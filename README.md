@@ -1,5 +1,7 @@
 <div align="center">
 
+![Metriplex Logo](assets/logo.png)
+
 # Metriplex (MPX)
 
 ### *Order from chaos*
