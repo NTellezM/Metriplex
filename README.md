@@ -126,7 +126,7 @@ python relayer.py
 | Decimals | 18 |
 | Network | Base (mainnet) |
 | Contract (Sepolia) | `0x22D3f414438556d1B071cCfE52513d4d829400fd` |
-| Uniswap | `TBD` |
+| Uniswap | [MPX/ETH en Base](https://app.uniswap.org/explore/tokens/base/0x22D3f414438556d1B071cCfE52513d4d829400fd) |
 
 ### Distribution
 ```
@@ -144,7 +144,7 @@ python relayer.py
 `0x22D3f414438556d1B071cCfE52513d4d829400fd`  
 [View on Etherscan](https://sepolia.etherscan.io/address/0x22D3f414438556d1B071cCfE52513d4d829400fd) · [TX Hash: mint live](https://sepolia.etherscan.io/tx/0x3c160ae311aeb2b35a3af6536f692307fc5f753d8e28fedeb006841e54557f53)
 
-**Mainnet:** Coming soon on Base.
+**Base Mainnet:** `0x22D3f414438556d1B071cCfE52513d4d829400fd` [Ver en BaseScan](https://basescan.org/token/0x22D3f414438556d1B071cCfE52513d4d829400fd)
 
 ### Deploy your own (Remix IDE)
 1. Open [remix.ethereum.org](https://remix.ethereum.org)
