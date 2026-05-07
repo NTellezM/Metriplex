@@ -1,0 +1,43 @@
+# ── Entornos Python ──────────────────────────────────────
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Datos del nodo (nunca subir a git) ──────────────────
+node_data_*.db
+*.db
+
+# ── Keystores y claves (NUNCA subir) ────────────────────
+*_keystore.json
+vault_keystore.json
+mi_wallet.json
+*.keystore
+*.key
+
+# ── Archivos de configuración personal ──────────────────
+pub_destino.json
+vault_pub.json
+vault_real.json
+.env
+.env.*
+
+# ── Tests ────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── Dashboard (Node.js) ──────────────────────────────────
+caf-dashboard/node_modules/
+caf-dashboard/dist/
+caf-dashboard/.env
+
+# ── OS ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

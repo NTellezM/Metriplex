@@ -1,0 +1,94 @@
+#root {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+body {
+  margin: 0;
+  background-color: #0f172a;
+  color: #f8fafc;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.dashboard-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.panel-left {
+  width: 40%;
+  padding: 20px;
+  overflow-y: auto;
+  border-right: 1px solid #334155;
+  background: #1e293b;
+}
+
+.panel-right {
+  width: 60%;
+  position: relative;
+  background: #000;
+}
+
+.header {
+  border-bottom: 1px solid #475569;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: #0f172a;
+  border: 1px solid #334155;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.block-item {
+  border-left: 4px solid #38bdf8;
+  padding-left: 10px;
+  margin-bottom: 20px;
+}
+
+.tx-item {
+  background: #1e293b;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.tx-item:hover {
+  background: #334155;
+}
+
+.btn-view {
+  background: #38bdf8;
+  color: #0f172a;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.btn-view:hover {
+  background: #7dd3fc;
+}
+
+.canvas-overlay {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(15, 23, 42, 0.8);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  pointer-events: none;
+  z-index: 10;
+}
