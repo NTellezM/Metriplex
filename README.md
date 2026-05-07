@@ -71,7 +71,7 @@ The `relayer.py` oracle monitors both chains:
 
 ### 1. Install dependencies
 ```bash
-git clone https://github.com/YOUR_USERNAME/metriplex
+git clone https://github.com/NTellezM/metriplex
 cd metriplex
 python -m venv venv
 source venv/bin/activate
@@ -125,7 +125,7 @@ python relayer.py
 | Max Supply | 21,000,000 |
 | Decimals | 18 |
 | Network | Base (mainnet) |
-| Contract | `TBD` |
+| Contract (Sepolia) | `0x22D3f414438556d1B071cCfE52513d4d829400fd` |
 | Uniswap | `TBD` |
 
 ### Distribution
@@ -142,7 +142,7 @@ python relayer.py
 
 **Sepolia testnet (live):**  
 `0x22D3f414438556d1B071cCfE52513d4d829400fd`  
-[View on Etherscan](https://sepolia.etherscan.io/address/0x22D3f414438556d1B071cCfE52513d4d829400fd)
+[View on Etherscan](https://sepolia.etherscan.io/address/0x22D3f414438556d1B071cCfE52513d4d829400fd) · [TX Hash: mint live](https://sepolia.etherscan.io/tx/0x3c160ae311aeb2b35a3af6536f692307fc5f753d8e28fedeb006841e54557f53)
 
 **Mainnet:** Coming soon on Base.
 
