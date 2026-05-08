@@ -467,56 +467,123 @@ section {
   word-break: break-all;
 }
 
-/* Uniswap Widget Container */
-.uniswap-container {
+/* Swap Card */
+.swap-card {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  overflow: hidden;
+  border-radius: 20px;
+  padding: 2.5rem;
   position: sticky;
   top: 6rem;
+  position: relative;
+  overflow: hidden;
 }
-
-.widget-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border);
+.swap-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--blue), transparent);
+}
+.swap-live {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: #00E676;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.1em;
 }
-
-.widget-header-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.widget-live-dot {
-  width: 8px;
-  height: 8px;
+.swap-live-dot {
+  width: 7px; height: 7px;
   border-radius: 50%;
   background: #00E676;
   animation: pulse 2s infinite;
 }
-
-#uniswap-iframe {
-  width: 100%;
-  height: 480px;
-  border: none;
-  display: block;
-}
-
-.widget-alt-btn {
-  display: block;
+.swap-price-display {
   text-align: center;
-  padding: 1rem;
-  border-top: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.8rem;
-  text-decoration: none;
-  transition: color 0.2s;
+  padding: 1.5rem;
+  background: var(--glow2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
 }
-
-.widget-alt-btn:hover { color: var(--blue); }
+.swap-price-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.5rem;
+}
+.swap-price-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--blue);
+  font-family: var(--mono);
+}
+.swap-price-eth {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+  font-family: var(--mono);
+}
+.swap-btn-main {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: linear-gradient(135deg, #00A3FF, #0066CC);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  text-decoration: none;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.05em;
+  transition: all 0.2s;
+  box-shadow: 0 0 24px rgba(0,163,255,0.25);
+}
+.swap-btn-main:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(0,163,255,0.45); }
+.swap-btn-secondary {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: transparent;
+  color: var(--blue);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.85rem 2rem;
+  border-radius: 12px;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+  transition: all 0.2s;
+}
+.swap-btn-secondary:hover { background: var(--glow); border-color: var(--blue); }
+.swap-contract {
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  color: var(--muted);
+  background: var(--glow2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  word-break: break-all;
+  line-height: 1.7;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.swap-contract:hover { border-color: var(--blue); }
+.swap-copied {
+  display: none;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: #00E676;
+  margin-top: 0.5rem;
+}
 
 /* ── TECH ── */
 #tech {
@@ -786,7 +853,17 @@ footer {
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="https://github.com/NTellezM/Metriplex" target="_blank">GitHub</a></li>
   </ul>
-  <div class="nav-price" id="nav-price">MPX $—</div>
+  <div style="display:flex;align-items:center;gap:0.75rem">
+    <button onclick="toggleLang()" id="lang-btn"
+      style="background:transparent;border:1px solid var(--border);color:var(--muted);
+             font-family:var(--mono);font-size:0.75rem;padding:6px 12px;border-radius:6px;
+             cursor:pointer;transition:all 0.2s;letter-spacing:0.05em"
+      onmouseover="this.style.color='var(--blue)';this.style.borderColor='var(--blue)'"
+      onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">
+      ES
+    </button>
+    <div class="nav-price" id="nav-price">MPX $—</div>
+  </div>
 </nav>
 
 <!-- HERO -->
@@ -935,20 +1012,36 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
         </a>
       </div>
 
-      <div class="uniswap-container">
-        <div class="widget-header">
-          <span class="widget-header-title">Swap ETH → MPX</span>
-          <div class="widget-live-dot"></div>
+      <div class="swap-card">
+        <div class="swap-live">
+          <div class="swap-live-dot"></div>
+          LIVE ON BASE MAINNET
         </div>
-        <iframe id="uniswap-iframe"
-          src="https://app.uniswap.org/swap?chain=base&outputCurrency=0x22D3f414438556d1B071cCfE52513d4d829400fd&theme=dark"
-          allow="clipboard-write"
-          style="border-radius:0">
-        </iframe>
-        <a href="https://app.uniswap.org/explore/tokens/base/0x22d3f414438556d1b071ccfe52513d4d829400fd"
-           target="_blank" class="widget-alt-btn">
-          Open in full Uniswap app →
+
+        <div class="swap-price-display">
+          <div class="swap-price-label">Current Price</div>
+          <div class="swap-price-value" id="swap-price-val">$—</div>
+          <div class="swap-price-eth" id="swap-price-eth">— ETH per MPX</div>
+        </div>
+
+        <a id="swap-btn-uni"
+           href="https://app.uniswap.org/swap?chain=base&outputCurrency=0x22D3f414438556d1B071cCfE52513d4d829400fd"
+           target="_blank" class="swap-btn-main">
+          Swap ETH → MPX on Uniswap
         </a>
+
+        <a href="https://app.uniswap.org/explore/tokens/base/0x22d3f414438556d1b071ccfe52513d4d829400fd"
+           target="_blank" class="swap-btn-secondary">
+          View token on Uniswap →
+        </a>
+
+        <div class="swap-contract" onclick="copyContract()" title="Click to copy">
+          <span style="color:var(--blue);font-size:0.6rem;letter-spacing:0.1em">
+            CONTRACT (BASE) · click to copy
+          </span><br>
+          0x22D3f414438556d1B071cCfE52513d4d829400fd
+        </div>
+        <div class="swap-copied" id="swap-copied">✓ Copied!</div>
       </div>
     </div>
   </div>
@@ -1026,7 +1119,7 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
         </div>
       </div>
       <div class="roadmap-item">
-        <div class="roadmap-phase">Phase 2 — In Progress</div>
+        <div class="roadmap-phase">Phase 2 — Q2 2026</div>
         <div class="roadmap-title">Decentralization + Validator Network</div>
         <div class="roadmap-items">
           <div class="roadmap-task">External validator nodes running</div>
@@ -1036,7 +1129,7 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
         </div>
       </div>
       <div class="roadmap-item">
-        <div class="roadmap-phase">Phase 3 — Q4 2026</div>
+        <div class="roadmap-phase">Phase 3 — Q3 2026</div>
         <div class="roadmap-title">Rust Rewrite — 100x Performance</div>
         <div class="roadmap-items">
           <div class="roadmap-task">Core cryptography rewritten in Rust</div>
@@ -1045,7 +1138,7 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
         </div>
       </div>
       <div class="roadmap-item">
-        <div class="roadmap-phase">Phase 4 — 2027</div>
+        <div class="roadmap-phase">Phase 4 — Q1 2027</div>
         <div class="roadmap-title">Security Audit + Formal Paper</div>
         <div class="roadmap-items">
           <div class="roadmap-task">ZK criterion formal security proof</div>
@@ -1187,6 +1280,12 @@ async function fetchPrice() {
       const sign = change >= 0 ? '+' : '';
       changeEl.textContent = `${sign}${change.toFixed(2)}% 24h`;
       changeEl.style.color = change >= 0 ? '#00E676' : '#FF5252';
+
+      // Swap card live price
+      const spv = document.getElementById('swap-price-val');
+      const spe = document.getElementById('swap-price-eth');
+      if (spv) spv.textContent = `$${price.toFixed(6)}`;
+      if (spe && pair.priceNative) spe.textContent = `${parseFloat(pair.priceNative).toFixed(8)} ETH per MPX`;
     }
   } catch(e) {
     console.log('Price fetch error:', e);
@@ -1221,6 +1320,22 @@ setInterval(() => {
   }
 }, 2000);
 
+function copyContract() {
+  var addr = '0x22D3f414438556d1B071cCfE52513d4d829400fd';
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(addr).then(function() { showCopied(); });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = addr; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showCopied();
+  }
+}
+function showCopied() {
+  var el = document.getElementById('swap-copied');
+  if (el) { el.style.display = 'block'; setTimeout(function(){ el.style.display='none'; }, 2000); }
+}
+
 // ── SCROLL REVEAL ──────────────────────────────────────────────────────
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(e => {
@@ -1240,5 +1355,239 @@ document.querySelectorAll(
   observer.observe(el);
 });
 </script>
+
+
+
+<script>
+const T = {
+  en: {
+    eyebrow: "Base Mainnet · Live · ERC-20",
+    heroTitle: "<span class='accent'>Fractal</span><br>Identity.",
+    tagline: "Order from <span>chaos</span>",
+    subtitle: "The first blockchain where your identity is a geometric shape, not a number. Your private key is a fractal attractor. Your public key is a 4×4×4 tensor.",
+    btnBuy: "Buy MPX",
+    btnGithub: "View on GitHub →",
+    statNet: "Base",
+    statNetSub: "Uniswap V4",
+    statSupply: "21M",
+    statSupplySub: "Fixed · Like Bitcoin",
+    statMcapSub: "21M MPX supply",
+    whatLabel: "What is Metriplex",
+    whatTitle: "Identity built on<br><span class='accent'>geometry</span>",
+    p1title: "Your key is a shape",
+    p1desc: "In Bitcoin and Ethereum your identity is a 256-bit integer. In Metriplex your private key is an Iterated Function System — a set of geometric contractions that define a unique fractal attractor.",
+    p2title: "ZK proof by geometry",
+    p2desc: "Every transaction includes a zero-knowledge proof that your attractor satisfies 8 geometric criteria simultaneously. Forgery requires solving the Inverse IFS Problem — conjectured NP-hard.",
+    p3title: "Native bridge to Ethereum",
+    p3desc: "MPX tokens live on Base mainnet. The cross-chain relayer monitors both chains — send MPX to receive wMPX on Ethereum, or burn wMPX to release MPX natively.",
+    buyLabel: "Get MPX",
+    buyTitle: "Buy <span class='accent'>Metriplex</span>",
+    s1title: "Get ETH on Base",
+    s1desc: "You need ETH on the Base network. Bridge from Ethereum at <strong>bridge.base.org</strong> or buy directly with a card using any CEX that supports Base withdrawals.",
+    s2title: "Open Uniswap on Base",
+    s2desc: "Go to app.uniswap.org and make sure your wallet is connected to <strong>Base Mainnet</strong>. Use the swap widget on the right or click the button below.",
+    s3title: "Swap ETH → MPX",
+    s3desc: "Search for MPX or paste the contract address. Set slippage to 1-2% for best results.",
+    btnUniswap: "Open Uniswap →",
+    swapTitle: "Swap ETH → MPX",
+    mobileSwapBtn: "Swap ETH → MPX on Uniswap",
+    mobileSwapDesc: "Tap to swap ETH for MPX directly on Uniswap.",
+    widgetAlt: "Open in Uniswap app →",
+    techLabel: "Technology",
+    techTitle: "Why <span class='accent'>different</span>",
+    tradCard: "Traditional Blockchain",
+    mpxCard: "Metriplex",
+    rmLabel: "Roadmap",
+    rmTitle: "Where we're <span class='accent'>going</span>",
+    phase1: "Phase 1 — Complete",
+    phase1title: "Layer 1 Core + EVM Bridge",
+    phase2: "Phase 2 — Q2 2026",
+    phase2title: "Decentralization + Validator Network",
+    phase3: "Phase 3 — Q3 2026",
+    phase3title: "Rust Rewrite — 100x Performance",
+    phase4: "Phase 4 — Q1 2027",
+    phase4title: "Security Audit + Formal Paper",
+    footerDesc: "The first blockchain with fractal identity. Order from chaos.",
+    footerLinks: "Links",
+    footerCommunity: "Community",
+    footerRun: "Run a Node",
+    footerContribute: "Contribute",
+    footerTagline: "Order from chaos.",
+    langBtn: "ES",
+    navAbout: "About",
+    navBuy: "Buy",
+    navTech: "Technology",
+    navRoadmap: "Roadmap"
+  },
+  es: {
+    eyebrow: "Base Mainnet · En vivo · ERC-20",
+    heroTitle: "<span class='accent'>Identidad</span><br>Fractal.",
+    tagline: "Orden desde el <span>caos</span>",
+    subtitle: "La primera blockchain donde tu identidad es una forma geométrica, no un número. Tu clave privada es un atractor fractal. Tu clave pública es un tensor 4×4×4.",
+    btnBuy: "Comprar MPX",
+    btnGithub: "Ver en GitHub →",
+    statNet: "Base",
+    statNetSub: "Uniswap V4",
+    statSupply: "21M",
+    statSupplySub: "Fijo · Como Bitcoin",
+    statMcapSub: "Supply de 21M MPX",
+    whatLabel: "Qué es Metriplex",
+    whatTitle: "Identidad basada en<br><span class='accent'>geometría</span>",
+    p1title: "Tu clave es una forma",
+    p1desc: "En Bitcoin y Ethereum tu identidad es un entero de 256 bits. En Metriplex tu clave privada es un Sistema de Funciones Iteradas — un conjunto de contracciones geométricas que definen un atractor fractal único.",
+    p2title: "Prueba ZK por geometría",
+    p2desc: "Cada transacción incluye una prueba de conocimiento cero que confirma que tu atractor satisface 8 criterios geométricos simultáneamente. La falsificación requiere resolver el Problema Inverso del IFS — considerado NP-difícil.",
+    p3title: "Puente nativo a Ethereum",
+    p3desc: "Los tokens MPX viven en Base mainnet. El relayer cross-chain monitorea ambas cadenas — envía MPX para recibir wMPX en Ethereum, o quema wMPX para liberar MPX nativos.",
+    buyLabel: "Obtener MPX",
+    buyTitle: "Comprar <span class='accent'>Metriplex</span>",
+    s1title: "Obtener ETH en Base",
+    s1desc: "Necesitas ETH en la red Base. Haz el bridge desde Ethereum en <strong>bridge.base.org</strong> o compra directamente con tarjeta en cualquier CEX que soporte retiros en Base.",
+    s2title: "Abrir Uniswap en Base",
+    s2desc: "Ve a app.uniswap.org y asegúrate de que tu billetera esté conectada a <strong>Base Mainnet</strong>. Usa el widget de swap a la derecha o haz clic en el botón de abajo.",
+    s3title: "Cambiar ETH → MPX",
+    s3desc: "Busca MPX o pega la dirección del contrato. Configura el slippage al 1-2% para mejores resultados.",
+    btnUniswap: "Abrir Uniswap →",
+    swapTitle: "Cambiar ETH → MPX",
+    mobileSwapBtn: "Cambiar ETH → MPX en Uniswap",
+    mobileSwapDesc: "Toca para cambiar ETH por MPX directamente en Uniswap.",
+    widgetAlt: "Abrir en app Uniswap →",
+    techLabel: "Tecnología",
+    techTitle: "Por qué es <span class='accent'>diferente</span>",
+    tradCard: "Blockchain Tradicional",
+    mpxCard: "Metriplex",
+    rmLabel: "Hoja de ruta",
+    rmTitle: "A dónde <span class='accent'>vamos</span>",
+    phase1: "Fase 1 — Completada",
+    phase1title: "Núcleo Layer 1 + Puente EVM",
+    phase2: "Fase 2 — Q2 2026",
+    phase2title: "Descentralización + Red de Validadores",
+    phase3: "Fase 3 — Q3 2026",
+    phase3title: "Reescritura en Rust — 100x Rendimiento",
+    phase4: "Fase 4 — Q1 2027",
+    phase4title: "Auditoría de Seguridad + Paper Formal",
+    footerDesc: "La primera blockchain con identidad fractal. Orden desde el caos.",
+    footerLinks: "Enlaces",
+    footerCommunity: "Comunidad",
+    footerRun: "Correr un Nodo",
+    footerContribute: "Contribuir",
+    footerTagline: "Orden desde el caos.",
+    langBtn: "EN",
+    navAbout: "Acerca de",
+    navBuy: "Comprar",
+    navTech: "Tecnología",
+    navRoadmap: "Hoja de ruta"
+  }
+};
+
+let currentLang = 'en';
+
+function setLang(lang) {
+  const t = T[lang];
+  currentLang = lang;
+
+  // Nav
+  document.getElementById('lang-btn').textContent = t.langBtn;
+  const navLinks = document.querySelectorAll('.nav-links a');
+  if (navLinks[0]) navLinks[0].textContent = t.navAbout;
+  if (navLinks[1]) navLinks[1].textContent = t.navBuy;
+  if (navLinks[2]) navLinks[2].textContent = t.navTech;
+  if (navLinks[3]) navLinks[3].textContent = t.navRoadmap;
+
+  // Hero
+  const heroTitle = document.querySelector('.hero-title');
+  if (heroTitle) heroTitle.innerHTML = t.heroTitle;
+  const heroTag = document.querySelector('.hero-tagline');
+  if (heroTag) heroTag.innerHTML = t.tagline;
+  const heroSub = document.querySelector('.hero-subtitle');
+  if (heroSub) heroSub.textContent = t.subtitle;
+  const eyebrow = document.querySelector('.hero-eyebrow');
+  if (eyebrow) eyebrow.textContent = t.eyebrow;
+  const ctaBtns = document.querySelectorAll('.hero-cta a');
+  if (ctaBtns[0]) ctaBtns[0].textContent = t.btnBuy;
+  if (ctaBtns[1]) ctaBtns[1].textContent = t.btnGithub;
+
+  // Stats
+  document.querySelector('#stats .stats-grid .stat-item:nth-child(3) .stat-value').textContent = t.statNet;
+  document.querySelector('#stats .stats-grid .stat-item:nth-child(3) .stat-change').textContent = t.statNetSub;
+  document.querySelector('#stats .stats-grid .stat-item:nth-child(4) .stat-value').textContent = t.statSupply;
+  document.querySelector('#stats .stats-grid .stat-item:nth-child(4) .stat-change').textContent = t.statSupplySub;
+  document.querySelector('#stats .stats-grid .stat-item:nth-child(2) .stat-change').textContent = t.statMcapSub;
+
+  // What
+  document.querySelector('#what .section-label').textContent = t.whatLabel;
+  document.querySelector('#what .section-title').innerHTML = t.whatTitle;
+  const pts = document.querySelectorAll('.what-point');
+  if (pts[0]) { pts[0].querySelector('.what-point-title').textContent = t.p1title; pts[0].querySelector('.what-point-desc').textContent = t.p1desc; }
+  if (pts[1]) { pts[1].querySelector('.what-point-title').textContent = t.p2title; pts[1].querySelector('.what-point-desc').textContent = t.p2desc; }
+  if (pts[2]) { pts[2].querySelector('.what-point-title').textContent = t.p3title; pts[2].querySelector('.what-point-desc').textContent = t.p3desc; }
+
+  // Buy
+  document.querySelector('#buy .section-label').textContent = t.buyLabel;
+  document.querySelector('#buy .section-title').innerHTML = t.buyTitle;
+  const steps = document.querySelectorAll('.buy-step');
+  if (steps[0]) { steps[0].querySelector('.step-title').textContent = t.s1title; steps[0].querySelector('.step-desc').innerHTML = t.s1desc; }
+  if (steps[1]) { steps[1].querySelector('.step-title').textContent = t.s2title; steps[1].querySelector('.step-desc').innerHTML = t.s2desc; }
+  if (steps[2]) { steps[2].querySelector('.step-title').textContent = t.s3title; steps[2].querySelector('.step-desc').textContent = t.s3desc; }
+  const uniBtn = document.querySelector('.buy-steps .btn-primary');
+  if (uniBtn) uniBtn.textContent = t.btnUniswap;
+  document.querySelector('.widget-header-title').textContent = t.swapTitle;
+  const mobileBtn = document.querySelector('#mobile-swap a');
+  if (mobileBtn) mobileBtn.textContent = t.mobileSwapBtn;
+  const mobileDesc = document.querySelector('#mobile-swap p');
+  if (mobileDesc) mobileDesc.textContent = t.mobileSwapDesc;
+  const widgetAlt = document.querySelector('.widget-alt-btn');
+  if (widgetAlt) widgetAlt.textContent = t.widgetAlt;
+
+  // Tech
+  document.querySelector('#tech .section-label').textContent = t.techLabel;
+  document.querySelector('#tech .section-title').innerHTML = t.techTitle;
+  document.querySelector('.tech-card.traditional .tech-card-title').textContent = t.tradCard;
+  document.querySelector('.tech-card.metriplex .tech-card-title').textContent = t.mpxCard;
+
+  // Roadmap
+  document.querySelector('#roadmap .section-label').textContent = t.rmLabel;
+  document.querySelector('#roadmap .section-title').innerHTML = t.rmTitle;
+  const phases = document.querySelectorAll('.roadmap-phase');
+  const phaseTitles = document.querySelectorAll('.roadmap-title');
+  if (phases[0]) phases[0].textContent = t.phase1;
+  if (phaseTitles[0]) phaseTitles[0].textContent = t.phase1title;
+  if (phases[1]) phases[1].textContent = t.phase2;
+  if (phaseTitles[1]) phaseTitles[1].textContent = t.phase2title;
+  if (phases[2]) phases[2].textContent = t.phase3;
+  if (phaseTitles[2]) phaseTitles[2].textContent = t.phase3title;
+  if (phases[3]) phases[3].textContent = t.phase4;
+  if (phaseTitles[3]) phaseTitles[3].textContent = t.phase4title;
+
+  // Footer
+  document.querySelector('.footer-brand p').textContent = t.footerDesc;
+  const fcols = document.querySelectorAll('.footer-col-title');
+  if (fcols[0]) fcols[0].textContent = t.footerLinks;
+  if (fcols[1]) fcols[1].textContent = t.footerCommunity;
+  const flinks = document.querySelectorAll('.footer-links');
+  if (flinks[1]) {
+    const as = flinks[1].querySelectorAll('a');
+    if (as[1]) as[1].textContent = t.footerRun;
+    if (as[2]) as[2].textContent = t.footerContribute;
+  }
+  document.querySelector('.footer-tagline').textContent = t.footerTagline;
+
+  // Save preference
+  try { localStorage.setItem('mpx-lang', lang); } catch(e) {}
+}
+
+function toggleLang() {
+  setLang(currentLang === 'en' ? 'es' : 'en');
+}
+
+// Load saved preference
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    const saved = localStorage.getItem('mpx-lang');
+    if (saved && saved !== 'en') setLang(saved);
+  } catch(e) {}
+});
+</script>
+
 </body>
 </html>
