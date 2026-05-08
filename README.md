@@ -1,6 +1,6 @@
 <div align="center">
 
-![Metriplex Logo](assets/logo.png)
+![Metriplex Logo](assets/logo3.png)
 
 # Metriplex (MPX)
 
