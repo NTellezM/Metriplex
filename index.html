@@ -405,6 +405,8 @@ section {
   border-radius: 16px;
   overflow: hidden;
   transition: border-color 0.2s;
+  opacity: 1 !important;
+  transform: none !important;
 }
 
 .guide-step:hover { border-color: rgba(0,163,255,0.25); }
@@ -1677,7 +1679,7 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.1 });
 
 document.querySelectorAll(
-  '.what-point, .buy-step, .tech-card, .roadmap-item, .stat-item'
+  '.what-point, .tech-card, .roadmap-item, .stat-item'
 ).forEach(el => {
   el.style.opacity = '0';
   el.style.transform = 'translateY(20px)';
@@ -1822,16 +1824,20 @@ function setLang(lang) {
   const t = T[lang];
   currentLang = lang;
 
-  // Helper
+  // Helper - safe set with individual try-catch
   function set(id, val, html) {
-    const el = document.getElementById(id) || document.querySelector('#' + id);
-    if (!el) return;
-    if (html) el.innerHTML = val; else el.textContent = val;
+    try {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (html) el.innerHTML = val; else el.textContent = val;
+    } catch(e) { console.warn('setLang set error:', id, e.message); }
   }
   function setQ(q, val, html) {
-    const el = document.querySelector(q);
-    if (!el) return;
-    if (html) el.innerHTML = val; else el.textContent = val;
+    try {
+      const el = document.querySelector(q);
+      if (!el) return;
+      if (html) el.innerHTML = val; else el.textContent = val;
+    } catch(e) { console.warn('setLang setQ error:', q, e.message); }
   }
   function setAll(q, vals) {
     document.querySelectorAll(q).forEach((el, i) => {
@@ -1990,6 +1996,12 @@ function setLang(lang) {
 
   // Refresh prices after language change
   fetchPrice();
+
+  // Force all animated elements visible after language change
+  document.querySelectorAll('.what-point, .tech-card, .roadmap-item, .stat-item, .guide-step').forEach(function(el) {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  });
 }
 
 function toggleLang() {
