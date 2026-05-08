@@ -7,7 +7,7 @@
 <meta name="description" content="The first blockchain with fractal identity. Your key is a geometric shape, not a number. MPX token live on Base.">
 <meta property="og:title" content="Metriplex (MPX) — Order from chaos">
 <meta property="og:description" content="The first blockchain with fractal identity. Live on Base mainnet.">
-<meta property="og:image" content="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo3.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -390,6 +390,203 @@ section {
   letter-spacing: 0.15em;
   margin-bottom: 1rem;
 }
+
+/* ── BUY MPX GUIDE ── */
+.guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 860px;
+}
+
+.guide-step {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.guide-step:hover { border-color: rgba(0,163,255,0.25); }
+
+.guide-step-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding: 1.5rem 1.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.guide-step-num {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.guide-step-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.guide-step-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.guide-step-body {
+  padding: 1.5rem 1.75rem;
+}
+
+.guide-action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.guide-action-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-decoration: none;
+  transition: all 0.2s;
+  display: block;
+}
+
+.guide-action-card:hover {
+  border-color: var(--blue);
+  background: var(--glow2);
+  transform: translateY(-2px);
+}
+
+.guide-action-icon { font-size: 1.75rem; margin-bottom: 0.5rem; }
+.guide-action-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem; color: var(--white); }
+.guide-action-desc { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.75rem; }
+.guide-action-btn { font-size: 0.8rem; color: var(--blue); font-weight: 600; }
+
+.guide-tip {
+  background: rgba(0,163,255,0.05);
+  border: 1px solid rgba(0,163,255,0.12);
+  border-left: 3px solid var(--blue);
+  border-radius: 0 8px 8px 0;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.network-config {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  font-family: var(--mono);
+}
+
+.network-config-title {
+  font-size: 0.65rem;
+  color: var(--blue);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 1rem;
+}
+
+.network-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.network-row:last-of-type { border-bottom: none; }
+.network-key { font-size: 0.75rem; color: var(--muted); }
+.network-val {
+  font-size: 0.8rem;
+  color: var(--white);
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+  background: var(--glow2);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+.network-val:hover { color: var(--blue); border-color: var(--blue); }
+
+.guide-two-paths {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.path-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.path-label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--blue);
+  letter-spacing: 0.12em;
+  margin-bottom: 0.75rem;
+}
+
+.path-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.path-btn {
+  display: block;
+  text-align: center;
+  background: var(--glow2);
+  border: 1px solid var(--border);
+  color: var(--blue);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.path-btn:hover { background: var(--glow); border-color: var(--blue); }
+
+.swap-final-card {
+  background: var(--bg);
+  border: 1px solid rgba(0,163,255,0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.swap-final-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--blue), transparent);
+}
+
+.swap-final-price { text-align: center; }
 
 /* ── BUY MPX ── */
 #buy {
@@ -825,12 +1022,17 @@ footer {
   nav { padding: 1rem 1.5rem; }
   .nav-links { display: none; }
   #stats .stats-grid { grid-template-columns: repeat(2,1fr); }
-  .what-grid, .buy-grid, .tech-comparison { grid-template-columns: 1fr; }
+  .what-grid, .tech-comparison { grid-template-columns: 1fr; }
   .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
   section { padding-left: 1.5rem; padding-right: 1.5rem; }
   #what, #tech { padding: 5rem 1.5rem; }
   #buy, #roadmap { padding: 5rem 1.5rem; }
   footer { padding: 3rem 1.5rem; }
+  .guide-action-grid { grid-template-columns: 1fr; }
+  .guide-two-paths { grid-template-columns: 1fr; }
+  .guide-step-header { padding: 1.25rem; }
+  .guide-step-body { padding: 1.25rem; }
+  .swap-final-card { padding: 1.25rem; }
 }
 </style>
 </head>
@@ -841,8 +1043,10 @@ footer {
 <!-- NAV -->
 <nav>
   <a href="#" class="nav-logo">
-    <img src="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo.png"
-         onerror="this.style.display='none'" alt="MPX">
+    <img src="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo4.png"
+         onerror="this.src='https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo.png'"
+         alt="MPX" style="width:52px;height:52px;border-radius:50%;object-fit:cover;
+                          box-shadow:0 0 16px rgba(0,163,255,0.4)">
     <span class="nav-logo-text">METRIPLEX</span>
     <span class="nav-logo-ticker">MPX</span>
   </a>
@@ -867,7 +1071,19 @@ footer {
 </nav>
 
 <!-- HERO -->
-<section id="hero">
+<section id="hero" style="position:relative;overflow:hidden;">
+  <!-- Watermark logo3 -->
+  <div style="position:absolute;inset:0;display:flex;align-items:center;
+              justify-content:center;pointer-events:none;z-index:0">
+    <img src="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo3.png"
+         alt="" style="width:min(70vw,600px);opacity:0.04;filter:blur(2px) grayscale(30%);
+                       user-select:none;pointer-events:none">
+  </div>
+  <img src="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo4.png"
+       alt="Metriplex"
+       style="width:120px;height:120px;border-radius:50%;object-fit:cover;
+              margin-bottom:2rem;opacity:0;animation:fadeUp 0.8s 0.1s forwards;
+              box-shadow:0 0 40px rgba(0,163,255,0.5),0 0 80px rgba(0,163,255,0.2)">
   <div class="hero-eyebrow">Base Mainnet · Live · ERC-20</div>
   <h1 class="hero-title">
     <span class="accent">Fractal</span><br>Identity.
@@ -969,81 +1185,156 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
 <!-- BUY MPX -->
 <section id="buy">
   <div class="buy-inner">
-    <div class="section-label">Get MPX</div>
+    <div class="section-label" id="buy-label">Get MPX</div>
     <h2 class="section-title">Buy <span class="accent">Metriplex</span></h2>
-    <div class="buy-grid">
-      <div class="buy-steps">
-        <div class="buy-step">
-          <div class="step-num">1</div>
+    <p style="color:var(--muted);font-size:1rem;line-height:1.7;max-width:680px;margin-bottom:3rem" id="buy-intro">
+      MPX lives on the <strong style="color:var(--white)">Base network</strong> — a fast and cheap Ethereum Layer 2.
+      To buy MPX you need ETH on Base, not on Ethereum Mainnet. This guide walks you through every step.
+      The whole process takes about 10 minutes.
+    </p>
+
+    <!-- STEP BY STEP -->
+    <div class="guide-steps">
+
+      <!-- STEP 1 -->
+      <div class="guide-step">
+        <div class="guide-step-header">
+          <div class="guide-step-num">1</div>
           <div>
-            <div class="step-title">Get ETH on Base</div>
-            <p class="step-desc">
-              You need ETH on the Base network. Bridge from Ethereum at
-              <strong>bridge.base.org</strong> or buy directly with a card
-              using any CEX that supports Base withdrawals.
-            </p>
+            <div class="guide-step-title" id="gs1t">Get a crypto wallet</div>
+            <div class="guide-step-sub" id="gs1s">You need a wallet that supports Base. MetaMask or Brave Wallet work perfectly.</div>
           </div>
         </div>
-        <div class="buy-step">
-          <div class="step-num">2</div>
-          <div>
-            <div class="step-title">Open Uniswap on Base</div>
-            <p class="step-desc">
-              Go to app.uniswap.org and make sure your wallet is connected to
-              <strong>Base Mainnet</strong>. Use the swap widget on the right
-              or click the button below.
-            </p>
+        <div class="guide-step-body">
+          <div class="guide-action-grid">
+            <a href="https://metamask.io/download/" target="_blank" class="guide-action-card">
+              <div class="guide-action-icon">🦊</div>
+              <div class="guide-action-name">MetaMask</div>
+              <div class="guide-action-desc" id="ga1d">Free browser extension</div>
+              <div class="guide-action-btn" id="ga1b">Download →</div>
+            </a>
+            <a href="https://brave.com/wallet/" target="_blank" class="guide-action-card">
+              <div class="guide-action-icon">🦁</div>
+              <div class="guide-action-name">Brave Wallet</div>
+              <div class="guide-action-desc" id="ga2d">Built into Brave browser</div>
+              <div class="guide-action-btn" id="ga2b">Download →</div>
+            </a>
+          </div>
+          <div class="guide-tip" id="gt1">
+            💡 Already have a wallet? Skip to step 2.
           </div>
         </div>
-        <div class="buy-step">
-          <div class="step-num">3</div>
-          <div>
-            <div class="step-title">Swap ETH → MPX</div>
-            <p class="step-desc">
-              Search for MPX or paste the contract address.
-              Set slippage to 1-2% for best results.
-            </p>
-            <div class="step-code">0x22D3f414438556d1B071cCfE52513d4d829400fd</div>
-          </div>
-        </div>
-        <a href="https://app.uniswap.org/explore/tokens/base/0x22d3f414438556d1b071ccfe52513d4d829400fd"
-           target="_blank" class="btn-primary" style="text-align:center;margin-top:0.5rem">
-          Open Uniswap →
-        </a>
       </div>
 
-      <div class="swap-card">
-        <div class="swap-live">
-          <div class="swap-live-dot"></div>
-          LIVE ON BASE MAINNET
+      <!-- STEP 2 -->
+      <div class="guide-step">
+        <div class="guide-step-header">
+          <div class="guide-step-num">2</div>
+          <div>
+            <div class="guide-step-title" id="gs2t">Add the Base network to your wallet</div>
+            <div class="guide-step-sub" id="gs2s">Base is not added by default. You need to configure it once.</div>
+          </div>
         </div>
-
-        <div class="swap-price-display">
-          <div class="swap-price-label">Current Price</div>
-          <div class="swap-price-value" id="swap-price-val">$—</div>
-          <div class="swap-price-eth" id="swap-price-eth">— ETH per MPX</div>
+        <div class="guide-step-body">
+          <div class="network-config">
+            <div class="network-config-title" id="nct">Base Network Settings</div>
+            <div class="network-row"><span class="network-key">Network Name</span><span class="network-val copy-val" onclick="copyText('Base')">Base</span></div>
+            <div class="network-row"><span class="network-key">RPC URL</span><span class="network-val copy-val" onclick="copyText('https://mainnet.base.org')" style="font-size:0.7rem">https://mainnet.base.org</span></div>
+            <div class="network-row"><span class="network-key">Chain ID</span><span class="network-val copy-val" onclick="copyText('8453')">8453</span></div>
+            <div class="network-row"><span class="network-key">Currency Symbol</span><span class="network-val copy-val" onclick="copyText('ETH')">ETH</span></div>
+            <div class="network-row"><span class="network-key">Block Explorer</span><span class="network-val copy-val" onclick="copyText('https://basescan.org')" style="font-size:0.7rem">https://basescan.org</span></div>
+            <div style="font-size:0.7rem;color:var(--muted);margin-top:0.75rem;font-family:var(--mono)" id="copy-hint">Click any value to copy it</div>
+          </div>
+          <div class="guide-tip" id="gt2">
+            💡 Or just click "Add to MetaMask" on <a href="https://chainlist.org/chain/8453" target="_blank" style="color:var(--blue)">chainlist.org/chain/8453</a> — it adds everything automatically.
+          </div>
         </div>
-
-        <a id="swap-btn-uni"
-           href="https://app.uniswap.org/swap?chain=base&outputCurrency=0x22D3f414438556d1B071cCfE52513d4d829400fd"
-           target="_blank" class="swap-btn-main">
-          Swap ETH → MPX on Uniswap
-        </a>
-
-        <a href="https://app.uniswap.org/explore/tokens/base/0x22d3f414438556d1b071ccfe52513d4d829400fd"
-           target="_blank" class="swap-btn-secondary">
-          View token on Uniswap →
-        </a>
-
-        <div class="swap-contract" onclick="copyContract()" title="Click to copy">
-          <span style="color:var(--blue);font-size:0.6rem;letter-spacing:0.1em">
-            CONTRACT (BASE) · click to copy
-          </span><br>
-          0x22D3f414438556d1B071cCfE52513d4d829400fd
-        </div>
-        <div class="swap-copied" id="swap-copied">✓ Copied!</div>
       </div>
-    </div>
+
+      <!-- STEP 3 -->
+      <div class="guide-step">
+        <div class="guide-step-header">
+          <div class="guide-step-num">3</div>
+          <div>
+            <div class="guide-step-title" id="gs3t">Get ETH on Base</div>
+            <div class="guide-step-sub" id="gs3s">You need ETH <em>on Base</em> to pay for the swap. There are two ways depending on where your money is.</div>
+          </div>
+        </div>
+        <div class="guide-step-body">
+          <div class="guide-two-paths">
+            <div class="path-card">
+              <div class="path-label" id="pl1">IF YOU HAVE ETH ON ETHEREUM</div>
+              <div class="path-desc" id="pd1">Use the official Base bridge to move your ETH from Ethereum to Base. Fast and free.</div>
+              <a href="https://bridge.base.org" target="_blank" class="path-btn" id="pb1">Bridge ETH to Base →</a>
+            </div>
+            <div class="path-card">
+              <div class="path-label" id="pl2">IF YOU HAVE USDT/USDC ON BINANCE</div>
+              <div class="path-desc" id="pd2">Buy ETH on Binance, then withdraw directly to your wallet address selecting the <strong>Base</strong> network.</div>
+              <a href="https://www.binance.com" target="_blank" class="path-btn" id="pb2">Go to Binance →</a>
+            </div>
+          </div>
+          <div class="guide-tip" id="gt3">
+            💡 You only need <strong>$5–10 of ETH</strong> to cover the swap fee on Base. The fee is usually less than $0.10.
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="guide-step">
+        <div class="guide-step-header">
+          <div class="guide-step-num">4</div>
+          <div>
+            <div class="guide-step-title" id="gs4t">Swap ETH for MPX on Uniswap</div>
+            <div class="guide-step-sub" id="gs4s">Go to Uniswap, connect your wallet, and swap. The link below opens Uniswap with MPX already selected.</div>
+          </div>
+        </div>
+        <div class="guide-step-body">
+          <div class="swap-final-card">
+            <div class="swap-final-price">
+              <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);letter-spacing:0.15em;margin-bottom:0.4rem" id="slive">LIVE PRICE</div>
+              <div style="font-size:2.2rem;font-weight:800;color:var(--blue);font-family:var(--mono)" id="swap-price-val">$—</div>
+              <div style="font-size:0.75rem;color:var(--muted);font-family:var(--mono);margin-top:0.2rem" id="swap-price-eth">— ETH per MPX</div>
+            </div>
+            <a href="https://app.uniswap.org/swap?chain=base&outputCurrency=0x22D3f414438556d1B071cCfE52513d4d829400fd"
+               target="_blank" id="swap-btn-uni"
+               style="display:block;background:linear-gradient(135deg,#00A3FF,#0066CC);
+                      color:#fff;font-weight:700;font-size:1.1rem;padding:1.1rem 2rem;
+                      border-radius:12px;text-decoration:none;text-align:center;
+                      margin:1.5rem 0 0.75rem;letter-spacing:0.05em;
+                      box-shadow:0 0 30px rgba(0,163,255,0.3);transition:all 0.2s"
+               onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 0 50px rgba(0,163,255,0.5)'"
+               onmouseout="this.style.transform='';this.style.boxShadow='0 0 30px rgba(0,163,255,0.3)'">
+              Open Uniswap — Swap ETH → MPX
+            </a>
+            <a href="https://app.uniswap.org/explore/tokens/base/0x22d3f414438556d1b071ccfe52513d4d829400fd"
+               target="_blank"
+               style="display:block;text-align:center;color:var(--muted);font-size:0.85rem;
+                      padding:0.75rem;border:1px solid var(--border);border-radius:10px;
+                      text-decoration:none;margin-bottom:1.5rem;transition:all 0.2s"
+               id="swap-btn-sec"
+               onmouseover="this.style.color='var(--blue)';this.style.borderColor='var(--blue)'"
+               onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">
+              View MPX token page on Uniswap →
+            </a>
+            <div style="background:var(--glow2);border:1px solid var(--border);border-radius:8px;
+                        padding:1rem;font-family:var(--mono);font-size:0.68rem;
+                        color:var(--muted);line-height:1.8">
+              <div style="color:var(--blue);font-size:0.6rem;letter-spacing:0.15em;margin-bottom:0.4rem" id="ct-label">CONTRACT ADDRESS (BASE) · CLICK TO COPY</div>
+              <div onclick="copyContract()" style="cursor:pointer;word-break:break-all;color:var(--white)"
+                   onmouseover="this.style.color='var(--blue)'"
+                   onmouseout="this.style.color='var(--white)'">
+                0x22D3f414438556d1B071cCfE52513d4d829400fd
+              </div>
+              <div id="swap-copied" style="display:none;color:#00E676;margin-top:0.4rem">✓ Copied!</div>
+            </div>
+          </div>
+          <div class="guide-tip" id="gt4">
+            💡 In Uniswap set slippage to <strong>1–2%</strong>. If the swap fails, increase slippage to 3%.
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end guide-steps -->
   </div>
 </section>
 
@@ -1319,6 +1610,19 @@ setInterval(() => {
        <br><span style="color:#0066CC">// Unique by Kruskal-Comon theorem.</span>`;
   }
 }, 2000);
+
+function copyText(val) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(val);
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = val; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  }
+  // brief visual feedback
+  event.target.style.color = '#00E676';
+  setTimeout(function(){ event.target.style.color = ''; }, 800);
+}
 
 function copyContract() {
   var addr = '0x22D3f414438556d1B071cCfE52513d4d829400fd';
