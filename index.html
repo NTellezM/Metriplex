@@ -1777,91 +1777,162 @@ function setLang(lang) {
   const t = T[lang];
   currentLang = lang;
 
-  // Nav
-  document.getElementById('lang-btn').textContent = t.langBtn;
-  const navLinks = document.querySelectorAll('.nav-links a');
-  if (navLinks[0]) navLinks[0].textContent = t.navAbout;
-  if (navLinks[1]) navLinks[1].textContent = t.navBuy;
-  if (navLinks[2]) navLinks[2].textContent = t.navTech;
-  if (navLinks[3]) navLinks[3].textContent = t.navRoadmap;
+  // Helper
+  function set(id, val, html) {
+    const el = document.getElementById(id) || document.querySelector(id);
+    if (!el) return;
+    if (html) el.innerHTML = val; else el.textContent = val;
+  }
+  function setQ(q, val, html) {
+    const el = document.querySelector(q);
+    if (!el) return;
+    if (html) el.innerHTML = val; else el.textContent = val;
+  }
+  function setAll(q, vals) {
+    document.querySelectorAll(q).forEach((el, i) => {
+      if (vals[i] !== undefined) el.textContent = vals[i];
+    });
+  }
+  function setAllHTML(q, vals) {
+    document.querySelectorAll(q).forEach((el, i) => {
+      if (vals[i] !== undefined) el.innerHTML = vals[i];
+    });
+  }
 
-  // Hero
-  const heroTitle = document.querySelector('.hero-title');
-  if (heroTitle) heroTitle.innerHTML = t.heroTitle;
-  const heroTag = document.querySelector('.hero-tagline');
-  if (heroTag) heroTag.innerHTML = t.tagline;
-  const heroSub = document.querySelector('.hero-subtitle');
-  if (heroSub) heroSub.textContent = t.subtitle;
-  const eyebrow = document.querySelector('.hero-eyebrow');
-  if (eyebrow) eyebrow.textContent = t.eyebrow;
-  const ctaBtns = document.querySelectorAll('.hero-cta a');
-  if (ctaBtns[0]) ctaBtns[0].textContent = t.btnBuy;
-  if (ctaBtns[1]) ctaBtns[1].textContent = t.btnGithub;
+  // ── NAV ──
+  set('lang-btn', t.langBtn);
+  setAll('.nav-links a', [t.navAbout, t.navBuy, t.navTech, t.navRoadmap]);
 
-  // Stats
-  document.querySelector('#stats .stats-grid .stat-item:nth-child(3) .stat-value').textContent = t.statNet;
-  document.querySelector('#stats .stats-grid .stat-item:nth-child(3) .stat-change').textContent = t.statNetSub;
-  document.querySelector('#stats .stats-grid .stat-item:nth-child(4) .stat-value').textContent = t.statSupply;
-  document.querySelector('#stats .stats-grid .stat-item:nth-child(4) .stat-change').textContent = t.statSupplySub;
-  document.querySelector('#stats .stats-grid .stat-item:nth-child(2) .stat-change').textContent = t.statMcapSub;
+  // ── HERO ──
+  setQ('.hero-eyebrow', t.eyebrow);
+  setQ('.hero-title', t.heroTitle, true);
+  setQ('.hero-tagline', t.tagline, true);
+  setQ('.hero-subtitle', t.subtitle);
+  const heroBtns = document.querySelectorAll('.hero-cta a');
+  if (heroBtns[0]) heroBtns[0].textContent = t.btnBuy;
+  if (heroBtns[1]) heroBtns[1].textContent = t.btnGithub;
 
-  // What
-  document.querySelector('#what .section-label').textContent = t.whatLabel;
-  document.querySelector('#what .section-title').innerHTML = t.whatTitle;
-  const pts = document.querySelectorAll('.what-point');
-  if (pts[0]) { pts[0].querySelector('.what-point-title').textContent = t.p1title; pts[0].querySelector('.what-point-desc').textContent = t.p1desc; }
-  if (pts[1]) { pts[1].querySelector('.what-point-title').textContent = t.p2title; pts[1].querySelector('.what-point-desc').textContent = t.p2desc; }
-  if (pts[2]) { pts[2].querySelector('.what-point-title').textContent = t.p3title; pts[2].querySelector('.what-point-desc').textContent = t.p3desc; }
+  // ── STATS ──
+  const statItems = document.querySelectorAll('#stats .stat-item');
+  if (statItems[1]) statItems[1].querySelector('.stat-change').textContent = t.statMcapSub;
+  if (statItems[2]) {
+    statItems[2].querySelector('.stat-value').textContent = t.statNet;
+    statItems[2].querySelector('.stat-change').textContent = t.statNetSub;
+  }
+  if (statItems[3]) {
+    statItems[3].querySelector('.stat-value').textContent = t.statSupply;
+    statItems[3].querySelector('.stat-change').textContent = t.statSupplySub;
+  }
 
-  // Buy
-  document.querySelector('#buy .section-label').textContent = t.buyLabel;
-  document.querySelector('#buy .section-title').innerHTML = t.buyTitle;
-  const steps = document.querySelectorAll('.buy-step');
-  if (steps[0]) { steps[0].querySelector('.step-title').textContent = t.s1title; steps[0].querySelector('.step-desc').innerHTML = t.s1desc; }
-  if (steps[1]) { steps[1].querySelector('.step-title').textContent = t.s2title; steps[1].querySelector('.step-desc').innerHTML = t.s2desc; }
-  if (steps[2]) { steps[2].querySelector('.step-title').textContent = t.s3title; steps[2].querySelector('.step-desc').textContent = t.s3desc; }
-  const uniBtn = document.querySelector('.buy-steps .btn-primary');
-  if (uniBtn) uniBtn.textContent = t.btnUniswap;
-  document.querySelector('.widget-header-title').textContent = t.swapTitle;
-  const mobileBtn = document.querySelector('#mobile-swap a');
-  if (mobileBtn) mobileBtn.textContent = t.mobileSwapBtn;
-  const mobileDesc = document.querySelector('#mobile-swap p');
-  if (mobileDesc) mobileDesc.textContent = t.mobileSwapDesc;
-  const widgetAlt = document.querySelector('.widget-alt-btn');
-  if (widgetAlt) widgetAlt.textContent = t.widgetAlt;
+  // ── WHAT ──
+  setQ('#what .section-label', t.whatLabel);
+  setQ('#what .section-title', t.whatTitle, true);
+  const wpts = document.querySelectorAll('.what-point');
+  if (wpts[0]) { wpts[0].querySelector('.what-point-title').textContent = t.p1title; wpts[0].querySelector('.what-point-desc').textContent = t.p1desc; }
+  if (wpts[1]) { wpts[1].querySelector('.what-point-title').textContent = t.p2title; wpts[1].querySelector('.what-point-desc').textContent = t.p2desc; }
+  if (wpts[2]) { wpts[2].querySelector('.what-point-title').textContent = t.p3title; wpts[2].querySelector('.what-point-desc').textContent = t.p3desc; }
 
-  // Tech
-  document.querySelector('#tech .section-label').textContent = t.techLabel;
-  document.querySelector('#tech .section-title').innerHTML = t.techTitle;
-  document.querySelector('.tech-card.traditional .tech-card-title').textContent = t.tradCard;
-  document.querySelector('.tech-card.metriplex .tech-card-title').textContent = t.mpxCard;
+  // ── BUY GUIDE ──
+  setQ('#buy .section-label', t.buyLabel);
+  setQ('#buy .section-title', t.buyTitle, true);
+  set('buy-intro', t.buyIntro, true);
+  // Step 1
+  set('gs1t', t.gs1t); set('gs1s', t.gs1s);
+  set('ga1d', t.ga1d); set('ga1b', t.ga1b);
+  set('ga2d', t.ga2d); set('ga2b', t.ga2b);
+  set('gt1',  t.gt1);
+  // Step 2
+  set('gs2t', t.gs2t); set('gs2s', t.gs2s);
+  set('nct',  t.nct);
+  set('copy-hint', t.copyHint);
+  set('gt2',  t.gt2);
+  // Step 3
+  set('gs3t', t.gs3t); set('gs3s', t.gs3s);
+  set('pl1',  t.pl1);  set('pd1',  t.pd1);  set('pb1', t.pb1);
+  set('pl2',  t.pl2);  set('pd2',  t.pd2,true);  set('pb2', t.pb2);
+  set('gt3',  t.gt3);
+  // Step 4
+  set('gs4t', t.gs4t); set('gs4s', t.gs4s);
+  set('slive', t.slive);
+  set('ct-label', t.ctLabel);
+  set('gt4',  t.gt4);
+  set('swap-btn-sec', t.swapBtnSec);
+  const swapBtnUni = document.getElementById('swap-btn-uni');
+  if (swapBtnUni) swapBtnUni.textContent = t.swapBtn;
 
-  // Roadmap
-  document.querySelector('#roadmap .section-label').textContent = t.rmLabel;
-  document.querySelector('#roadmap .section-title').innerHTML = t.rmTitle;
+  // ── TECH ──
+  setQ('#tech .section-label', t.techLabel);
+  setQ('#tech .section-title', t.techTitle, true);
+  setQ('.tech-card.traditional .tech-card-title', t.tradCard);
+  setQ('.tech-card.metriplex .tech-card-title', t.mpxCard);
+
+  // Tech rows — keys
+  const techKeys = document.querySelectorAll('.tech-key');
+  const techKeyEN = ['Identity','Public Key','Signature','Quantum risk','Collision model'];
+  const techKeyES = ['Identidad','Clave Pública','Firma','Riesgo cuántico','Modelo de colisión'];
+  const techKeyList = lang === 'es' ? techKeyES : techKeyEN;
+  techKeys.forEach((el, i) => { if (techKeyList[i]) el.textContent = techKeyList[i]; });
+
+  // ── ROADMAP ──
+  setQ('#roadmap .section-label', t.rmLabel);
+  setQ('#roadmap .section-title', t.rmTitle, true);
   const phases = document.querySelectorAll('.roadmap-phase');
-  const phaseTitles = document.querySelectorAll('.roadmap-title');
-  if (phases[0]) phases[0].textContent = t.phase1;
-  if (phaseTitles[0]) phaseTitles[0].textContent = t.phase1title;
-  if (phases[1]) phases[1].textContent = t.phase2;
-  if (phaseTitles[1]) phaseTitles[1].textContent = t.phase2title;
-  if (phases[2]) phases[2].textContent = t.phase3;
-  if (phaseTitles[2]) phaseTitles[2].textContent = t.phase3title;
-  if (phases[3]) phases[3].textContent = t.phase4;
-  if (phaseTitles[3]) phaseTitles[3].textContent = t.phase4title;
+  const pTitles = document.querySelectorAll('.roadmap-title');
+  [t.phase1,t.phase2,t.phase3,t.phase4].forEach((v,i) => { if(phases[i]) phases[i].textContent = v; });
+  [t.phase1title,t.phase2title,t.phase3title,t.phase4title].forEach((v,i) => { if(pTitles[i]) pTitles[i].textContent = v; });
 
-  // Footer
-  document.querySelector('.footer-brand p').textContent = t.footerDesc;
+  // Roadmap tasks
+  const rmTasksEN = [
+    'Native blockchain with fractal identity',
+    'ZK proof system (c1–c8 composite criterion)',
+    'Cross-chain bridge to Ethereum (live)',
+    'MPX token on Base mainnet + Uniswap V4',
+    'Open source — github.com/NTellezM/Metriplex',
+    'External validator nodes running',
+    'MPX stake mechanism for validators',
+    'CoinGecko listing',
+    'Liquidity growth to $10,000+',
+    'Core cryptography rewritten in Rust',
+    'TX signing: 4s → 40ms',
+    '100+ TPS demonstrated',
+    'ZK criterion formal security proof',
+    'arXiv paper: IFS as post-quantum primitive',
+    'DAO governance for protocol changes'
+  ];
+  const rmTasksES = [
+    'Blockchain nativa con identidad fractal',
+    'Sistema ZK c1–c8 (criterio compuesto)',
+    'Puente cross-chain a Ethereum (en vivo)',
+    'Token MPX en Base mainnet + Uniswap V4',
+    'Código abierto — github.com/NTellezM/Metriplex',
+    'Nodos validadores externos operativos',
+    'Mecanismo de stake MPX para validadores',
+    'Listing en CoinGecko',
+    'Crecimiento de liquidez a $10,000+',
+    'Núcleo criptográfico reescrito en Rust',
+    'Firma de TX: 4s → 40ms',
+    '100+ TPS demostrado',
+    'Prueba formal de seguridad del criterio ZK',
+    'Paper en arXiv: IFS como primitivo post-cuántico',
+    'Gobernanza DAO para cambios del protocolo'
+  ];
+  const taskList = lang === 'es' ? rmTasksES : rmTasksEN;
+  document.querySelectorAll('.roadmap-task').forEach((el, i) => {
+    if (taskList[i]) el.lastChild.textContent = ' ' + taskList[i];
+  });
+
+  // ── FOOTER ──
+  setQ('.footer-brand p', t.footerDesc);
   const fcols = document.querySelectorAll('.footer-col-title');
   if (fcols[0]) fcols[0].textContent = t.footerLinks;
   if (fcols[1]) fcols[1].textContent = t.footerCommunity;
-  const flinks = document.querySelectorAll('.footer-links');
-  if (flinks[1]) {
-    const as = flinks[1].querySelectorAll('a');
+  setQ('.footer-tagline', t.footerTagline);
+  const footLinks = document.querySelectorAll('.footer-links');
+  if (footLinks[1]) {
+    const as = footLinks[1].querySelectorAll('a');
     if (as[1]) as[1].textContent = t.footerRun;
     if (as[2]) as[2].textContent = t.footerContribute;
   }
-  document.querySelector('.footer-tagline').textContent = t.footerTagline;
 
   // Save preference
   try { localStorage.setItem('mpx-lang', lang); } catch(e) {}
