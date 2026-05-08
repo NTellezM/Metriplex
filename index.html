@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metriplex — Order from chaos</title>
+<meta name="description" content="The first blockchain with fractal identity. Your key is a geometric shape, not a number. MPX token live on Base.">
+<meta property="og:title" content="Metriplex (MPX) — Order from chaos">
+<meta property="og:description" content="The first blockchain with fractal identity. Live on Base mainnet.">
+<meta property="og:image" content="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #06080F;
+  --bg2:      #0A0E1A;
+  --blue:     #00A3FF;
+  --blue2:    #0066CC;
+  --glow:     rgba(0,163,255,0.15);
+  --glow2:    rgba(0,163,255,0.04);
+  --white:    #F0F4FF;
+  --muted:    #6B7A99;
+  --border:   rgba(0,163,255,0.12);
+  --mono:     'Share Tech Mono', monospace;
+  --sans:     'Exo 2', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: var(--sans);
+  overflow-x: hidden;
+  cursor: crosshair;
+}
+
+/* ── CANVAS FRACTAL BACKGROUND ── */
+#fractal-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 4rem;
+  background: rgba(6,8,15,0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+}
+
+.nav-logo img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.nav-logo-text {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--white);
+}
+
+.nav-logo-ticker {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--blue);
+  background: rgba(0,163,255,0.1);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  list-style: none;
+}
+
+.nav-links a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover { color: var(--blue); }
+
+.nav-price {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--blue);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: var(--glow2);
+}
+
+/* ── SECTIONS ── */
+section {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── HERO ── */
+#hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8rem 2rem 4rem;
+  position: relative;
+}
+
+.hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--blue);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.2s forwards;
+}
+
+.hero-title {
+  font-size: clamp(3rem, 8vw, 7rem);
+  font-weight: 800;
+  line-height: 1.0;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.4s forwards;
+}
+
+.hero-title .accent {
+  background: linear-gradient(135deg, #00A3FF, #0066CC, #00E5FF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-tagline {
+  font-family: var(--mono);
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  margin-bottom: 3rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.6s forwards;
+}
+
+.hero-tagline span { color: var(--blue); }
+
+.hero-subtitle {
+  font-size: 1.1rem;
+  color: var(--muted);
+  max-width: 560px;
+  line-height: 1.7;
+  margin-bottom: 3rem;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.7s forwards;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.9s forwards;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00A3FF, #0066CC);
+  color: #fff;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  padding: 0.9rem 2rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  box-shadow: 0 0 24px rgba(0,163,255,0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 40px rgba(0,163,255,0.5);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--blue);
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  padding: 0.9rem 2rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: var(--glow);
+  border-color: var(--blue);
+  transform: translateY(-2px);
+}
+
+/* ── STATS BAR ── */
+#stats {
+  padding: 3rem 4rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--white);
+  line-height: 1;
+}
+
+.stat-value.live { color: var(--blue); }
+
+.stat-change {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: #00E676;
+  margin-top: 0.25rem;
+}
+
+/* ── WHAT IS ── */
+#what {
+  padding: 8rem 4rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--blue);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+}
+
+.section-title .accent {
+  background: linear-gradient(135deg, #00A3FF, #00E5FF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.what-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  margin-top: 4rem;
+}
+
+.what-points {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.what-point {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.what-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--glow2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.what-point-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+
+.what-point-desc {
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.what-visual {
+  position: relative;
+}
+
+.tensor-display {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--blue);
+  line-height: 1.8;
+  position: relative;
+  overflow: hidden;
+}
+
+.tensor-display::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--blue), transparent);
+}
+
+.tensor-label {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 1rem;
+}
+
+/* ── BUY MPX ── */
+#buy {
+  padding: 8rem 4rem;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+}
+
+.buy-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.buy-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  margin-top: 4rem;
+  align-items: start;
+}
+
+.buy-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.buy-step {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  padding: 1.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: border-color 0.2s;
+}
+
+.buy-step:hover { border-color: var(--blue2); }
+
+.step-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.step-title {
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.step-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.step-code {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--blue);
+  background: rgba(0,163,255,0.06);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  display: inline-block;
+  word-break: break-all;
+}
+
+/* Uniswap Widget Container */
+.uniswap-container {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  position: sticky;
+  top: 6rem;
+}
+
+.widget-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.widget-header-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.widget-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00E676;
+  animation: pulse 2s infinite;
+}
+
+#uniswap-iframe {
+  width: 100%;
+  height: 480px;
+  border: none;
+  display: block;
+}
+
+.widget-alt-btn {
+  display: block;
+  text-align: center;
+  padding: 1rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.widget-alt-btn:hover { color: var(--blue); }
+
+/* ── TECH ── */
+#tech {
+  padding: 8rem 4rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.tech-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 4rem;
+}
+
+.tech-card {
+  padding: 2.5rem;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.tech-card.traditional {
+  background: rgba(255,255,255,0.02);
+}
+
+.tech-card.metriplex {
+  background: var(--glow2);
+  border-color: rgba(0,163,255,0.25);
+}
+
+.tech-card.metriplex::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--blue), transparent);
+}
+
+.tech-card-title {
+  font-size: 0.7rem;
+  font-family: var(--mono);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 1.5rem;
+}
+
+.tech-card.metriplex .tech-card-title { color: var(--blue); }
+
+.tech-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.85rem;
+}
+
+.tech-row:last-child { border-bottom: none; }
+
+.tech-key { color: var(--muted); font-size: 0.8rem; }
+.tech-val { font-weight: 600; font-family: var(--mono); font-size: 0.8rem; }
+.tech-val.blue { color: var(--blue); }
+
+/* ── ROADMAP ── */
+#roadmap {
+  padding: 8rem 4rem;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+}
+
+.roadmap-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.roadmap-timeline {
+  margin-top: 4rem;
+  position: relative;
+  padding-left: 2rem;
+}
+
+.roadmap-timeline::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0; bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--blue), transparent);
+}
+
+.roadmap-item {
+  position: relative;
+  padding: 0 0 3rem 2.5rem;
+}
+
+.roadmap-item::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--blue);
+  background: var(--bg);
+}
+
+.roadmap-item.done::before {
+  background: var(--blue);
+}
+
+.roadmap-phase {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--blue);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+
+.roadmap-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.roadmap-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.roadmap-task {
+  font-size: 0.85rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.roadmap-task.done { color: var(--white); }
+.roadmap-task.done::before { content: '✓'; color: var(--blue); font-size: 0.7rem; }
+.roadmap-task:not(.done)::before { content: '○'; color: var(--muted); font-size: 0.7rem; }
+
+/* ── FOOTER ── */
+footer {
+  padding: 4rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4rem;
+}
+
+.footer-brand p {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-top: 1rem;
+}
+
+.footer-col-title {
+  font-size: 0.7rem;
+  font-family: var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 1.25rem;
+}
+
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  list-style: none;
+}
+
+.footer-links a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover { color: var(--blue); }
+
+.footer-contract {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--blue);
+  background: var(--glow2);
+  border: 1px solid var(--border);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-top: 1rem;
+  word-break: break-all;
+  line-height: 1.6;
+}
+
+.footer-bottom {
+  max-width: 1100px;
+  margin: 3rem auto 0;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.footer-tagline {
+  font-family: var(--mono);
+  color: var(--blue);
+  font-size: 0.85rem;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(1.4); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  nav { padding: 1rem 1.5rem; }
+  .nav-links { display: none; }
+  #stats .stats-grid { grid-template-columns: repeat(2,1fr); }
+  .what-grid, .buy-grid, .tech-comparison { grid-template-columns: 1fr; }
+  .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
+  section { padding-left: 1.5rem; padding-right: 1.5rem; }
+  #what, #tech { padding: 5rem 1.5rem; }
+  #buy, #roadmap { padding: 5rem 1.5rem; }
+  footer { padding: 3rem 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="fractal-canvas"></canvas>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <img src="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo.png"
+         onerror="this.style.display='none'" alt="MPX">
+    <span class="nav-logo-text">METRIPLEX</span>
+    <span class="nav-logo-ticker">MPX</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#what">About</a></li>
+    <li><a href="#buy">Buy</a></li>
+    <li><a href="#tech">Technology</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="https://github.com/NTellezM/Metriplex" target="_blank">GitHub</a></li>
+  </ul>
+  <div class="nav-price" id="nav-price">MPX $—</div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-eyebrow">Base Mainnet · Live · ERC-20</div>
+  <h1 class="hero-title">
+    <span class="accent">Fractal</span><br>Identity.
+  </h1>
+  <div class="hero-tagline">Order from <span>chaos</span></div>
+  <p class="hero-subtitle">
+    The first blockchain where your identity is a geometric shape, not a number.
+    Your private key is a fractal attractor. Your public key is a 4×4×4 tensor.
+  </p>
+  <div class="hero-cta">
+    <a href="#buy" class="btn-primary">Buy MPX</a>
+    <a href="https://github.com/NTellezM/Metriplex" target="_blank" class="btn-secondary">View on GitHub →</a>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="stats">
+  <div class="stats-grid">
+    <div class="stat-item">
+      <div class="stat-label">Price</div>
+      <div class="stat-value live" id="stat-price">—</div>
+      <div class="stat-change" id="stat-change">Live on Base</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Market Cap</div>
+      <div class="stat-value" id="stat-mcap">—</div>
+      <div class="stat-change">21M MPX supply</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Network</div>
+      <div class="stat-value">Base</div>
+      <div class="stat-change">Uniswap V4</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Total Supply</div>
+      <div class="stat-value">21M</div>
+      <div class="stat-change">Fixed · Like Bitcoin</div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT IS -->
+<section id="what">
+  <div class="section-label">What is Metriplex</div>
+  <h2 class="section-title">Identity built on<br><span class="accent">geometry</span></h2>
+  <div class="what-grid">
+    <div class="what-points">
+      <div class="what-point">
+        <div class="what-icon">🔷</div>
+        <div>
+          <div class="what-point-title">Your key is a shape</div>
+          <p class="what-point-desc">
+            In Bitcoin and Ethereum your identity is a 256-bit integer.
+            In Metriplex your private key is an Iterated Function System —
+            a set of geometric contractions that define a unique fractal attractor.
+          </p>
+        </div>
+      </div>
+      <div class="what-point">
+        <div class="what-icon">🔬</div>
+        <div>
+          <div class="what-point-title">ZK proof by geometry</div>
+          <p class="what-point-desc">
+            Every transaction includes a zero-knowledge proof that your
+            attractor satisfies 8 geometric criteria simultaneously.
+            Forgery requires solving the Inverse IFS Problem — conjectured NP-hard.
+          </p>
+        </div>
+      </div>
+      <div class="what-point">
+        <div class="what-icon">🌉</div>
+        <div>
+          <div class="what-point-title">Native bridge to Ethereum</div>
+          <p class="what-point-desc">
+            MPX tokens live on Base mainnet. The cross-chain relayer monitors
+            both chains — send MPX to receive wMPX on Ethereum, or burn wMPX
+            to release MPX natively.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="what-visual">
+      <div class="tensor-display">
+        <div class="tensor-label">Public Key M₃ — 4×4×4 Tensor</div>
+        <div id="tensor-anim">
+M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
+[[ 8384988, -1608707,  6420335, 19642383]<br>
+ [-1608707, -6911081, 47404468,-25925513]<br>
+ [ 6420335, 47404468,102664263,-29063834]<br>
+ [19642383,-25925513,-29063834,-27647372]]<br><br>
+<span style="color:#00E5FF">// Not a number. A geometric shape.</span><br>
+<span style="color:#0066CC">// Unique by Kruskal-Comon theorem.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BUY MPX -->
+<section id="buy">
+  <div class="buy-inner">
+    <div class="section-label">Get MPX</div>
+    <h2 class="section-title">Buy <span class="accent">Metriplex</span></h2>
+    <div class="buy-grid">
+      <div class="buy-steps">
+        <div class="buy-step">
+          <div class="step-num">1</div>
+          <div>
+            <div class="step-title">Get ETH on Base</div>
+            <p class="step-desc">
+              You need ETH on the Base network. Bridge from Ethereum at
+              <strong>bridge.base.org</strong> or buy directly with a card
+              using any CEX that supports Base withdrawals.
+            </p>
+          </div>
+        </div>
+        <div class="buy-step">
+          <div class="step-num">2</div>
+          <div>
+            <div class="step-title">Open Uniswap on Base</div>
+            <p class="step-desc">
+              Go to app.uniswap.org and make sure your wallet is connected to
+              <strong>Base Mainnet</strong>. Use the swap widget on the right
+              or click the button below.
+            </p>
+          </div>
+        </div>
+        <div class="buy-step">
+          <div class="step-num">3</div>
+          <div>
+            <div class="step-title">Swap ETH → MPX</div>
+            <p class="step-desc">
+              Search for MPX or paste the contract address.
+              Set slippage to 1-2% for best results.
+            </p>
+            <div class="step-code">0x22D3f414438556d1B071cCfE52513d4d829400fd</div>
+          </div>
+        </div>
+        <a href="https://app.uniswap.org/explore/tokens/base/0x22d3f414438556d1b071ccfe52513d4d829400fd"
+           target="_blank" class="btn-primary" style="text-align:center;margin-top:0.5rem">
+          Open Uniswap →
+        </a>
+      </div>
+
+      <div class="uniswap-container">
+        <div class="widget-header">
+          <span class="widget-header-title">Swap ETH → MPX</span>
+          <div class="widget-live-dot"></div>
+        </div>
+        <iframe id="uniswap-iframe"
+          src="https://app.uniswap.org/swap?chain=base&outputCurrency=0x22D3f414438556d1B071cCfE52513d4d829400fd&theme=dark"
+          allow="clipboard-write"
+          style="border-radius:0">
+        </iframe>
+        <a href="https://app.uniswap.org/explore/tokens/base/0x22d3f414438556d1b071ccfe52513d4d829400fd"
+           target="_blank" class="widget-alt-btn">
+          Open in full Uniswap app →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH -->
+<section id="tech">
+  <div class="section-label">Technology</div>
+  <h2 class="section-title">Why <span class="accent">different</span></h2>
+  <div class="tech-comparison">
+    <div class="tech-card traditional">
+      <div class="tech-card-title">Traditional Blockchain</div>
+      <div class="tech-row">
+        <span class="tech-key">Identity</span>
+        <span class="tech-val">256-bit integer</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Public Key</span>
+        <span class="tech-val">Elliptic curve point</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Signature</span>
+        <span class="tech-val">ECDSA (algebraic)</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Quantum risk</span>
+        <span class="tech-val">High (Shor's algo)</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Collision model</span>
+        <span class="tech-val">Probabilistic</span>
+      </div>
+    </div>
+    <div class="tech-card metriplex">
+      <div class="tech-card-title">Metriplex</div>
+      <div class="tech-row">
+        <span class="tech-key">Identity</span>
+        <span class="tech-val blue">Fractal attractor (IFS)</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Public Key</span>
+        <span class="tech-val blue">4×4×4 Tensor M₃</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Signature</span>
+        <span class="tech-val blue">ZK geometric proof (c1–c8)</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Quantum risk</span>
+        <span class="tech-val blue">Non-periodic structure</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Collision model</span>
+        <span class="tech-val blue">Kruskal uniqueness theorem</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap">
+  <div class="roadmap-inner">
+    <div class="section-label">Roadmap</div>
+    <h2 class="section-title">Where we're <span class="accent">going</span></h2>
+    <div class="roadmap-timeline">
+      <div class="roadmap-item done">
+        <div class="roadmap-phase">Phase 1 — Complete</div>
+        <div class="roadmap-title">Layer 1 Core + EVM Bridge</div>
+        <div class="roadmap-items">
+          <div class="roadmap-task done">Native blockchain with fractal identity</div>
+          <div class="roadmap-task done">ZK proof system (c1–c8 composite criterion)</div>
+          <div class="roadmap-task done">Cross-chain bridge to Ethereum (live)</div>
+          <div class="roadmap-task done">MPX token on Base mainnet + Uniswap V4</div>
+          <div class="roadmap-task done">Open source — github.com/NTellezM/Metriplex</div>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-phase">Phase 2 — In Progress</div>
+        <div class="roadmap-title">Decentralization + Validator Network</div>
+        <div class="roadmap-items">
+          <div class="roadmap-task">External validator nodes running</div>
+          <div class="roadmap-task">MPX stake mechanism for validators</div>
+          <div class="roadmap-task">CoinGecko listing</div>
+          <div class="roadmap-task">Liquidity growth to $10,000+</div>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-phase">Phase 3 — Q4 2025</div>
+        <div class="roadmap-title">Rust Rewrite — 100x Performance</div>
+        <div class="roadmap-items">
+          <div class="roadmap-task">Core cryptography rewritten in Rust</div>
+          <div class="roadmap-task">TX signing: 4s → 40ms</div>
+          <div class="roadmap-task">100+ TPS demonstrated</div>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-phase">Phase 4 — 2026</div>
+        <div class="roadmap-title">Security Audit + Formal Paper</div>
+        <div class="roadmap-items">
+          <div class="roadmap-task">ZK criterion formal security proof</div>
+          <div class="roadmap-task">arXiv paper: IFS as post-quantum primitive</div>
+          <div class="roadmap-task">DAO governance for protocol changes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="nav-logo-text" style="font-size:1.2rem">METRIPLEX</div>
+      <p>The first blockchain with fractal identity. Order from chaos.</p>
+      <div class="footer-contract">
+        Contract (Base):<br>
+        0x22D3f414438556d1B071cCfE52513d4d829400fd
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Links</div>
+      <ul class="footer-links">
+        <li><a href="https://github.com/NTellezM/Metriplex" target="_blank">GitHub</a></li>
+        <li><a href="https://github.com/NTellezM/Metriplex/blob/main/docs/whitepaper.md" target="_blank">Whitepaper</a></li>
+        <li><a href="https://basescan.org/token/0x22D3f414438556d1B071cCfE52513d4d829400fd" target="_blank">BaseScan</a></li>
+        <li><a href="https://app.uniswap.org/explore/tokens/base/0x22d3f414438556d1b071ccfe52513d4d829400fd" target="_blank">Uniswap</a></li>
+        <li><a href="https://dexscreener.com/base/0x22D3f414438556d1B071cCfE52513d4d829400fd" target="_blank">DexScreener</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Community</div>
+      <ul class="footer-links">
+        <li><a href="https://twitter.com/MetriplexMPX" target="_blank">Twitter / X</a></li>
+        <li><a href="https://github.com/NTellezM/Metriplex/blob/main/docs/JOIN_NETWORK.md" target="_blank">Run a Node</a></li>
+        <li><a href="https://github.com/NTellezM/Metriplex/blob/main/CONTRIBUTING.md" target="_blank">Contribute</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 Metriplex Protocol. MIT License.</span>
+    <span class="footer-tagline">Order from chaos.</span>
+  </div>
+</footer>
+
+<script>
+// ── FRACTAL CANVAS BACKGROUND ──────────────────────────────────────────
+const canvas = document.getElementById('fractal-canvas');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// IFS: Barnsley fern variant with blue palette
+const transforms = [
+  { a:0.85, b:0.04, c:-0.04, d:0.85, e:0, f:1.6, p:0.85 },
+  { a:0.20, b:-0.26, c:0.23, d:0.22, e:0, f:1.6, p:0.07 },
+  { a:-0.15, b:0.28, c:0.26, d:0.24, e:0, f:0.44, p:0.07 },
+  { a:0, b:0, c:0, d:0.16, e:0, f:0, p:0.01 }
+];
+
+let px = 0, py = 0;
+let pts = [];
+const N_PTS = 12000;
+
+for (let i = 0; i < N_PTS; i++) {
+  const r = Math.random();
+  let t;
+  let cum = 0;
+  for (const tr of transforms) {
+    cum += tr.p;
+    if (r < cum) { t = tr; break; }
+  }
+  const nx = t.a*px + t.b*py + t.e;
+  const ny = t.c*px + t.d*py + t.f;
+  px = nx; py = ny;
+  pts.push([px, py]);
+}
+
+function drawFractal(scroll) {
+  ctx.clearRect(0, 0, W, H);
+  const scale = Math.min(W, H) * 0.085;
+  const cx = W * 0.5;
+  const cy = H * 0.55 + scroll * 0.1;
+
+  for (let i = 0; i < pts.length; i++) {
+    const [x, y] = pts[i];
+    const sx = cx + x * scale;
+    const sy = cy - y * scale;
+    const alpha = 0.4 + 0.3 * Math.sin(i * 0.002 + Date.now() * 0.0005);
+    ctx.fillStyle = `rgba(0,163,255,${alpha * 0.6})`;
+    ctx.fillRect(sx, sy, 1, 1);
+  }
+}
+
+let scrollY = 0;
+window.addEventListener('scroll', () => { scrollY = window.scrollY; });
+
+function animate() {
+  drawFractal(scrollY);
+  requestAnimationFrame(animate);
+}
+animate();
+
+// ── LIVE PRICE FROM DEXSCREENER ────────────────────────────────────────
+async function fetchPrice() {
+  try {
+    const res = await fetch(
+      'https://api.dexscreener.com/latest/dex/tokens/0x22D3f414438556d1B071cCfE52513d4d829400fd'
+    );
+    const data = await res.json();
+    if (data.pairs && data.pairs.length > 0) {
+      const pair = data.pairs[0];
+      const price  = parseFloat(pair.priceUsd);
+      const mcap   = price * 21_000_000;
+      const change = pair.priceChange?.h24 || 0;
+
+      // Nav price
+      document.getElementById('nav-price').textContent =
+        `MPX $${price.toFixed(6)}`;
+
+      // Stats
+      document.getElementById('stat-price').textContent =
+        `$${price.toFixed(6)}`;
+
+      const mcapStr = mcap >= 1000
+        ? `$${(mcap/1000).toFixed(1)}K`
+        : `$${mcap.toFixed(0)}`;
+      document.getElementById('stat-mcap').textContent = mcapStr;
+
+      const changeEl = document.getElementById('stat-change');
+      const sign = change >= 0 ? '+' : '';
+      changeEl.textContent = `${sign}${change.toFixed(2)}% 24h`;
+      changeEl.style.color = change >= 0 ? '#00E676' : '#FF5252';
+    }
+  } catch(e) {
+    console.log('Price fetch error:', e);
+  }
+}
+
+fetchPrice();
+setInterval(fetchPrice, 30000); // update every 30s
+
+// ── TENSOR ANIMATION ───────────────────────────────────────────────────
+const values = [
+  [8384988,-1608707,6420335,19642383],
+  [-1608707,-6911081,47404468,-25925513],
+  [6420335,47404468,102664263,-29063834],
+  [19642383,-25925513,-29063834,-27647372]
+];
+
+let frame = 0;
+setInterval(() => {
+  frame++;
+  const noise = values.map(row =>
+    row.map(v => v + Math.floor((Math.random()-0.5)*50000))
+  );
+  const el = document.getElementById('tensor-anim');
+  if (el) {
+    el.innerHTML = `M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>` +
+      noise.map(row =>
+        '[' + row.map(v => String(v).padStart(11)).join(', ') + ']'
+      ).join('<br>') +
+      `<br><br><span style="color:#00E5FF">// Not a number. A geometric shape.</span>
+       <br><span style="color:#0066CC">// Unique by Kruskal-Comon theorem.</span>`;
+  }
+}, 2000);
+
+// ── SCROLL REVEAL ──────────────────────────────────────────────────────
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll(
+  '.what-point, .buy-step, .tech-card, .roadmap-item, .stat-item'
+).forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
