@@ -37,6 +37,13 @@ body {
   cursor: crosshair;
 }
 
+/* Global section centering */
+.section-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
 /* ── CANVAS FRACTAL BACKGROUND ── */
 #fractal-canvas {
   position: fixed;
@@ -54,7 +61,7 @@ nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.2rem 4rem;
+  padding: 1rem 3rem;
   background: rgba(6,8,15,0.85);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
@@ -133,7 +140,7 @@ section {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 8rem 2rem 4rem;
+  padding: 9rem 2rem 5rem;
   position: relative;
 }
 
@@ -180,9 +187,9 @@ section {
 .hero-subtitle {
   font-size: 1.1rem;
   color: var(--muted);
-  max-width: 560px;
+  max-width: 580px;
   line-height: 1.7;
-  margin-bottom: 3rem;
+  margin-bottom: 2.5rem;
   opacity: 0;
   animation: fadeUp 0.8s 0.7s forwards;
 }
@@ -240,7 +247,7 @@ section {
 
 /* ── STATS BAR ── */
 #stats {
-  padding: 3rem 4rem;
+  padding: 3rem 2rem;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   background: var(--bg2);
@@ -250,7 +257,7 @@ section {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 2rem;
-  max-width: 1100px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
@@ -268,10 +275,11 @@ section {
 }
 
 .stat-value {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 800;
   color: var(--white);
   line-height: 1;
+  letter-spacing: -0.01em;
 }
 
 .stat-value.live { color: var(--blue); }
@@ -286,7 +294,7 @@ section {
 /* ── WHAT IS ── */
 #what {
   padding: 8rem 4rem;
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
@@ -300,10 +308,10 @@ section {
 }
 
 .section-title {
-  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-size: clamp(2rem, 4vw, 3.2rem);
   font-weight: 800;
   line-height: 1.1;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .section-title .accent {
@@ -316,9 +324,9 @@ section {
 .what-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 4rem;
+  gap: 5rem;
   align-items: center;
-  margin-top: 4rem;
+  margin-top: 3rem;
 }
 
 .what-points {
@@ -395,8 +403,9 @@ section {
 .guide-steps {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  max-width: 860px;
+  gap: 1.5rem;
+  max-width: 820px;
+  margin: 2rem auto 0;
 }
 
 .guide-step {
@@ -590,13 +599,13 @@ section {
 
 /* ── BUY MPX ── */
 #buy {
-  padding: 8rem 4rem;
+  padding: 6rem 2rem;
   background: var(--bg2);
   border-top: 1px solid var(--border);
 }
 
 .buy-inner {
-  max-width: 1100px;
+  max-width: 960px;
   margin: 0 auto;
 }
 
@@ -785,15 +794,16 @@ section {
 /* ── TECH ── */
 #tech {
   padding: 8rem 4rem;
-  max-width: 1200px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
 .tech-comparison {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  margin-top: 4rem;
+  gap: 1.5rem;
+  margin-top: 3rem;
+  align-items: start;
 }
 
 .tech-card {
@@ -849,13 +859,13 @@ section {
 
 /* ── ROADMAP ── */
 #roadmap {
-  padding: 8rem 4rem;
+  padding: 7rem 2rem;
   background: var(--bg2);
   border-top: 1px solid var(--border);
 }
 
 .roadmap-inner {
-  max-width: 900px;
+  max-width: 780px;
   margin: 0 auto;
 }
 
@@ -930,17 +940,17 @@ section {
 
 /* ── FOOTER ── */
 footer {
-  padding: 4rem;
+  padding: 4rem 2rem;
   border-top: 1px solid var(--border);
   background: var(--bg);
 }
 
 .footer-inner {
-  max-width: 1100px;
+  max-width: 960px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 4rem;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 3rem;
 }
 
 .footer-brand p {
@@ -989,7 +999,7 @@ footer {
 }
 
 .footer-bottom {
-  max-width: 1100px;
+  max-width: 960px;
   margin: 3rem auto 0;
   padding-top: 2rem;
   border-top: 1px solid var(--border);
@@ -1053,21 +1063,26 @@ footer {
 }
 
 /* ── RESPONSIVE ── */
+@media (max-width: 1024px) {
+  nav { padding: 1rem 2rem; }
+}
+
 @media (max-width: 900px) {
   nav { padding: 1rem 1.5rem; }
   .nav-links { display: none; }
-  #stats .stats-grid { grid-template-columns: repeat(2,1fr); }
+  #stats .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
   .what-grid, .tech-comparison { grid-template-columns: 1fr; }
   .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
-  section { padding-left: 1.5rem; padding-right: 1.5rem; }
-  #what, #tech { padding: 5rem 1.5rem; }
-  #buy, #roadmap { padding: 5rem 1.5rem; }
+  #what, #tech, #buy, #roadmap { padding: 5rem 1.5rem; }
   footer { padding: 3rem 1.5rem; }
   .guide-action-grid { grid-template-columns: 1fr; }
   .guide-two-paths { grid-template-columns: 1fr; }
   .guide-step-header { padding: 1.25rem; }
   .guide-step-body { padding: 1.25rem; }
   .swap-final-card { padding: 1.25rem; }
+  .what-grid { gap: 2.5rem; }
+  .guide-steps { max-width: 100%; }
+  .buy-inner { max-width: 100%; }
 }
 </style>
 </head>
@@ -1230,7 +1245,7 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
   <div class="buy-inner">
     <div class="section-label" id="buy-label">Get MPX</div>
     <h2 class="section-title">Buy <span class="accent">Metriplex</span></h2>
-    <p style="color:var(--muted);font-size:1rem;line-height:1.7;max-width:680px;margin-bottom:3rem" id="buy-intro">
+    <p style="color:var(--muted);font-size:1rem;line-height:1.8;max-width:780px;margin-bottom:2.5rem;margin-left:0" id="buy-intro">
       MPX lives on the <strong style="color:var(--white)">Base network</strong> — a fast and cheap Ethereum Layer 2.
       To buy MPX you need ETH on Base, not on Ethereum Mainnet. This guide walks you through every step.
       The whole process takes about 10 minutes.
