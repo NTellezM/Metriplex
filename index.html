@@ -42,7 +42,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 0;
-  opacity: 0.08;
+  opacity: 0.35;
   pointer-events: none;
 }
 
@@ -1040,6 +1040,21 @@ footer {
 
 <canvas id="fractal-canvas"></canvas>
 
+<!-- Watermark logo3 — visible solo en el hero, se desvanece al scroll -->
+<div id="hero-watermark" style="
+  position:fixed;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:min(55vw,520px);
+  pointer-events:none;
+  z-index:0;
+  transition:opacity 0.4s;
+">
+  <img src="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo3.png"
+       alt="" style="width:100%;opacity:0.06;filter:grayscale(15%) blur(0.5px);
+                     user-select:none;pointer-events:none;display:block">
+</div>
+
 <!-- NAV -->
 <nav>
   <a href="#" class="nav-logo">
@@ -1072,13 +1087,6 @@ footer {
 
 <!-- HERO -->
 <section id="hero" style="position:relative;overflow:hidden;">
-  <!-- Watermark logo3 -->
-  <div style="position:absolute;inset:0;display:flex;align-items:center;
-              justify-content:center;pointer-events:none;z-index:0">
-    <img src="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo3.png"
-         alt="" style="width:min(65vw,550px);opacity:0.07;filter:blur(1px) grayscale(20%);
-                       user-select:none;pointer-events:none">
-  </div>
   <img src="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo4.png"
        alt="Metriplex"
        style="width:120px;height:120px;border-radius:50%;object-fit:cover;
@@ -1478,7 +1486,7 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
 </footer>
 
 <script>
-// ── FRACTAL CANVAS BACKGROUND ──────────────────────────────────────────
+// ── BACKGROUND: LOGO3 + FRACTAL PARTICLES ──────────────────────────────
 const canvas = document.getElementById('fractal-canvas');
 const ctx = canvas.getContext('2d');
 let W, H;
@@ -1490,7 +1498,12 @@ function resize() {
 resize();
 window.addEventListener('resize', resize);
 
-// IFS: Barnsley fern variant with blue palette
+// Cargar logo3 como fondo
+const bgLogo = new Image();
+bgLogo.crossOrigin = 'anonymous';
+bgLogo.src = 'https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo3.png';
+
+// Fractal IFS para partículas superpuestas
 const transforms = [
   { a:0.85, b:0.04, c:-0.04, d:0.85, e:0, f:1.6, p:0.85 },
   { a:0.20, b:-0.26, c:0.23, d:0.22, e:0, f:1.6, p:0.07 },
@@ -1500,12 +1513,11 @@ const transforms = [
 
 let px = 0, py = 0;
 let pts = [];
-const N_PTS = 12000;
+const N_PTS = 9000;
 
 for (let i = 0; i < N_PTS; i++) {
   const r = Math.random();
-  let t;
-  let cum = 0;
+  let t, cum = 0;
   for (const tr of transforms) {
     cum += tr.p;
     if (r < cum) { t = tr; break; }
@@ -1516,27 +1528,56 @@ for (let i = 0; i < N_PTS; i++) {
   pts.push([px, py]);
 }
 
-function drawFractal(scroll) {
+let scrollY = 0;
+window.addEventListener('scroll', () => {
+  scrollY = window.scrollY;
+});
+
+function drawBackground() {
   ctx.clearRect(0, 0, W, H);
-  const scale = Math.min(W, H) * 0.085;
+
   const cx = W * 0.5;
-  const cy = H * 0.55 + scroll * 0.1;
+  // Parallax suave: el logo sube más lento que el scroll
+  const cy = H * 0.5 + scrollY * 0.18;
+  const t  = Date.now();
+
+  // ── CAPA 1: Logo3 como watermark animado ─────────────────────────
+  if (bgLogo.complete && bgLogo.naturalWidth > 0) {
+    // Pulso suave de escala
+    const pulse = 1 + 0.018 * Math.sin(t * 0.0007);
+    const size  = Math.min(W, H) * 0.80 * pulse;
+
+    // Glow azul detrás del logo
+    const grd = ctx.createRadialGradient(cx, cy, size*0.1, cx, cy, size*0.5);
+    grd.addColorStop(0, 'rgba(0,163,255,0.07)');
+    grd.addColorStop(1, 'rgba(0,163,255,0)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(cx - size, cy - size, size*2, size*2);
+
+    // Logo semitransparente
+    ctx.save();
+    ctx.globalAlpha = 0.055 + 0.015 * Math.sin(t * 0.0006);
+    ctx.drawImage(bgLogo, cx - size/2, cy - size/2, size, size);
+    ctx.restore();
+  }
+
+  // ── CAPA 2: Partículas fractales IFS encima ───────────────────────
+  const scale = Math.min(W, H) * 0.075;
+  const fcx   = W * 0.5;
+  const fcy   = H * 0.52 + scrollY * 0.09;
 
   for (let i = 0; i < pts.length; i++) {
     const [x, y] = pts[i];
-    const sx = cx + x * scale;
-    const sy = cy - y * scale;
-    const alpha = 0.4 + 0.3 * Math.sin(i * 0.002 + Date.now() * 0.0005);
-    ctx.fillStyle = `rgba(0,163,255,${alpha * 0.6})`;
-    ctx.fillRect(sx, sy, 1, 1);
+    const sx = fcx + x * scale;
+    const sy = fcy - y * scale;
+    const alpha = 0.12 + 0.10 * Math.sin(i * 0.003 + t * 0.0004);
+    ctx.fillStyle = `rgba(0,163,255,${alpha})`;
+    ctx.fillRect(sx, sy, 1.1, 1.1);
   }
 }
 
-let scrollY = 0;
-window.addEventListener('scroll', () => { scrollY = window.scrollY; });
-
 function animate() {
-  drawFractal(scrollY);
+  drawBackground();
   requestAnimationFrame(animate);
 }
 animate();
