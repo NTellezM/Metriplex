@@ -26,4 +26,4 @@ Thank you for your interest in contributing.
 ## Security issues
 
 Please do **not** open public issues for security vulnerabilities.  
-Contact: security@metriplex.io
+Contact: ntellezm@gmail.com
