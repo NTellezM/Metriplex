@@ -405,8 +405,6 @@ section {
   border-radius: 16px;
   overflow: hidden;
   transition: border-color 0.2s;
-  opacity: 1 !important;
-  transform: none !important;
 }
 
 .guide-step:hover { border-color: rgba(0,163,255,0.25); }
@@ -1013,6 +1011,41 @@ footer {
   from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* CSS scroll reveal — no JS dependency */
+.what-point {
+  animation: fadeIn 0.6s ease both;
+}
+.what-point:nth-child(1) { animation-delay: 0.1s; }
+.what-point:nth-child(2) { animation-delay: 0.2s; }
+.what-point:nth-child(3) { animation-delay: 0.3s; }
+
+.tech-card {
+  animation: fadeIn 0.6s ease both;
+}
+.tech-card:nth-child(1) { animation-delay: 0.1s; }
+.tech-card:nth-child(2) { animation-delay: 0.2s; }
+
+.stat-item {
+  animation: fadeIn 0.5s ease both;
+}
+.stat-item:nth-child(1) { animation-delay: 0.05s; }
+.stat-item:nth-child(2) { animation-delay: 0.10s; }
+.stat-item:nth-child(3) { animation-delay: 0.15s; }
+.stat-item:nth-child(4) { animation-delay: 0.20s; }
+
+.roadmap-item {
+  animation: fadeIn 0.6s ease both;
+}
+.roadmap-item:nth-child(1) { animation-delay: 0.1s; }
+.roadmap-item:nth-child(2) { animation-delay: 0.2s; }
+.roadmap-item:nth-child(3) { animation-delay: 0.3s; }
+.roadmap-item:nth-child(4) { animation-delay: 0.4s; }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
@@ -1668,24 +1701,8 @@ function showCopied() {
   if (el) { el.style.display = 'block'; setTimeout(function(){ el.style.display='none'; }, 2000); }
 }
 
-// ── SCROLL REVEAL ──────────────────────────────────────────────────────
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      e.target.style.opacity = '1';
-      e.target.style.transform = 'translateY(0)';
-    }
-  });
-}, { threshold: 0.1 });
-
-document.querySelectorAll(
-  '.what-point, .tech-card, .roadmap-item, .stat-item'
-).forEach(el => {
-  el.style.opacity = '0';
-  el.style.transform = 'translateY(20px)';
-  el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-  observer.observe(el);
-});
+// ── SCROLL REVEAL — Pure CSS, no JS timing issues ──────────────────────
+// Handled entirely in CSS via @keyframes fadeUp
 </script>
 
 
@@ -1997,22 +2014,9 @@ function setLang(lang) {
   // Refresh prices after language change
   fetchPrice();
 
-  // Force ALL potentially hidden elements visible
-  var toShow = '.what-point,.guide-step,.guide-action-card,.path-card,.swap-final-card,.network-config,.buy-step,.tech-card,.roadmap-item,.stat-item,.guide-step-body,.guide-step-header';
-  document.querySelectorAll(toShow).forEach(function(el) {
-    el.style.opacity = '1';
-    el.style.transform = 'translateY(0)';
-    el.style.visibility = 'visible';
-    el.style.display = el.style.display === 'none' ? '' : el.style.display;
-  });
 }
 
 function toggleLang() {
-  // Force all animated elements visible before and after lang change
-  document.querySelectorAll('.what-point,.guide-step,.tech-card,.roadmap-item,.stat-item,.guide-action-card,.path-card,.buy-step').forEach(function(el) {
-    el.style.opacity = '1';
-    el.style.transform = 'translateY(0)';
-  });
   setLang(currentLang === 'en' ? 'es' : 'en');
 }
 
