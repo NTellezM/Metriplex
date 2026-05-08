@@ -1997,22 +1997,32 @@ function setLang(lang) {
   // Refresh prices after language change
   fetchPrice();
 
-  // Force all animated elements visible after language change
-  document.querySelectorAll('.what-point, .tech-card, .roadmap-item, .stat-item, .guide-step').forEach(function(el) {
+  // Force ALL potentially hidden elements visible
+  var toShow = '.what-point,.guide-step,.guide-action-card,.path-card,.swap-final-card,.network-config,.buy-step,.tech-card,.roadmap-item,.stat-item,.guide-step-body,.guide-step-header';
+  document.querySelectorAll(toShow).forEach(function(el) {
     el.style.opacity = '1';
     el.style.transform = 'translateY(0)';
+    el.style.visibility = 'visible';
+    el.style.display = el.style.display === 'none' ? '' : el.style.display;
   });
 }
 
 function toggleLang() {
+  // Force all animated elements visible before and after lang change
+  document.querySelectorAll('.what-point,.guide-step,.tech-card,.roadmap-item,.stat-item,.guide-action-card,.path-card,.buy-step').forEach(function(el) {
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+  });
   setLang(currentLang === 'en' ? 'es' : 'en');
 }
 
-// Load saved preference
+// Load saved preference — delay ensures IntersectionObserver already ran
 document.addEventListener('DOMContentLoaded', function() {
   try {
     const saved = localStorage.getItem('mpx-lang');
-    if (saved && saved !== 'en') setLang(saved);
+    if (saved && saved !== 'en') {
+      setTimeout(function() { setLang(saved); }, 150);
+    }
   } catch(e) {}
 });
 </script>
