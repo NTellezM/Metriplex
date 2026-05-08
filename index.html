@@ -1486,101 +1486,47 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
 </footer>
 
 <script>
-// ── BACKGROUND: LOGO3 + FRACTAL PARTICLES ──────────────────────────────
+// ── BACKGROUND: LOGO3 FIJO ──────────────────────────────────────────────
 const canvas = document.getElementById('fractal-canvas');
-const ctx = canvas.getContext('2d');
+const ctx    = canvas.getContext('2d');
 let W, H;
 
 function resize() {
   W = canvas.width  = window.innerWidth;
   H = canvas.height = window.innerHeight;
+  drawOnce();
 }
 resize();
 window.addEventListener('resize', resize);
 
-// Cargar logo3 como fondo
 const bgLogo = new Image();
 bgLogo.crossOrigin = 'anonymous';
 bgLogo.src = 'https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo3.png';
 
-// Fractal IFS para partículas superpuestas
-const transforms = [
-  { a:0.85, b:0.04, c:-0.04, d:0.85, e:0, f:1.6, p:0.85 },
-  { a:0.20, b:-0.26, c:0.23, d:0.22, e:0, f:1.6, p:0.07 },
-  { a:-0.15, b:0.28, c:0.26, d:0.24, e:0, f:0.44, p:0.07 },
-  { a:0, b:0, c:0, d:0.16, e:0, f:0, p:0.01 }
-];
-
-let px = 0, py = 0;
-let pts = [];
-const N_PTS = 9000;
-
-for (let i = 0; i < N_PTS; i++) {
-  const r = Math.random();
-  let t, cum = 0;
-  for (const tr of transforms) {
-    cum += tr.p;
-    if (r < cum) { t = tr; break; }
-  }
-  const nx = t.a*px + t.b*py + t.e;
-  const ny = t.c*px + t.d*py + t.f;
-  px = nx; py = ny;
-  pts.push([px, py]);
-}
-
-let scrollY = 0;
-window.addEventListener('scroll', () => {
-  scrollY = window.scrollY;
-});
-
-function drawBackground() {
+function drawOnce() {
   ctx.clearRect(0, 0, W, H);
+  if (!bgLogo.complete || bgLogo.naturalWidth === 0) return;
 
-  const cx = W * 0.5;
-  // Parallax suave: el logo sube más lento que el scroll
-  const cy = H * 0.5 + scrollY * 0.18;
-  const t  = Date.now();
+  const size = Math.min(W, H) * 0.75;
+  const cx   = W * 0.5;
+  const cy   = H * 0.5;
 
-  // ── CAPA 1: Logo3 como watermark animado ─────────────────────────
-  if (bgLogo.complete && bgLogo.naturalWidth > 0) {
-    // Pulso suave de escala
-    const pulse = 1 + 0.018 * Math.sin(t * 0.0007);
-    const size  = Math.min(W, H) * 0.80 * pulse;
+  // Glow radial suave
+  const grd = ctx.createRadialGradient(cx, cy, size*0.05, cx, cy, size*0.52);
+  grd.addColorStop(0, 'rgba(0,163,255,0.06)');
+  grd.addColorStop(1, 'rgba(0,163,255,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.arc(cx, cy, size*0.52, 0, Math.PI*2);
+  ctx.fill();
 
-    // Glow azul detrás del logo
-    const grd = ctx.createRadialGradient(cx, cy, size*0.1, cx, cy, size*0.5);
-    grd.addColorStop(0, 'rgba(0,163,255,0.07)');
-    grd.addColorStop(1, 'rgba(0,163,255,0)');
-    ctx.fillStyle = grd;
-    ctx.fillRect(cx - size, cy - size, size*2, size*2);
-
-    // Logo semitransparente
-    ctx.save();
-    ctx.globalAlpha = 0.055 + 0.015 * Math.sin(t * 0.0006);
-    ctx.drawImage(bgLogo, cx - size/2, cy - size/2, size, size);
-    ctx.restore();
-  }
-
-  // ── CAPA 2: Partículas fractales IFS encima ───────────────────────
-  const scale = Math.min(W, H) * 0.075;
-  const fcx   = W * 0.5;
-  const fcy   = H * 0.52 + scrollY * 0.09;
-
-  for (let i = 0; i < pts.length; i++) {
-    const [x, y] = pts[i];
-    const sx = fcx + x * scale;
-    const sy = fcy - y * scale;
-    const alpha = 0.12 + 0.10 * Math.sin(i * 0.003 + t * 0.0004);
-    ctx.fillStyle = `rgba(0,163,255,${alpha})`;
-    ctx.fillRect(sx, sy, 1.1, 1.1);
-  }
+  // Logo fijo centrado
+  ctx.globalAlpha = 0.07;
+  ctx.drawImage(bgLogo, cx - size/2, cy - size/2, size, size);
+  ctx.globalAlpha = 1;
 }
 
-function animate() {
-  drawBackground();
-  requestAnimationFrame(animate);
-}
-animate();
+bgLogo.onload = drawOnce;
 
 // ── LIVE PRICE FROM DEXSCREENER ────────────────────────────────────────
 async function fetchPrice() {
