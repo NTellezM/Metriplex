@@ -1111,24 +1111,24 @@ footer {
 <section id="stats">
   <div class="stats-grid">
     <div class="stat-item">
-      <div class="stat-label">Price</div>
+      <div class="stat-label" id="stat-price-label">Price</div>
       <div class="stat-value live" id="stat-price">—</div>
       <div class="stat-change" id="stat-change">Live on Base</div>
     </div>
     <div class="stat-item">
-      <div class="stat-label">Market Cap</div>
+      <div class="stat-label" id="stat-mcap-label">Market Cap</div>
       <div class="stat-value" id="stat-mcap">—</div>
-      <div class="stat-change">21M MPX supply</div>
+      <div class="stat-change" id="stat-mcap-sub">21M MPX supply</div>
     </div>
     <div class="stat-item">
-      <div class="stat-label">Network</div>
-      <div class="stat-value">Base</div>
-      <div class="stat-change">Uniswap V4</div>
+      <div class="stat-label" id="stat-net-label">Network</div>
+      <div class="stat-value" id="stat-net-val">Base</div>
+      <div class="stat-change" id="stat-net-sub">Uniswap V4</div>
     </div>
     <div class="stat-item">
-      <div class="stat-label">Total Supply</div>
-      <div class="stat-value">21M</div>
-      <div class="stat-change">Fixed · Like Bitcoin</div>
+      <div class="stat-label" id="stat-supply-label">Total Supply</div>
+      <div class="stat-value" id="stat-supply-val">21M</div>
+      <div class="stat-change" id="stat-supply-sub">Fixed · Like Bitcoin</div>
     </div>
   </div>
 </section>
@@ -1301,7 +1301,7 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
             <div class="swap-final-price">
               <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);letter-spacing:0.15em;margin-bottom:0.4rem" id="slive">LIVE PRICE</div>
               <div style="font-size:2.2rem;font-weight:800;color:var(--blue);font-family:var(--mono)" id="swap-price-val">$—</div>
-              <div style="font-size:0.75rem;color:var(--muted);font-family:var(--mono);margin-top:0.2rem" id="swap-price-eth">— ETH per MPX</div>
+              <div style="font-size:0.75rem;color:var(--muted);font-family:var(--mono);margin-top:0.2rem" id="swap-price-eth" data-en="— ETH per MPX" data-es="— ETH por MPX">— ETH per MPX</div>
             </div>
             <a href="https://app.uniswap.org/swap?chain=base&outputCurrency=0x22D3f414438556d1B071cCfE52513d4d829400fd"
                target="_blank" id="swap-btn-uni"
@@ -1658,6 +1658,8 @@ const T = {
     subtitle: "The first blockchain where your identity is a geometric shape, not a number. Your private key is a fractal attractor. Your public key is a 4×4×4 tensor.",
     btnBuy: "Buy MPX",
     btnGithub: "View on GitHub →",
+    statPriceLabel: "Price",
+    statMcapLabel: "Market Cap",
     statNet: "Base",
     statNetSub: "Uniswap V4",
     statSupply: "21M",
@@ -1717,6 +1719,10 @@ const T = {
     subtitle: "La primera blockchain donde tu identidad es una forma geométrica, no un número. Tu clave privada es un atractor fractal. Tu clave pública es un tensor 4×4×4.",
     btnBuy: "Comprar MPX",
     btnGithub: "Ver en GitHub →",
+    statPriceLabel: "Price",
+    statMcapLabel: "Market Cap",
+    statPriceLabel: "Precio",
+    statMcapLabel: "Cap. Mercado",
     statNet: "Base",
     statNetSub: "Uniswap V4",
     statSupply: "21M",
@@ -1813,16 +1819,15 @@ function setLang(lang) {
   if (heroBtns[1]) heroBtns[1].textContent = t.btnGithub;
 
   // ── STATS ──
-  const statItems = document.querySelectorAll('#stats .stat-item');
-  if (statItems[1]) statItems[1].querySelector('.stat-change').textContent = t.statMcapSub;
-  if (statItems[2]) {
-    statItems[2].querySelector('.stat-value').textContent = t.statNet;
-    statItems[2].querySelector('.stat-change').textContent = t.statNetSub;
-  }
-  if (statItems[3]) {
-    statItems[3].querySelector('.stat-value').textContent = t.statSupply;
-    statItems[3].querySelector('.stat-change').textContent = t.statSupplySub;
-  }
+  set('stat-price-label',  lang === 'es' ? 'Precio'        : 'Price');
+  set('stat-mcap-label',   lang === 'es' ? 'Cap. Mercado'  : 'Market Cap');
+  set('stat-net-label',    lang === 'es' ? 'Red'           : 'Network');
+  set('stat-supply-label', lang === 'es' ? 'Supply Total'  : 'Total Supply');
+  set('stat-net-val',   t.statNet);
+  set('stat-net-sub',   t.statNetSub);
+  set('stat-supply-val', t.statSupply);
+  set('stat-supply-sub', t.statSupplySub);
+  set('stat-mcap-sub',  t.statMcapSub);
 
   // ── WHAT ──
   setQ('#what .section-label', t.whatLabel);
@@ -1858,6 +1863,12 @@ function setLang(lang) {
   set('ct-label', t.ctLabel);
   set('gt4',  t.gt4);
   set('swap-btn-sec', t.swapBtnSec);
+  // ETH price label language
+  const ethLabel = document.getElementById('swap-price-eth');
+  if (ethLabel && !ethLabel.textContent.includes('0.')) {
+    ethLabel.textContent = lang === 'es' ? '— ETH por MPX' : '— ETH per MPX';
+  }
+
   const swapBtnUni = document.getElementById('swap-btn-uni');
   if (swapBtnUni) swapBtnUni.textContent = t.swapBtn;
 
@@ -1937,6 +1948,9 @@ function setLang(lang) {
 
   // Save preference
   try { localStorage.setItem('mpx-lang', lang); } catch(e) {}
+
+  // Refresh prices after language change
+  fetchPrice();
 }
 
 function toggleLang() {
