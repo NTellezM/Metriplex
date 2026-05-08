@@ -1491,6 +1491,11 @@ const canvas = document.getElementById('fractal-canvas');
 const ctx    = canvas.getContext('2d');
 let W, H;
 
+// bgLogo declarado ANTES de resize() para evitar ReferenceError
+const bgLogo = new Image();
+bgLogo.crossOrigin = 'anonymous';
+bgLogo.src = 'https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo3.png';
+
 function resize() {
   W = canvas.width  = window.innerWidth;
   H = canvas.height = window.innerHeight;
@@ -1498,10 +1503,6 @@ function resize() {
 }
 resize();
 window.addEventListener('resize', resize);
-
-const bgLogo = new Image();
-bgLogo.crossOrigin = 'anonymous';
-bgLogo.src = 'https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo3.png';
 
 function drawOnce() {
   ctx.clearRect(0, 0, W, H);
