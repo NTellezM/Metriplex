@@ -1779,7 +1779,7 @@ function setLang(lang) {
 
   // Helper
   function set(id, val, html) {
-    const el = document.getElementById(id) || document.querySelector(id);
+    const el = document.getElementById(id) || document.querySelector('#' + id);
     if (!el) return;
     if (html) el.innerHTML = val; else el.textContent = val;
   }
@@ -1833,6 +1833,7 @@ function setLang(lang) {
   if (wpts[2]) { wpts[2].querySelector('.what-point-title').textContent = t.p3title; wpts[2].querySelector('.what-point-desc').textContent = t.p3desc; }
 
   // ── BUY GUIDE ──
+  set('buy-label', t.buyLabel);
   setQ('#buy .section-label', t.buyLabel);
   setQ('#buy .section-title', t.buyTitle, true);
   set('buy-intro', t.buyIntro, true);
@@ -1918,7 +1919,7 @@ function setLang(lang) {
   ];
   const taskList = lang === 'es' ? rmTasksES : rmTasksEN;
   document.querySelectorAll('.roadmap-task').forEach((el, i) => {
-    if (taskList[i]) el.lastChild.textContent = ' ' + taskList[i];
+    if (taskList[i]) el.textContent = taskList[i];
   });
 
   // ── FOOTER ──
