@@ -1112,12 +1112,12 @@ footer {
   <div class="stats-grid">
     <div class="stat-item">
       <div class="stat-label" id="stat-price-label">Price</div>
-      <div class="stat-value live" id="stat-price">—</div>
+      <div class="stat-value live" id="stat-price" style="font-size:1.4rem">Loading...</div>
       <div class="stat-change" id="stat-change">Live on Base</div>
     </div>
     <div class="stat-item">
       <div class="stat-label" id="stat-mcap-label">Market Cap</div>
-      <div class="stat-value" id="stat-mcap">—</div>
+      <div class="stat-value" id="stat-mcap" style="font-size:1.4rem">Loading...</div>
       <div class="stat-change" id="stat-mcap-sub">21M MPX supply</div>
     </div>
     <div class="stat-item">
@@ -1300,7 +1300,7 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
           <div class="swap-final-card">
             <div class="swap-final-price">
               <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);letter-spacing:0.15em;margin-bottom:0.4rem" id="slive">LIVE PRICE</div>
-              <div style="font-size:2.2rem;font-weight:800;color:var(--blue);font-family:var(--mono)" id="swap-price-val">$—</div>
+              <div style="font-size:2.2rem;font-weight:800;color:var(--blue);font-family:var(--mono)" id="swap-price-val">Loading...</div>
               <div style="font-size:0.75rem;color:var(--muted);font-family:var(--mono);margin-top:0.2rem" id="swap-price-eth" data-en="— ETH per MPX" data-es="— ETH por MPX">— ETH per MPX</div>
             </div>
             <a href="https://app.uniswap.org/swap?chain=base&outputCurrency=0x22D3f414438556d1B071cCfE52513d4d829400fd"
@@ -1529,45 +1529,83 @@ function drawOnce() {
 bgLogo.onload = drawOnce;
 
 // ── LIVE PRICE FROM DEXSCREENER ────────────────────────────────────────
-async function fetchPrice() {
-  try {
-    const res = await fetch(
-      'https://api.dexscreener.com/latest/dex/tokens/0x22D3f414438556d1B071cCfE52513d4d829400fd'
-    );
-    const data = await res.json();
-    if (data.pairs && data.pairs.length > 0) {
-      const pair = data.pairs[0];
-      const price  = parseFloat(pair.priceUsd);
-      const mcap   = price * 21_000_000;
-      const change = pair.priceChange?.h24 || 0;
+function updatePriceUI(price, mcap, change, priceNative) {
+  var mcapNum = price * 21000000;
+  var mcapStr = mcapNum >= 1000
+    ? '$' + (mcapNum/1000).toFixed(1) + 'K'
+    : '$' + mcapNum.toFixed(0);
 
-      // Nav price
-      document.getElementById('nav-price').textContent =
-        `MPX $${price.toFixed(6)}`;
+  var navEl = document.getElementById('nav-price');
+  var priceEl = document.getElementById('stat-price');
+  var mcapEl = document.getElementById('stat-mcap');
+  var changeEl = document.getElementById('stat-change');
+  var spv = document.getElementById('swap-price-val');
+  var spe = document.getElementById('swap-price-eth');
 
-      // Stats
-      document.getElementById('stat-price').textContent =
-        `$${price.toFixed(6)}`;
-
-      const mcapStr = mcap >= 1000
-        ? `$${(mcap/1000).toFixed(1)}K`
-        : `$${mcap.toFixed(0)}`;
-      document.getElementById('stat-mcap').textContent = mcapStr;
-
-      const changeEl = document.getElementById('stat-change');
-      const sign = change >= 0 ? '+' : '';
-      changeEl.textContent = `${sign}${change.toFixed(2)}% 24h`;
-      changeEl.style.color = change >= 0 ? '#00E676' : '#FF5252';
-
-      // Swap card live price
-      const spv = document.getElementById('swap-price-val');
-      const spe = document.getElementById('swap-price-eth');
-      if (spv) spv.textContent = `$${price.toFixed(6)}`;
-      if (spe && pair.priceNative) spe.textContent = `${parseFloat(pair.priceNative).toFixed(8)} ETH per MPX`;
-    }
-  } catch(e) {
-    console.log('Price fetch error:', e);
+  if (navEl)    navEl.textContent    = 'MPX $' + price.toFixed(6);
+  if (priceEl)  priceEl.textContent  = '$' + price.toFixed(6);
+  if (mcapEl)   mcapEl.textContent   = mcapStr;
+  if (changeEl) {
+    var sign = change >= 0 ? '+' : '';
+    changeEl.textContent = sign + change.toFixed(2) + '% 24h';
+    changeEl.style.color = change >= 0 ? '#00E676' : '#FF5252';
   }
+  if (spv) spv.textContent = '$' + price.toFixed(6);
+  if (spe && priceNative) {
+    var lang = typeof currentLang !== 'undefined' ? currentLang : 'en';
+    var suffix = lang === 'es' ? ' ETH por MPX' : ' ETH per MPX';
+    spe.textContent = parseFloat(priceNative).toFixed(8) + suffix;
+  }
+}
+
+async function fetchPrice() {
+  // Intentar 3 endpoints distintos para evitar CORS/bloqueos
+  var endpoints = [
+    'https://api.dexscreener.com/latest/dex/tokens/0x22D3f414438556d1B071cCfE52513d4d829400fd',
+    'https://api.dexscreener.com/latest/dex/pairs/base/0x42f8cd9605baa6e8d6d63a9fbaa26924595e12fb57f0655edd1a6c98ee3f8541',
+  ];
+
+  for (var i = 0; i < endpoints.length; i++) {
+    try {
+      var res = await fetch(endpoints[i], {
+        method: 'GET',
+        mode: 'cors',
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-cache'
+      });
+
+      if (!res.ok) continue;
+      var data = await res.json();
+
+      var pair = null;
+      if (data.pairs && data.pairs.length > 0) {
+        pair = data.pairs[0];
+      } else if (data.pair) {
+        pair = data.pair;
+      }
+
+      if (pair && pair.priceUsd) {
+        var price  = parseFloat(pair.priceUsd);
+        var change = (pair.priceChange && pair.priceChange.h24) ? parseFloat(pair.priceChange.h24) : 0;
+        var priceNative = pair.priceNative || null;
+        updatePriceUI(price, price * 21000000, change, priceNative);
+        return; // éxito, salir
+      }
+    } catch(e) {
+      console.log('fetchPrice endpoint ' + i + ' falló:', e.message);
+    }
+  }
+
+  // Si todos fallaron, mostrar enlace a DexScreener
+  console.warn('fetchPrice: todos los endpoints fallaron');
+  var priceEl  = document.getElementById('stat-price');
+  var mcapEl   = document.getElementById('stat-mcap');
+  var navEl    = document.getElementById('nav-price');
+  var spv      = document.getElementById('swap-price-val');
+  if (priceEl) priceEl.innerHTML = '<a href="https://dexscreener.com/base/0x22D3f414438556d1B071cCfE52513d4d829400fd" target="_blank" style="color:var(--blue);font-size:0.9rem;text-decoration:none">View on DexScreener →</a>';
+  if (mcapEl)  mcapEl.textContent = 'See DexScreener';
+  if (navEl)   navEl.innerHTML    = '<a href="https://dexscreener.com/base/0x22D3f414438556d1B071cCfE52513d4d829400fd" target="_blank" style="color:var(--blue);text-decoration:none">MPX Live →</a>';
+  if (spv)     spv.innerHTML      = '<a href="https://dexscreener.com/base/0x22D3f414438556d1B071cCfE52513d4d829400fd" target="_blank" style="color:var(--blue);text-decoration:none">View live price →</a>';
 }
 
 fetchPrice();
