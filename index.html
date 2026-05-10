@@ -405,7 +405,7 @@ section {
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
   max-width: 820px;
-  margin-bottom: 2.5rem;
+  margin: 0 auto 2.5rem;
 }
 
 .buy-path-card {
@@ -531,13 +531,15 @@ section {
 .buy-price-strip {
   display: flex;
   align-items: center;
-  gap: 2.5rem;
+  justify-content: space-between;
+  gap: 1.5rem;
   flex-wrap: wrap;
-  padding: 1.25rem 1.5rem;
+  padding: 1.25rem 1.75rem;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 14px;
   max-width: 820px;
+  margin: 0 auto;
 }
 
 .buy-price-item { }
@@ -787,7 +789,7 @@ section {
 }
 
 .buy-inner {
-  max-width: 960px;
+  max-width: 920px;
   margin: 0 auto;
 }
 
@@ -1259,8 +1261,9 @@ footer {
   footer { padding: 3rem 1.5rem; }
   .guide-action-grid { grid-template-columns: 1fr; }
   .guide-two-paths { grid-template-columns: 1fr; }
-  .buy-paths-grid { grid-template-columns: 1fr; }
-  .buy-price-strip { gap: 1rem; }
+  .buy-paths-grid { grid-template-columns: 1fr; max-width: 100%; }
+  .buy-price-strip { gap: 1rem; justify-content: flex-start; }
+  .buy-path-card { padding: 1.5rem; }
   .guide-step-header { padding: 1.25rem; }
   .guide-step-body { padding: 1.25rem; }
   .swap-final-card { padding: 1.25rem; }
@@ -1501,7 +1504,7 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
     </div>
 
     <!-- CONTRACT -->
-    <div style="margin-top:1.5rem;max-width:820px">
+    <div style="margin-top:1.5rem;max-width:820px;margin-left:auto;margin-right:auto">
       <div onclick="copyContract()" id="ct-label"
            style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);
                   letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;
@@ -2055,6 +2058,12 @@ const T = {
     ms3Desc: "Connect your Coinbase Wallet and swap your ETH for MPX. Link opens with MPX already selected.",
     ms3Btn: "Swap ETH → MPX →",
     ms3Tip: "💡 Set slippage to 1-2% in Uniswap settings. If the swap fails, increase to 3%.",
+    as1Title: "Add Base network to your wallet",
+    as1Desc: "Base is not added by default. Add it once with these settings (click any value to copy):",
+    as1Tip: "💡 Faster: chainlist.org/chain/8453 → Add to MetaMask automatically.",
+    as2Title: "Get ETH on Base",
+    as2Desc: "You need ETH on Base (not Ethereum Mainnet). Two options:",
+    as2Tip: "💡 You only need $10-20 of ETH for gas. The rest goes to MPX.",
     gs1t: "Get a crypto wallet",
     gs1s: "You need a wallet that supports Base. MetaMask or Brave Wallet work perfectly.",
     ga1d: "Free browser extension", ga1b: "Download →",
@@ -2153,6 +2162,12 @@ const T = {
     ms3Desc: "Conecta tu Coinbase Wallet y cambia ETH por MPX. El enlace abre Uniswap con MPX ya seleccionado.",
     ms3Btn: "Cambiar ETH → MPX →",
     ms3Tip: "💡 Configura el slippage al 1-2% en Uniswap. Si falla el swap, sube al 3%.",
+    as1Title: "Añadir la red Base a tu billetera",
+    as1Desc: "Base no viene configurada por defecto. Agrégala una vez (clic en cualquier valor para copiar):",
+    as1Tip: "💡 Más rápido: chainlist.org/chain/8453 → Agregar a MetaMask automáticamente.",
+    as2Title: "Obtener ETH en Base",
+    as2Desc: "Necesitas ETH en Base (no en Ethereum Mainnet). Dos opciones:",
+    as2Tip: "💡 Solo necesitas $10-20 de ETH para el gas. El resto va a MPX.",
     gs1t: "Obtener una billetera cripto",
     gs1s: "Necesitas una billetera que soporte la red Base. MetaMask o Brave Wallet funcionan perfectamente.",
     ga1d: "Extensión gratuita para el navegador", ga1b: "Descargar →",
@@ -2275,36 +2290,50 @@ function setLang(lang) {
   set('buy-label', t.buyLabel);
   setQ('#buy .section-label', t.buyLabel);
   setQ('#buy .section-title', t.buyTitle, true);
-  set('buy-intro', t.buyIntro, true);
-  // Step 1
-  set('gs1t', t.gs1t); set('gs1s', t.gs1s);
-  set('ga1d', t.ga1d); set('ga1b', t.ga1b);
-  set('ga2d', t.ga2d); set('ga2b', t.ga2b);
-  set('gt1',  t.gt1);
-  // Step 2
-  set('gs2t', t.gs2t); set('gs2s', t.gs2s);
-  set('nct',  t.nct);
-  set('copy-hint', t.copyHint);
-  set('gt2',  t.gt2);
-  // Step 3
-  set('gs3t', t.gs3t); set('gs3s', t.gs3s);
-  set('pl1',  t.pl1);  set('pd1',  t.pd1);  set('pb1', t.pb1);
-  set('pl2',  t.pl2);  set('pd2',  t.pd2,true);  set('pb2', t.pb2);
-  set('gt3',  t.gt3);
-  // Step 4
-  set('gs4t', t.gs4t); set('gs4s', t.gs4s);
+  set('buy-intro', t.buyIntro);
+  // Path cards
+  set('bp1-badge', t.bp1Badge); set('bp1-title', t.bp1Title);
+  set('bp1-desc', t.bp1Desc); set('bp1-btn', t.bp1Btn);
+  set('bp2-badge', t.bp2Badge); set('bp2-title', t.bp2Title);
+  set('bp2-desc', t.bp2Desc); set('bp2-btn', t.bp2Btn);
+  // Feature list items
+  var f1 = lang==='es'
+    ? ['Sin extensión necesaria','Billetera con biometría','Compra ETH con tarjeta','Swap a MPX en Uniswap','~5 minutos en total']
+    : ['No browser extension needed','Wallet created with biometrics','Buy ETH with credit card','Swap to MPX on Uniswap','~5 minutes total'];
+  var f2 = lang==='es'
+    ? ['MetaMask, Brave, Coinbase Wallet','Control total de tus claves','Sin comisiones extra','Requiere billetera existente','Configuración manual de red']
+    : ['MetaMask, Brave, Coinbase Wallet','Full control of your keys','No extra fees','Requires existing wallet','Manual network setup'];
+  ['bpf1-1','bpf1-2','bpf1-3','bpf1-4','bpf1-5'].forEach(function(id,i){set(id,f1[i]);});
+  ['bpf2-1','bpf2-2','bpf2-3','bpf2-4','bpf2-5'].forEach(function(id,i){set(id,f2[i]);});
+  // Easy modal
+  set('measy-title', t.measyTitle); set('measy-sub', t.measySubt);
+  set('ms1-title', t.ms1Title); set('ms1-desc', t.ms1Desc);
+  set('ms1-btn', t.ms1Btn); set('ms1-tip', t.ms1Tip);
+  set('ms2-title', t.ms2Title); set('ms2-desc', t.ms2Desc);
+  set('ms2-btn', t.ms2Btn); set('ms2-tip', t.ms2Tip);
+  set('ms3-title', t.ms3Title); set('ms3-desc', t.ms3Desc);
+  set('ms3-btn', t.ms3Btn); set('ms3-tip', t.ms3Tip);
+  // Advanced modal
+  set('madv-title', t.madvTitle); set('madv-sub', t.madvSubt);
+  set('as1-title', t.as1Title); set('as1-desc', t.as1Desc); set('as1-tip', t.as1Tip);
+  set('as2-title', t.as2Title); set('as2-desc', t.as2Desc); set('as2-tip', t.as2Tip);
+  set('as3-title', t.ms3Title); set('as3-desc', t.ms3Desc);
+  set('as3-btn', t.ms3Btn); set('as3-tip', t.ms3Tip);
+  var netL = lang==='es'
+    ? ['Nombre de red','URL RPC','Chain ID','Símbolo','Explorador']
+    : ['Network Name','RPC URL','Chain ID','Symbol','Explorer'];
+  ['as1-n1','as1-n2','as1-n3','as1-n4','as1-n5'].forEach(function(id,i){set(id,netL[i]);});
+  set('as2-p1l', lang==='es'?'TIENES ETH EN ETHEREUM':'HAVE ETH ON ETHEREUM');
+  set('as2-p1d', lang==='es'?'Usa el bridge oficial de Base. Gratis.':'Use the official Base bridge. Fast and free.');
+  set('as2-p1b', lang==='es'?'bridge.base.org →':'bridge.base.org →');
+  set('as2-p2l', lang==='es'?'TIENES USDT EN BINANCE':'HAVE USDT ON BINANCE');
+  set('as2-p2d', lang==='es'?'Compra ETH y retira a Base.':'Buy ETH, withdraw to Base.');
+  set('as2-p2b', lang==='es'?'Binance →':'Binance →');
+  // Price strip
   set('slive', t.slive);
-  set('ct-label', t.ctLabel);
-  set('gt4',  t.gt4);
-  set('swap-btn-sec', t.swapBtnSec);
-  // ETH price label language
-  const ethLabel = document.getElementById('swap-price-eth');
-  if (ethLabel && !ethLabel.textContent.includes('0.')) {
-    ethLabel.textContent = lang === 'es' ? '— ETH por MPX' : '— ETH per MPX';
-  }
-
-  const swapBtnUni = document.getElementById('swap-btn-uni');
-  if (swapBtnUni) swapBtnUni.textContent = t.swapBtn;
+  set('ct-label', lang==='es' ? 'CONTRATO (BASE) · CLIC PARA COPIAR' : 'CONTRACT (BASE) · CLICK TO COPY');
+  var swapBtnUni = document.getElementById('swap-btn-uni');
+  if (swapBtnUni) swapBtnUni.textContent = lang==='es' ? 'Comprar en Uniswap →' : 'Buy on Uniswap →';
 
   // ── TECH ──
   setQ('#tech .section-label', t.techLabel);
