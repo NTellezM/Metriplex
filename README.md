@@ -232,3 +232,11 @@ MIT © 2026 Metriplex Protocol
 [Twitter](https://twitter.com/MetriplexMPX) · [Telegram](https://t.me/MetriplexMPX) · [Whitepaper](docs/whitepaper.md)
 
 </div>
+
+
+---
+
+## Contact
+
+Developer: ntellezm@gmail.com  
+Project: metriplexmpx@gmail.com

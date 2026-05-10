@@ -1802,16 +1802,17 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
       </ul>
     </div>
     <div>
-      <div class="footer-col-title">Community</div>
+      <div class="footer-col-title" id="footer-community-label">Community</div>
       <ul class="footer-links">
         <li><a href="https://twitter.com/MetriplexMPX" target="_blank">Twitter / X</a></li>
-        <li><a href="https://github.com/NTellezM/Metriplex/blob/main/docs/JOIN_NETWORK.md" target="_blank">Run a Node</a></li>
-        <li><a href="https://github.com/NTellezM/Metriplex/blob/main/CONTRIBUTING.md" target="_blank">Contribute</a></li>
+        <li><a href="https://github.com/NTellezM/Metriplex/blob/main/docs/JOIN_NETWORK.md" target="_blank" id="footer-run-node">Run a Node</a></li>
+        <li><a href="https://github.com/NTellezM/Metriplex/blob/main/CONTRIBUTING.md" target="_blank" id="footer-contribute">Contribute</a></li>
+        <li><a href="mailto:metriplexmpx@gmail.com">Contact</a></li>
       </ul>
     </div>
   </div>
   <div class="footer-bottom">
-    <span>© 2026 Metriplex Protocol. MIT License.</span>
+    <span>© 2026 Metriplex Protocol. MIT License. · <a href="mailto:metriplexmpx@gmail.com" style="color:var(--muted);text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='var(--blue)'" onmouseout="this.style.color='var(--muted)'">metriplexmpx@gmail.com</a></span>
     <span class="footer-tagline">Order from chaos.</span>
   </div>
 </footer>
@@ -2109,6 +2110,7 @@ const T = {
     footerCommunity: "Community",
     footerRun: "Run a Node",
     footerContribute: "Contribute",
+    footerContact: "Contact",
     footerTagline: "Order from chaos.",
     langBtn: "ES",
     navAbout: "About",
@@ -2213,6 +2215,7 @@ const T = {
     footerCommunity: "Comunidad",
     footerRun: "Correr un Nodo",
     footerContribute: "Contribuir",
+    footerContact: "Contacto",
     footerTagline: "Orden desde el caos.",
     langBtn: "EN",
     navAbout: "Acerca de",
@@ -2407,6 +2410,7 @@ function setLang(lang) {
     const as = footLinks[1].querySelectorAll('a');
     if (as[1]) as[1].textContent = t.footerRun;
     if (as[2]) as[2].textContent = t.footerContribute;
+    if (as[3]) as[3].textContent = t.footerContact;
   }
 
   // Save preference
