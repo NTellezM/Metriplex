@@ -1043,84 +1043,140 @@ section {
 
 /* ── ROADMAP ── */
 #roadmap {
-  padding: 7rem 2rem;
+  padding: 6rem 2rem;
   background: var(--bg2);
   border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 .roadmap-inner {
-  max-width: 780px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
-.roadmap-timeline {
-  margin-top: 4rem;
-  position: relative;
-  padding-left: 2rem;
+.rm-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 3rem;
 }
 
-.roadmap-timeline::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0; bottom: 0;
-  width: 1px;
-  background: linear-gradient(to bottom, var(--blue), transparent);
-}
-
-.roadmap-item {
-  position: relative;
-  padding: 0 0 3rem 2.5rem;
-}
-
-.roadmap-item::before {
-  content: '';
-  position: absolute;
-  left: -4px;
-  top: 6px;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  border: 2px solid var(--blue);
+.rm-card {
   background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.75rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
 }
 
-.roadmap-item.done::before {
-  background: var(--blue);
+.rm-card:hover { transform: translateY(-3px); }
+
+.rm-card.done {
+  border-color: rgba(0,163,255,0.2);
+  background: var(--glow2);
 }
 
-.roadmap-phase {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  color: var(--blue);
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  margin-bottom: 0.4rem;
+.rm-card.done::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--blue), transparent);
 }
 
-.roadmap-title {
-  font-size: 1.1rem;
-  font-weight: 700;
+.rm-card.active::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00E676, transparent);
+}
+
+.rm-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 0.75rem;
 }
 
-.roadmap-items {
+.rm-phase-tag {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(107,122,153,0.1);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.rm-phase-tag.done {
+  color: var(--blue);
+  background: rgba(0,163,255,0.08);
+  border-color: rgba(0,163,255,0.2);
+}
+
+.rm-phase-tag.active {
+  color: #00E676;
+  background: rgba(0,230,118,0.08);
+  border-color: rgba(0,230,118,0.2);
+}
+
+.rm-check {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.rm-progress-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #00E676;
+  animation: pulse 2s infinite;
+}
+
+.rm-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  line-height: 1.3;
+}
+
+.rm-tasks {
+  list-style: none;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
 
-.roadmap-task {
-  font-size: 0.85rem;
+.rm-tasks li {
+  font-size: 0.8rem;
   color: var(--muted);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
+  line-height: 1.5;
 }
 
-.roadmap-task.done { color: var(--white); }
-.roadmap-task.done::before { content: '✓'; color: var(--blue); font-size: 0.7rem; }
-.roadmap-task:not(.done)::before { content: '○'; color: var(--muted); font-size: 0.7rem; }
+.rm-tasks li::before {
+  content: '○';
+  color: var(--muted);
+  font-size: 0.62rem;
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.rm-tasks li.done { color: var(--white); }
+.rm-tasks li.done::before { content: '✓'; color: var(--blue); font-weight: 700; }
 
 /* ── FOOTER ── */
 footer {
@@ -1264,6 +1320,7 @@ footer {
   .buy-paths-grid { grid-template-columns: 1fr; max-width: 100%; }
   .buy-price-strip { gap: 1rem; justify-content: flex-start; }
   .buy-path-card { padding: 1.5rem; }
+  .rm-grid { grid-template-columns: 1fr; }
   .guide-step-header { padding: 1.25rem; }
   .guide-step-body { padding: 1.25rem; }
   .swap-final-card { padding: 1.25rem; }
@@ -1306,7 +1363,7 @@ footer {
     <li><a href="#what">About</a></li>
     <li><a href="#buy">Buy</a></li>
     <li><a href="#tech">Technology</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#roadmap" id="nav-rm-link">Roadmap</a></li>
     <li><a href="https://github.com/NTellezM/Metriplex" target="_blank">GitHub</a></li>
   </ul>
   <div style="display:flex;align-items:center;gap:0.75rem">
@@ -1423,6 +1480,131 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
 <span style="color:#0066CC">// Unique by Kruskal-Comon theorem.</span>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH -->
+<section id="tech">
+  <div class="section-label">Technology</div>
+  <h2 class="section-title">Why <span class="accent">different</span></h2>
+  <div class="tech-comparison">
+    <div class="tech-card traditional">
+      <div class="tech-card-title">Traditional Blockchain</div>
+      <div class="tech-row">
+        <span class="tech-key">Identity</span>
+        <span class="tech-val">256-bit integer</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Public Key</span>
+        <span class="tech-val">Elliptic curve point</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Signature</span>
+        <span class="tech-val">ECDSA (algebraic)</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Quantum risk</span>
+        <span class="tech-val">High (Shor's algo)</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Collision model</span>
+        <span class="tech-val">Probabilistic</span>
+      </div>
+    </div>
+    <div class="tech-card metriplex">
+      <div class="tech-card-title">Metriplex</div>
+      <div class="tech-row">
+        <span class="tech-key">Identity</span>
+        <span class="tech-val blue">Fractal attractor (IFS)</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Public Key</span>
+        <span class="tech-val blue">4×4×4 Tensor M₃</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Signature</span>
+        <span class="tech-val blue">ZK geometric proof (c1–c8)</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Quantum risk</span>
+        <span class="tech-val blue">Non-periodic structure</span>
+      </div>
+      <div class="tech-row">
+        <span class="tech-key">Collision model</span>
+        <span class="tech-val blue">Kruskal uniqueness theorem</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap">
+  <div class="roadmap-inner">
+    <div class="section-label" id="rmLabel">Roadmap</div>
+    <h2 class="section-title" id="rmTitle">Where we're <span class="accent">going</span></h2>
+
+    <div class="rm-grid">
+
+      <!-- PHASE 1 -->
+      <div class="rm-card done">
+        <div class="rm-card-top">
+          <div class="rm-phase-tag done" id="rm-p1-tag">Phase 1 — Complete</div>
+          <div class="rm-check">✓</div>
+        </div>
+        <div class="rm-card-title" id="rm-p1-title">Layer 1 Core + EVM Bridge</div>
+        <ul class="rm-tasks">
+          <li class="done" id="rm-t1-1">Native blockchain with fractal identity</li>
+          <li class="done" id="rm-t1-2">ZK proof system (c1–c8 composite criterion)</li>
+          <li class="done" id="rm-t1-3">Cross-chain bridge to Ethereum (live)</li>
+          <li class="done" id="rm-t1-4">MPX token on Base mainnet + Uniswap V4</li>
+          <li class="done" id="rm-t1-5">Open source — github.com/NTellezM/Metriplex</li>
+        </ul>
+      </div>
+
+      <!-- PHASE 2 -->
+      <div class="rm-card active">
+        <div class="rm-card-top">
+          <div class="rm-phase-tag active" id="rm-p2-tag">Phase 2 — Q2 2026</div>
+          <div class="rm-progress-dot"></div>
+        </div>
+        <div class="rm-card-title" id="rm-p2-title">Decentralization + Validator Network</div>
+        <ul class="rm-tasks">
+          <li id="rm-t2-1">External validator nodes running</li>
+          <li id="rm-t2-2">MPX stake mechanism for validators</li>
+          <li id="rm-t2-3">CoinGecko listing</li>
+          <li id="rm-t2-4">Liquidity growth to $10,000+</li>
+        </ul>
+      </div>
+
+      <!-- PHASE 3 -->
+      <div class="rm-card">
+        <div class="rm-card-top">
+          <div class="rm-phase-tag" id="rm-p3-tag">Phase 3 — Q3 2026</div>
+        </div>
+        <div class="rm-card-title" id="rm-p3-title">Rust Rewrite — 100x Performance</div>
+        <ul class="rm-tasks">
+          <li id="rm-t3-1">Core cryptography rewritten in Rust</li>
+          <li id="rm-t3-2">TX signing: 4s → 40ms</li>
+          <li id="rm-t3-3">100+ TPS demonstrated</li>
+          <li id="rm-t3-4">Multi-node public testnet</li>
+        </ul>
+      </div>
+
+      <!-- PHASE 4 -->
+      <div class="rm-card">
+        <div class="rm-card-top">
+          <div class="rm-phase-tag" id="rm-p4-tag">Phase 4 — Q1 2027</div>
+        </div>
+        <div class="rm-card-title" id="rm-p4-title">Security Audit + Formal Paper</div>
+        <ul class="rm-tasks">
+          <li id="rm-t4-1">ZK criterion formal security proof</li>
+          <li id="rm-t4-2">arXiv paper: IFS as post-quantum primitive</li>
+          <li id="rm-t4-3">DAO governance for protocol changes</li>
+          <li id="rm-t4-4">CEX listing (Gate.io / MEXC)</li>
+        </ul>
+      </div>
+
     </div>
   </div>
 </section>
@@ -1676,109 +1858,6 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
     </div>
   </div>
 </div>
-
-<!-- TECH -->
-<section id="tech">
-  <div class="section-label">Technology</div>
-  <h2 class="section-title">Why <span class="accent">different</span></h2>
-  <div class="tech-comparison">
-    <div class="tech-card traditional">
-      <div class="tech-card-title">Traditional Blockchain</div>
-      <div class="tech-row">
-        <span class="tech-key">Identity</span>
-        <span class="tech-val">256-bit integer</span>
-      </div>
-      <div class="tech-row">
-        <span class="tech-key">Public Key</span>
-        <span class="tech-val">Elliptic curve point</span>
-      </div>
-      <div class="tech-row">
-        <span class="tech-key">Signature</span>
-        <span class="tech-val">ECDSA (algebraic)</span>
-      </div>
-      <div class="tech-row">
-        <span class="tech-key">Quantum risk</span>
-        <span class="tech-val">High (Shor's algo)</span>
-      </div>
-      <div class="tech-row">
-        <span class="tech-key">Collision model</span>
-        <span class="tech-val">Probabilistic</span>
-      </div>
-    </div>
-    <div class="tech-card metriplex">
-      <div class="tech-card-title">Metriplex</div>
-      <div class="tech-row">
-        <span class="tech-key">Identity</span>
-        <span class="tech-val blue">Fractal attractor (IFS)</span>
-      </div>
-      <div class="tech-row">
-        <span class="tech-key">Public Key</span>
-        <span class="tech-val blue">4×4×4 Tensor M₃</span>
-      </div>
-      <div class="tech-row">
-        <span class="tech-key">Signature</span>
-        <span class="tech-val blue">ZK geometric proof (c1–c8)</span>
-      </div>
-      <div class="tech-row">
-        <span class="tech-key">Quantum risk</span>
-        <span class="tech-val blue">Non-periodic structure</span>
-      </div>
-      <div class="tech-row">
-        <span class="tech-key">Collision model</span>
-        <span class="tech-val blue">Kruskal uniqueness theorem</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ROADMAP -->
-<section id="roadmap">
-  <div class="roadmap-inner">
-    <div class="section-label">Roadmap</div>
-    <h2 class="section-title">Where we're <span class="accent">going</span></h2>
-    <div class="roadmap-timeline">
-      <div class="roadmap-item done">
-        <div class="roadmap-phase">Phase 1 — Complete</div>
-        <div class="roadmap-title">Layer 1 Core + EVM Bridge</div>
-        <div class="roadmap-items">
-          <div class="roadmap-task done">Native blockchain with fractal identity</div>
-          <div class="roadmap-task done">ZK proof system (c1–c8 composite criterion)</div>
-          <div class="roadmap-task done">Cross-chain bridge to Ethereum (live)</div>
-          <div class="roadmap-task done">MPX token on Base mainnet + Uniswap V4</div>
-          <div class="roadmap-task done">Open source — github.com/NTellezM/Metriplex</div>
-        </div>
-      </div>
-      <div class="roadmap-item">
-        <div class="roadmap-phase">Phase 2 — Q2 2026</div>
-        <div class="roadmap-title">Decentralization + Validator Network</div>
-        <div class="roadmap-items">
-          <div class="roadmap-task">External validator nodes running</div>
-          <div class="roadmap-task">MPX stake mechanism for validators</div>
-          <div class="roadmap-task">CoinGecko listing</div>
-          <div class="roadmap-task">Liquidity growth to $10,000+</div>
-        </div>
-      </div>
-      <div class="roadmap-item">
-        <div class="roadmap-phase">Phase 3 — Q3 2026</div>
-        <div class="roadmap-title">Rust Rewrite — 100x Performance</div>
-        <div class="roadmap-items">
-          <div class="roadmap-task">Core cryptography rewritten in Rust</div>
-          <div class="roadmap-task">TX signing: 4s → 40ms</div>
-          <div class="roadmap-task">100+ TPS demonstrated</div>
-        </div>
-      </div>
-      <div class="roadmap-item">
-        <div class="roadmap-phase">Phase 4 — Q1 2027</div>
-        <div class="roadmap-title">Security Audit + Formal Paper</div>
-        <div class="roadmap-items">
-          <div class="roadmap-task">ZK criterion formal security proof</div>
-          <div class="roadmap-task">arXiv paper: IFS as post-quantum primitive</div>
-          <div class="roadmap-task">DAO governance for protocol changes</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- FOOTER -->
 <footer>
@@ -2354,49 +2433,42 @@ function setLang(lang) {
   // ── ROADMAP ──
   setQ('#roadmap .section-label', t.rmLabel);
   setQ('#roadmap .section-title', t.rmTitle, true);
-  const phases = document.querySelectorAll('.roadmap-phase');
-  const pTitles = document.querySelectorAll('.roadmap-title');
-  [t.phase1,t.phase2,t.phase3,t.phase4].forEach((v,i) => { if(phases[i]) phases[i].textContent = v; });
-  [t.phase1title,t.phase2title,t.phase3title,t.phase4title].forEach((v,i) => { if(pTitles[i]) pTitles[i].textContent = v; });
+  // Roadmap phase tags
+  var rmPhases = {
+    en: ['Phase 1 — Complete','Phase 2 — Q2 2026','Phase 3 — Q3 2026','Phase 4 — Q1 2027'],
+    es: ['Fase 1 — Completada','Fase 2 — Q2 2026','Fase 3 — Q3 2026','Fase 4 — Q1 2027']
+  };
+  var rmTitles = {
+    en: ['Layer 1 Core + EVM Bridge','Decentralization + Validator Network','Rust Rewrite — 100x Performance','Security Audit + Formal Paper'],
+    es: ['Núcleo Layer 1 + Puente EVM','Descentralización + Red de Validadores','Reescritura en Rust — 100x Rendimiento','Auditoría de Seguridad + Paper Formal']
+  };
+  ['rm-p1-tag','rm-p2-tag','rm-p3-tag','rm-p4-tag'].forEach(function(id,i){set(id,rmPhases[lang][i]);});
+  ['rm-p1-title','rm-p2-title','rm-p3-title','rm-p4-title'].forEach(function(id,i){set(id,rmTitles[lang][i]);});
 
-  // Roadmap tasks
-  const rmTasksEN = [
-    'Native blockchain with fractal identity',
-    'ZK proof system (c1–c8 composite criterion)',
-    'Cross-chain bridge to Ethereum (live)',
-    'MPX token on Base mainnet + Uniswap V4',
-    'Open source — github.com/NTellezM/Metriplex',
-    'External validator nodes running',
-    'MPX stake mechanism for validators',
-    'CoinGecko listing',
-    'Liquidity growth to $10,000+',
-    'Core cryptography rewritten in Rust',
-    'TX signing: 4s → 40ms',
-    '100+ TPS demonstrated',
-    'ZK criterion formal security proof',
-    'arXiv paper: IFS as post-quantum primitive',
-    'DAO governance for protocol changes'
+  var rmTasks = {
+    en: [
+      ['Native blockchain with fractal identity','ZK proof system (c1–c8 composite criterion)','Cross-chain bridge to Ethereum (live)','MPX token on Base mainnet + Uniswap V4','Open source — github.com/NTellezM/Metriplex'],
+      ['External validator nodes running','MPX stake mechanism for validators','CoinGecko listing','Liquidity growth to $10,000+'],
+      ['Core cryptography rewritten in Rust','TX signing: 4s → 40ms','100+ TPS demonstrated','Multi-node public testnet'],
+      ['ZK criterion formal security proof','arXiv paper: IFS as post-quantum primitive','DAO governance for protocol changes','CEX listing (Gate.io / MEXC)']
+    ],
+    es: [
+      ['Blockchain nativa con identidad fractal','Sistema ZK c1–c8 (criterio compuesto)','Puente cross-chain a Ethereum (en vivo)','Token MPX en Base mainnet + Uniswap V4','Código abierto — github.com/NTellezM/Metriplex'],
+      ['Nodos validadores externos operativos','Mecanismo de stake MPX para validadores','Listing en CoinGecko','Crecimiento de liquidez a $10,000+'],
+      ['Núcleo criptográfico reescrito en Rust','Firma de TX: 4s → 40ms','100+ TPS demostrado','Testnet público multi-nodo'],
+      ['Prueba formal de seguridad del criterio ZK','Paper en arXiv: IFS como primitivo post-cuántico','Gobernanza DAO para cambios del protocolo','Listing en exchange (Gate.io / MEXC)']
+    ]
+  };
+  var taskIds = [
+    ['rm-t1-1','rm-t1-2','rm-t1-3','rm-t1-4','rm-t1-5'],
+    ['rm-t2-1','rm-t2-2','rm-t2-3','rm-t2-4'],
+    ['rm-t3-1','rm-t3-2','rm-t3-3','rm-t3-4'],
+    ['rm-t4-1','rm-t4-2','rm-t4-3','rm-t4-4']
   ];
-  const rmTasksES = [
-    'Blockchain nativa con identidad fractal',
-    'Sistema ZK c1–c8 (criterio compuesto)',
-    'Puente cross-chain a Ethereum (en vivo)',
-    'Token MPX en Base mainnet + Uniswap V4',
-    'Código abierto — github.com/NTellezM/Metriplex',
-    'Nodos validadores externos operativos',
-    'Mecanismo de stake MPX para validadores',
-    'Listing en CoinGecko',
-    'Crecimiento de liquidez a $10,000+',
-    'Núcleo criptográfico reescrito en Rust',
-    'Firma de TX: 4s → 40ms',
-    '100+ TPS demostrado',
-    'Prueba formal de seguridad del criterio ZK',
-    'Paper en arXiv: IFS como primitivo post-cuántico',
-    'Gobernanza DAO para cambios del protocolo'
-  ];
-  const taskList = lang === 'es' ? rmTasksES : rmTasksEN;
-  document.querySelectorAll('.roadmap-task').forEach((el, i) => {
-    if (taskList[i]) el.textContent = taskList[i];
+  taskIds.forEach(function(group,gi){
+    group.forEach(function(id,ti){
+      if(rmTasks[lang][gi] && rmTasks[lang][gi][ti]) set(id, rmTasks[lang][gi][ti]);
+    });
   });
 
   // ── FOOTER ──
