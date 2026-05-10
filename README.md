@@ -250,6 +250,12 @@ The cryptographic core (fractal identity, ZK criterion c1–c8, tensor operation
 is available for non-production use. Production use requires a commercial license
 until May 2027, when it automatically becomes MIT. Contact: metriplexmpx@gmail.com
 
+**Academic citation:**
+```
+NTellezM (Nelson Tellez). "Metriplex: Fractal Identity as a Cryptographic Primitive
+on a Layer 1 Blockchain." 2026. https://github.com/NTellezM/Metriplex
+```
+
 ---
 
 ## Contact
