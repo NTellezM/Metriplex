@@ -1,0 +1,49 @@
+Business Source License 1.1
+
+Parameters
+
+Licensor:             NTellezM (Nelson Tellez)
+Licensed Work:        Metriplex Cryptographic Core
+                      The Licensed Work is (c) 2025-2026 NTellezM
+                      Files: core/ and crypto/ directories
+Additional Use Grant: Non-production use only (research, education,
+                      personal projects, development/testing)
+Change Date:          2027-05-09
+Change License:       MIT License
+
+---
+
+Terms
+
+The Licensor hereby grants you the right to copy, modify, create
+derivative works, redistribute, and make non-production use of the
+Licensed Work.
+
+Effective on the Change Date, the Licensor hereby grants you rights
+under the terms of the Change License (MIT), and the rights granted
+above terminate.
+
+Non-production use means:
+  - Academic research
+  - Personal or educational projects
+  - Development and testing environments
+  - Any use that does not serve end-user traffic or generate revenue
+
+Production use means deploying the Licensed Work as part of a product
+or service that serves end users, processes real transactions, or
+generates revenue. For production use before the Change Date, contact:
+  metriplexmpx@gmail.com
+
+Notice
+
+The Business Source License is not an Open Source license. However,
+the Licensed Work will eventually be made available under an Open
+Source License, as stated in this License.
+
+For more information on the Business Source License, visit:
+https://mariadb.com/bsl11/
+
+THE LICENSED WORK IS PROVIDED "AS IS". THE LICENSOR HEREBY DISCLAIMS
+ALL WARRANTIES AND CONDITIONS, EXPRESS OR IMPLIED, INCLUDING
+(WITHOUT LIMITATION) WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE, NON-INFRINGEMENT, AND TITLE.

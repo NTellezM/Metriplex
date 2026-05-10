@@ -1,3 +1,12 @@
+# SPDX-License-Identifier: MIT
+#
+# Metriplex Protocol
+# Copyright (c) 2025-2026 NTellezM (Nelson Tellez)
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software to use, copy, modify, and distribute this
+# software under the terms of the MIT License.
+#
 """
 blockchain/chain.py — Libro Mayor Distribuido CAF v2
 =====================================================

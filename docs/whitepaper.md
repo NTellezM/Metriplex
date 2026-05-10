@@ -1,6 +1,16 @@
+<!--
+  Metriplex Protocol — Technical Whitepaper
+  Copyright (c) 2025-2026 NTellezM (Nelson Tellez)
+  Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0)
+  https://creativecommons.org/licenses/by/4.0/
+  
+  Attribution required: cite as NTellezM, Metriplex Protocol (2025),
+  https://github.com/NTellezM/Metriplex
+-->
+
 # Metriplex Protocol — Technical Whitepaper
 
-**Version 1.0 · May 2026**  
+**Version 1.0 · May 2025**  
 *Order from chaos*
 
 ---
@@ -122,10 +132,10 @@ The Ethereum bridge uses a lock-and-mint / burn-and-release architecture:
 |-------|--------|-------------|
 | Layer 1 core | ✅ Complete | IFS identity, ZK criterion, consensus, persistence |
 | EVM bridge | ✅ Live (Sepolia) | Relayer + ERC-20 contract, verified on Etherscan |
-| Base mainnet | 🔜 Q3 2026 | Token launch, Uniswap V3 pair |
-| Rust rewrite | 🔜 Q4 2026 | 100x performance improvement |
+| Base mainnet | 🔜 Q3 2025 | Token launch, Uniswap V3 pair |
+| Rust rewrite | 🔜 Q4 2025 | 100x performance improvement |
 | Security audit | 🔜 Pre-mainnet | ZK criterion formal verification |
-| Multi-node testnet | 🔜 2027 | Decentralized validator set |
+| Multi-node testnet | 🔜 2026 | Decentralized validator set |
 
 ---
 
