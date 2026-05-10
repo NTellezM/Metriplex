@@ -1,6 +1,16 @@
-MIT License
+# Metriplex Protocol — License Overview
 
-Copyright (c) 2026 Metriplex Protocol
+This repository uses a dual licensing structure:
+
+---
+
+## MIT License
+**Applies to:** Core node, API, network, bridge, wallet, contracts
+
+Files: main.py, relayer.py, wallet_cli.py, contract_cli.py,
+       api/, network/, blockchain/, contracts/, tests/
+
+Copyright (c) 2025-2026 NTellezM (Nelson Tellez)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +29,32 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## Business Source License 1.1 (BUSL-1.1)
+**Applies to:** Cryptographic core
+
+Files: core/, crypto/
+
+See LICENSE-CORE for full terms.
+
+Summary:
+- Non-production use (research, education, personal) is permitted
+- Production use requires a commercial license until 2027-05-09
+- On 2027-05-09 this code automatically becomes MIT licensed
+- Contact: metriplexmpx@gmail.com
+
+---
+
+## Creative Commons Attribution 4.0 (CC BY 4.0)
+**Applies to:** Documentation and whitepaper
+
+Files: docs/whitepaper.md, docs/DEPLOY.md, docs/JOIN_NETWORK.md
+
+See LICENSE-DOCS for full terms.
+
+Summary:
+- Free to share and adapt for any purpose
+- Must credit: NTellezM / Nelson Tellez
+- Must link to: https://github.com/NTellezM/Metriplex

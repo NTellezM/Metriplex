@@ -1,3 +1,18 @@
+# SPDX-License-Identifier: BUSL-1.1
+#
+# Metriplex Cryptographic Core
+# Copyright (c) 2025-2026 NTellezM (Nelson Tellez)
+#
+# This file is part of the Metriplex Cryptographic Core, licensed under
+# the Business Source License 1.1 (BUSL-1.1).
+#
+# Non-production use (research, education, personal projects) is permitted.
+# Production use requires a commercial license until 2027-05-09, after which
+# this file is available under the MIT License.
+#
+# Contact: metriplexmpx@gmail.com
+# License: See LICENSE-CORE in the repository root
+#
 """
 Módulo de cálculo tensorial para el protocolo CAF.
 Genera y manipula el tensor de tercer orden M3 que actúa como

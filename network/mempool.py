@@ -1,3 +1,12 @@
+# SPDX-License-Identifier: MIT
+#
+# Metriplex Protocol
+# Copyright (c) 2025-2026 NTellezM (Nelson Tellez)
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software to use, copy, modify, and distribute this
+# software under the terms of the MIT License.
+#
 """
 Módulo de gestión de transacciones pendientes (Mempool) para el protocolo CAF.
 Almacena transacciones validadas criptográficamente a la espera de ser minadas/validadas.

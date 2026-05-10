@@ -1,7 +1,5 @@
 <div align="center">
 
-![Metriplex Logo](assets/logo3.png)
-
 # Metriplex (MPX)
 
 ### *Order from chaos*
@@ -9,6 +7,8 @@
 **The first blockchain with fractal identity**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: BUSL-1.1](https://img.shields.io/badge/License-BUSL--1.1-blue.svg)](LICENSE-CORE)
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](LICENSE-DOCS)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
 [![Solidity 0.8.20](https://img.shields.io/badge/Solidity-0.8.20-purple.svg)](contracts/Metriplex.sol)
 [![Network: Base](https://img.shields.io/badge/Network-Base-blue.svg)](https://base.org)
@@ -127,8 +127,8 @@ python relayer.py
 | Max Supply | 21,000,000 |
 | Decimals | 18 |
 | Network | Base (mainnet) |
-| Contract (Sepolia) | `0x22D3f414438556d1B071cCfE52513d4d829400fd` |
-| Uniswap | [MPX/ETH en Base](https://app.uniswap.org/explore/tokens/base/0x22D3f414438556d1B071cCfE52513d4d829400fd) |
+| Contract | `TBD` |
+| Uniswap | `TBD` |
 
 ### Distribution
 ```
@@ -144,9 +144,9 @@ python relayer.py
 
 **Sepolia testnet (live):**  
 `0x22D3f414438556d1B071cCfE52513d4d829400fd`  
-[View on Etherscan](https://sepolia.etherscan.io/address/0x22D3f414438556d1B071cCfE52513d4d829400fd) · [TX Hash: mint live](https://sepolia.etherscan.io/tx/0x3c160ae311aeb2b35a3af6536f692307fc5f753d8e28fedeb006841e54557f53)
+[View on Etherscan](https://sepolia.etherscan.io/address/0x22D3f414438556d1B071cCfE52513d4d829400fd)
 
-**Base Mainnet:** `0x22D3f414438556d1B071cCfE52513d4d829400fd` [Ver en BaseScan](https://basescan.org/token/0x22D3f414438556d1B071cCfE52513d4d829400fd)
+**Mainnet:** Coming soon on Base.
 
 ### Deploy your own (Remix IDE)
 1. Open [remix.ethereum.org](https://remix.ethereum.org)
@@ -221,7 +221,7 @@ metriplex/
 
 ## License
 
-MIT © 2026 Metriplex Protocol
+MIT © 2025 Metriplex Protocol
 
 ---
 
@@ -236,7 +236,23 @@ MIT © 2026 Metriplex Protocol
 
 ---
 
+## License
+
+This repository uses a **dual license structure**:
+
+| Component | License |
+|-----------|---------|
+| Node, API, Bridge, Contracts (`main.py`, `api/`, `network/`, `blockchain/`, `contracts/`) | [MIT](LICENSE) |
+| Cryptographic Core (`core/`, `crypto/`) | [BUSL-1.1](LICENSE-CORE) → MIT on 2027-05-09 |
+| Whitepaper & Docs (`docs/`) | [CC BY 4.0](LICENSE-DOCS) |
+
+The cryptographic core (fractal identity, ZK criterion c1–c8, tensor operations)
+is available for non-production use. Production use requires a commercial license
+until May 2027, when it automatically becomes MIT. Contact: metriplexmpx@gmail.com
+
+---
+
 ## Contact
 
-Developer: ntellezm@gmail.com  
-Project: metriplexmpx@gmail.com
+Developer: ntellezm@gmail.com
+Project:   metriplexmpx@gmail.com
