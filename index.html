@@ -399,6 +399,188 @@ section {
   margin-bottom: 1rem;
 }
 
+/* ── BUY TWO PATHS ── */
+.buy-paths-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  max-width: 820px;
+  margin-bottom: 2.5rem;
+}
+
+.buy-path-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2rem 1.75rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.buy-path-card:hover { transform: translateY(-3px); }
+
+.buy-path-card.easy {
+  border-color: rgba(0,163,255,0.28);
+}
+
+.buy-path-card.easy::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--blue), transparent);
+}
+
+.buy-path-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 1.25rem;
+}
+
+.buy-path-badge.recommended {
+  background: rgba(0,163,255,0.1);
+  color: var(--blue);
+  border: 1px solid rgba(0,163,255,0.2);
+}
+
+.buy-path-badge.advanced {
+  background: rgba(107,122,153,0.08);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.buy-path-icon { font-size: 2.25rem; margin-bottom: 0.75rem; display: block; }
+.buy-path-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.5rem; }
+.buy-path-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.7; margin-bottom: 1.25rem; }
+
+.buy-path-features {
+  list-style: none;
+  margin-bottom: 1.75rem;
+}
+
+.buy-path-features li {
+  font-size: 0.82rem;
+  color: var(--muted);
+  padding: 0.3rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.buy-path-features li::before {
+  content: '✓';
+  color: #00E676;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.buy-path-features li.na::before {
+  content: '—';
+  color: var(--muted);
+}
+
+.buy-path-btn-primary {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: linear-gradient(135deg, var(--blue), var(--blue2));
+  color: #fff;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.9rem 1.5rem;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 0 20px rgba(0,163,255,0.25);
+}
+
+.buy-path-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 35px rgba(0,163,255,0.45);
+}
+
+.buy-path-btn-secondary {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: transparent;
+  color: var(--blue);
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.9rem 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.buy-path-btn-secondary:hover {
+  background: var(--glow);
+  border-color: var(--blue);
+}
+
+.buy-price-strip {
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+  flex-wrap: wrap;
+  padding: 1.25rem 1.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  max-width: 820px;
+}
+
+.buy-price-item { }
+.buy-price-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.buy-price-val {
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.buy-price-val.live { color: var(--blue); }
+
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #00E676;
+  display: inline-block;
+  animation: pulse 2s infinite;
+}
+
+.adv-net-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0.9rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.adv-net-row:hover { background: var(--glow2); }
+
 /* ── BUY MPX GUIDE ── */
 .guide-steps {
   display: flex;
@@ -1077,6 +1259,8 @@ footer {
   footer { padding: 3rem 1.5rem; }
   .guide-action-grid { grid-template-columns: 1fr; }
   .guide-two-paths { grid-template-columns: 1fr; }
+  .buy-paths-grid { grid-template-columns: 1fr; }
+  .buy-price-strip { gap: 1rem; }
   .guide-step-header { padding: 1.25rem; }
   .guide-step-body { padding: 1.25rem; }
   .swap-final-card { padding: 1.25rem; }
@@ -1245,156 +1429,250 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
   <div class="buy-inner">
     <div class="section-label" id="buy-label">Get MPX</div>
     <h2 class="section-title">Buy <span class="accent">Metriplex</span></h2>
-    <p style="color:var(--muted);font-size:1rem;line-height:1.8;max-width:780px;margin-bottom:2.5rem;margin-left:0" id="buy-intro">
-      MPX lives on the <strong style="color:var(--white)">Base network</strong> — a fast and cheap Ethereum Layer 2.
-      To buy MPX you need ETH on Base, not on Ethereum Mainnet. This guide walks you through every step.
-      The whole process takes about 10 minutes.
+    <p style="color:var(--muted);font-size:1rem;line-height:1.8;max-width:780px;margin-bottom:2.5rem" id="buy-intro">
+      Choose how you want to buy MPX. New to crypto or experienced — we have the right path for you.
     </p>
 
-    <!-- STEP BY STEP -->
-    <div class="guide-steps">
+    <!-- TWO PATH CARDS -->
+    <div class="buy-paths-grid">
 
-      <!-- STEP 1 -->
-      <div class="guide-step">
-        <div class="guide-step-header">
-          <div class="guide-step-num">1</div>
-          <div>
-            <div class="guide-step-title" id="gs1t">Get a crypto wallet</div>
-            <div class="guide-step-sub" id="gs1s">You need a wallet that supports Base. MetaMask or Brave Wallet work perfectly.</div>
-          </div>
-        </div>
-        <div class="guide-step-body">
-          <div class="guide-action-grid">
-            <a href="https://metamask.io/download/" target="_blank" class="guide-action-card">
-              <div class="guide-action-icon">🦊</div>
-              <div class="guide-action-name">MetaMask</div>
-              <div class="guide-action-desc" id="ga1d">Free browser extension</div>
-              <div class="guide-action-btn" id="ga1b">Download →</div>
-            </a>
-            <a href="https://brave.com/wallet/" target="_blank" class="guide-action-card">
-              <div class="guide-action-icon">🦁</div>
-              <div class="guide-action-name">Brave Wallet</div>
-              <div class="guide-action-desc" id="ga2d">Built into Brave browser</div>
-              <div class="guide-action-btn" id="ga2b">Download →</div>
-            </a>
-          </div>
-          <div class="guide-tip" id="gt1">
-            💡 Already have a wallet? Skip to step 2.
-          </div>
-        </div>
+      <!-- PATH 1: QUICK -->
+      <div class="buy-path-card easy">
+        <span class="buy-path-badge recommended" id="bp1-badge">⚡ Recommended</span>
+        <div class="buy-path-icon">📱</div>
+        <div class="buy-path-title" id="bp1-title">Quick Buy</div>
+        <p class="buy-path-desc" id="bp1-desc">No wallet setup. Create a secure wallet with fingerprint or Face ID and buy MPX in minutes.</p>
+        <ul class="buy-path-features">
+          <li id="bpf1-1">No browser extension needed</li>
+          <li id="bpf1-2">Wallet created with biometrics</li>
+          <li id="bpf1-3">Buy ETH with credit card</li>
+          <li id="bpf1-4">Swap to MPX on Uniswap</li>
+          <li id="bpf1-5">~5 minutes total</li>
+        </ul>
+        <button class="buy-path-btn-primary" onclick="document.getElementById('modal-easy').style.display='flex'" id="bp1-btn">
+          Get Started →
+        </button>
       </div>
 
-      <!-- STEP 2 -->
-      <div class="guide-step">
-        <div class="guide-step-header">
-          <div class="guide-step-num">2</div>
-          <div>
-            <div class="guide-step-title" id="gs2t">Add the Base network to your wallet</div>
-            <div class="guide-step-sub" id="gs2s">Base is not added by default. You need to configure it once.</div>
-          </div>
-        </div>
-        <div class="guide-step-body">
-          <div class="network-config">
-            <div class="network-config-title" id="nct">Base Network Settings</div>
-            <div class="network-row"><span class="network-key">Network Name</span><span class="network-val copy-val" onclick="copyText('Base')">Base</span></div>
-            <div class="network-row"><span class="network-key">RPC URL</span><span class="network-val copy-val" onclick="copyText('https://mainnet.base.org')" style="font-size:0.7rem">https://mainnet.base.org</span></div>
-            <div class="network-row"><span class="network-key">Chain ID</span><span class="network-val copy-val" onclick="copyText('8453')">8453</span></div>
-            <div class="network-row"><span class="network-key">Currency Symbol</span><span class="network-val copy-val" onclick="copyText('ETH')">ETH</span></div>
-            <div class="network-row"><span class="network-key">Block Explorer</span><span class="network-val copy-val" onclick="copyText('https://basescan.org')" style="font-size:0.7rem">https://basescan.org</span></div>
-            <div style="font-size:0.7rem;color:var(--muted);margin-top:0.75rem;font-family:var(--mono)" id="copy-hint">Click any value to copy it</div>
-          </div>
-          <div class="guide-tip" id="gt2">
-            💡 Or just click "Add to MetaMask" on <a href="https://chainlist.org/chain/8453" target="_blank" style="color:var(--blue)">chainlist.org/chain/8453</a> — it adds everything automatically.
-          </div>
-        </div>
+      <!-- PATH 2: ADVANCED -->
+      <div class="buy-path-card">
+        <span class="buy-path-badge advanced" id="bp2-badge">For existing wallets</span>
+        <div class="buy-path-icon">🦊</div>
+        <div class="buy-path-title" id="bp2-title">With My Wallet</div>
+        <p class="buy-path-desc" id="bp2-desc">Already have MetaMask, Brave Wallet or Coinbase? Follow the step-by-step guide.</p>
+        <ul class="buy-path-features">
+          <li id="bpf2-1">MetaMask, Brave, Coinbase Wallet</li>
+          <li id="bpf2-2">Full control of your keys</li>
+          <li id="bpf2-3">No extra fees</li>
+          <li class="na" id="bpf2-4">Requires existing wallet</li>
+          <li class="na" id="bpf2-5">Manual network setup</li>
+        </ul>
+        <button class="buy-path-btn-secondary" onclick="document.getElementById('modal-advanced').style.display='flex'" id="bp2-btn">
+          Step-by-step guide →
+        </button>
       </div>
 
-      <!-- STEP 3 -->
-      <div class="guide-step">
-        <div class="guide-step-header">
-          <div class="guide-step-num">3</div>
-          <div>
-            <div class="guide-step-title" id="gs3t">Get ETH on Base</div>
-            <div class="guide-step-sub" id="gs3s">You need ETH <em>on Base</em> to pay for the swap. There are two ways depending on where your money is.</div>
-          </div>
-        </div>
-        <div class="guide-step-body">
-          <div class="guide-two-paths">
-            <div class="path-card">
-              <div class="path-label" id="pl1">IF YOU HAVE ETH ON ETHEREUM</div>
-              <div class="path-desc" id="pd1">Use the official Base bridge to move your ETH from Ethereum to Base. Fast and free.</div>
-              <a href="https://bridge.base.org" target="_blank" class="path-btn" id="pb1">Bridge ETH to Base →</a>
-            </div>
-            <div class="path-card">
-              <div class="path-label" id="pl2">IF YOU HAVE USDT/USDC ON BINANCE</div>
-              <div class="path-desc" id="pd2">Buy ETH on Binance, then withdraw directly to your wallet address selecting the <strong>Base</strong> network.</div>
-              <a href="https://www.binance.com" target="_blank" class="path-btn" id="pb2">Go to Binance →</a>
-            </div>
-          </div>
-          <div class="guide-tip" id="gt3">
-            💡 You only need <strong>$5–10 of ETH</strong> to cover the swap fee on Base. The fee is usually less than $0.10.
-          </div>
-        </div>
-      </div>
+    </div>
 
-      <!-- STEP 4 -->
-      <div class="guide-step">
-        <div class="guide-step-header">
-          <div class="guide-step-num">4</div>
-          <div>
-            <div class="guide-step-title" id="gs4t">Swap ETH for MPX on Uniswap</div>
-            <div class="guide-step-sub" id="gs4s">Go to Uniswap, connect your wallet, and swap. The link below opens Uniswap with MPX already selected.</div>
-          </div>
-        </div>
-        <div class="guide-step-body">
-          <div class="swap-final-card">
-            <div class="swap-final-price">
-              <div style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);letter-spacing:0.15em;margin-bottom:0.4rem" id="slive">LIVE PRICE</div>
-              <div style="font-size:2.2rem;font-weight:800;color:var(--blue);font-family:var(--mono)" id="swap-price-val">Loading...</div>
-              <div style="font-size:0.75rem;color:var(--muted);font-family:var(--mono);margin-top:0.2rem" id="swap-price-eth" data-en="— ETH per MPX" data-es="— ETH por MPX">— ETH per MPX</div>
-            </div>
-            <a href="https://app.uniswap.org/swap?chain=base&outputCurrency=0x22D3f414438556d1B071cCfE52513d4d829400fd"
-               target="_blank" id="swap-btn-uni"
-               style="display:block;background:linear-gradient(135deg,#00A3FF,#0066CC);
-                      color:#fff;font-weight:700;font-size:1.1rem;padding:1.1rem 2rem;
-                      border-radius:12px;text-decoration:none;text-align:center;
-                      margin:1.5rem 0 0.75rem;letter-spacing:0.05em;
-                      box-shadow:0 0 30px rgba(0,163,255,0.3);transition:all 0.2s"
-               onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 0 50px rgba(0,163,255,0.5)'"
-               onmouseout="this.style.transform='';this.style.boxShadow='0 0 30px rgba(0,163,255,0.3)'">
-              Open Uniswap — Swap ETH → MPX
-            </a>
-            <a href="https://app.uniswap.org/explore/tokens/base/0x22d3f414438556d1b071ccfe52513d4d829400fd"
-               target="_blank"
-               style="display:block;text-align:center;color:var(--muted);font-size:0.85rem;
-                      padding:0.75rem;border:1px solid var(--border);border-radius:10px;
-                      text-decoration:none;margin-bottom:1.5rem;transition:all 0.2s"
-               id="swap-btn-sec"
-               onmouseover="this.style.color='var(--blue)';this.style.borderColor='var(--blue)'"
-               onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">
-              View MPX token page on Uniswap →
-            </a>
-            <div style="background:var(--glow2);border:1px solid var(--border);border-radius:8px;
-                        padding:1rem;font-family:var(--mono);font-size:0.68rem;
-                        color:var(--muted);line-height:1.8">
-              <div style="color:var(--blue);font-size:0.6rem;letter-spacing:0.15em;margin-bottom:0.4rem" id="ct-label">CONTRACT ADDRESS (BASE) · CLICK TO COPY</div>
-              <div onclick="copyContract()" style="cursor:pointer;word-break:break-all;color:var(--white)"
-                   onmouseover="this.style.color='var(--blue)'"
-                   onmouseout="this.style.color='var(--white)'">
-                0x22D3f414438556d1B071cCfE52513d4d829400fd
-              </div>
-              <div id="swap-copied" style="display:none;color:#00E676;margin-top:0.4rem">✓ Copied!</div>
-            </div>
-          </div>
-          <div class="guide-tip" id="gt4">
-            💡 In Uniswap set slippage to <strong>1–2%</strong>. If the swap fails, increase slippage to 3%.
-          </div>
-        </div>
+    <!-- LIVE PRICE STRIP -->
+    <div class="buy-price-strip">
+      <div class="buy-price-item">
+        <div class="buy-price-label"><span class="live-dot"></span><span id="slive">LIVE PRICE</span></div>
+        <div class="buy-price-val live" id="swap-price-val">Loading...</div>
       </div>
+      <div class="buy-price-item">
+        <div class="buy-price-label">NETWORK</div>
+        <div class="buy-price-val">Base</div>
+      </div>
+      <div class="buy-price-item">
+        <div class="buy-price-label">EXCHANGE</div>
+        <div class="buy-price-val">Uniswap V4</div>
+      </div>
+      <div>
+        <a href="https://app.uniswap.org/swap?chain=base&outputCurrency=0x22D3f414438556d1B071cCfE52513d4d829400fd"
+           target="_blank" id="swap-btn-uni"
+           style="display:inline-block;background:linear-gradient(135deg,#00A3FF,#0066CC);
+                  color:#fff;font-weight:700;font-size:0.9rem;padding:0.75rem 1.5rem;
+                  border-radius:10px;text-decoration:none;transition:all 0.2s;
+                  box-shadow:0 0 20px rgba(0,163,255,0.25)">
+          Buy on Uniswap →
+        </a>
+      </div>
+    </div>
 
-    </div><!-- end guide-steps -->
+    <!-- CONTRACT -->
+    <div style="margin-top:1.5rem;max-width:820px">
+      <div onclick="copyContract()" id="ct-label"
+           style="font-family:var(--mono);font-size:0.65rem;color:var(--muted);
+                  letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;
+                  background:var(--glow2);border:1px solid var(--border);
+                  border-radius:8px;padding:0.75rem 1rem;word-break:break-all;
+                  transition:border-color 0.2s"
+           onmouseover="this.style.borderColor='var(--blue)'"
+           onmouseout="this.style.borderColor='var(--border)'">
+        CONTRACT (BASE) · CLICK TO COPY<br>
+        <span style="color:var(--white);font-size:0.75rem">0x22D3f414438556d1B071cCfE52513d4d829400fd</span>
+        <span id="swap-copied" style="display:none;color:#00E676;margin-left:1rem">✓ Copied!</span>
+      </div>
+    </div>
+
   </div>
 </section>
+
+<!-- MODAL: EASY PATH -->
+<div id="modal-easy" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);
+     z-index:500;align-items:center;justify-content:center;padding:1rem"
+     onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--bg2);border:1px solid rgba(0,163,255,0.25);border-radius:20px;
+              width:100%;max-width:540px;max-height:90vh;overflow-y:auto;position:relative">
+    <div style="height:3px;background:linear-gradient(90deg,transparent,var(--blue),transparent);border-radius:20px 20px 0 0"></div>
+    <div style="padding:1.75rem 2rem 1.25rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:1.2rem;font-weight:800" id="measy-title">Quick Buy — 3 steps</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-top:0.2rem" id="measy-sub">~5 minutes · No extension needed</div>
+      </div>
+      <button onclick="document.getElementById('modal-easy').style.display='none'"
+              style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div style="padding:2rem">
+
+      <div style="display:flex;gap:1.25rem;margin-bottom:2rem">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue2));display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0">1</div>
+        <div>
+          <div style="font-weight:700;margin-bottom:0.3rem" id="ms1-title">Create a free wallet with Coinbase</div>
+          <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;margin-bottom:0.75rem" id="ms1-desc">Coinbase Smart Wallet creates a secure wallet using biometrics. No seed phrase. No extension. Works in any browser.</div>
+          <a href="https://wallet.coinbase.com" target="_blank"
+             style="display:inline-block;padding:0.6rem 1.25rem;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-weight:700;font-size:0.85rem;border-radius:8px;text-decoration:none" id="ms1-btn">
+            Create Wallet Free →
+          </a>
+          <div style="background:rgba(0,163,255,0.05);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:0.65rem 0.9rem;font-size:0.8rem;color:var(--muted);line-height:1.6;margin-top:0.75rem" id="ms1-tip">
+            💡 On mobile uses Face ID or fingerprint. On desktop uses your device security key. Under 60 seconds.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:1.25rem;margin-bottom:2rem">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue2));display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0">2</div>
+        <div>
+          <div style="font-weight:700;margin-bottom:0.3rem" id="ms2-title">Buy ETH on Base with your card</div>
+          <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;margin-bottom:0.75rem" id="ms2-desc">Buy ETH directly on the Base network using your credit or debit card. You need ~$20-50 of ETH to buy MPX.</div>
+          <a href="https://pay.coinbase.com/buy/select-asset?appId=b4e22e63-4a12-4a72-a078-9e1a39e05461&defaultExperience=buy&defaultAsset=ETH&defaultNetwork=base"
+             target="_blank"
+             style="display:inline-block;padding:0.6rem 1.25rem;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-weight:700;font-size:0.85rem;border-radius:8px;text-decoration:none" id="ms2-btn">
+            Buy ETH with Card →
+          </a>
+          <div style="background:rgba(0,163,255,0.05);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:0.65rem 0.9rem;font-size:0.8rem;color:var(--muted);line-height:1.6;margin-top:0.75rem" id="ms2-tip">
+            💡 Select "Base" as the network. ETH on Base has very low fees (less than $0.10 per transaction).
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:1.25rem">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue2));display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0">3</div>
+        <div>
+          <div style="font-weight:700;margin-bottom:0.3rem" id="ms3-title">Swap ETH → MPX on Uniswap</div>
+          <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;margin-bottom:0.75rem" id="ms3-desc">Connect your Coinbase Wallet and swap your ETH for MPX. The link below opens Uniswap with MPX already selected.</div>
+          <a href="https://app.uniswap.org/swap?chain=base&outputCurrency=0x22D3f414438556d1B071cCfE52513d4d829400fd"
+             target="_blank"
+             style="display:inline-block;padding:0.6rem 1.25rem;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-weight:700;font-size:0.85rem;border-radius:8px;text-decoration:none" id="ms3-btn">
+            Swap ETH → MPX →
+          </a>
+          <div style="background:rgba(0,163,255,0.05);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:0.65rem 0.9rem;font-size:0.8rem;color:var(--muted);line-height:1.6;margin-top:0.75rem" id="ms3-tip">
+            💡 Set slippage to 1-2% in Uniswap settings. If the swap fails, increase to 3%.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADVANCED PATH -->
+<div id="modal-advanced" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);
+     z-index:500;align-items:center;justify-content:center;padding:1rem"
+     onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:var(--bg2);border:1px solid rgba(0,163,255,0.25);border-radius:20px;
+              width:100%;max-width:540px;max-height:90vh;overflow-y:auto;position:relative">
+    <div style="height:3px;background:linear-gradient(90deg,transparent,var(--blue),transparent);border-radius:20px 20px 0 0"></div>
+    <div style="padding:1.75rem 2rem 1.25rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:1.2rem;font-weight:800" id="madv-title">Buy with existing wallet</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-top:0.2rem" id="madv-sub">MetaMask · Brave · Coinbase Wallet</div>
+      </div>
+      <button onclick="document.getElementById('modal-advanced').style.display='none'"
+              style="background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div style="padding:2rem">
+
+      <!-- ADV STEP 1 -->
+      <div style="display:flex;gap:1.25rem;margin-bottom:2rem">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue2));display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0">1</div>
+        <div style="width:100%">
+          <div style="font-weight:700;margin-bottom:0.3rem" id="as1-title">Add Base network to your wallet</div>
+          <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;margin-bottom:0.75rem" id="as1-desc">Base is not added by default. Add it once with these settings (click to copy):</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-family:var(--mono);font-size:0.75rem">
+            <div class="adv-net-row" onclick="copyNetVal(this,'Base')"><span style="color:var(--muted)" id="as1-n1">Network Name</span><span style="color:var(--white);font-weight:600">Base</span></div>
+            <div class="adv-net-row" onclick="copyNetVal(this,'https://mainnet.base.org')"><span style="color:var(--muted)" id="as1-n2">RPC URL</span><span style="color:var(--white);font-weight:600;font-size:0.65rem">https://mainnet.base.org</span></div>
+            <div class="adv-net-row" onclick="copyNetVal(this,'8453')"><span style="color:var(--muted)" id="as1-n3">Chain ID</span><span style="color:var(--white);font-weight:600">8453</span></div>
+            <div class="adv-net-row" onclick="copyNetVal(this,'ETH')"><span style="color:var(--muted)" id="as1-n4">Symbol</span><span style="color:var(--white);font-weight:600">ETH</span></div>
+            <div class="adv-net-row" style="border-bottom:none" onclick="copyNetVal(this,'https://basescan.org')"><span style="color:var(--muted)" id="as1-n5">Explorer</span><span style="color:var(--white);font-weight:600;font-size:0.65rem">https://basescan.org</span></div>
+          </div>
+          <div style="background:rgba(0,163,255,0.05);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:0.65rem 0.9rem;font-size:0.8rem;color:var(--muted);line-height:1.6;margin-top:0.75rem" id="as1-tip">
+            💡 Faster: <a href="https://chainlist.org/chain/8453" target="_blank" style="color:var(--blue)">chainlist.org/chain/8453</a> → Add to MetaMask
+          </div>
+        </div>
+      </div>
+
+      <!-- ADV STEP 2 -->
+      <div style="display:flex;gap:1.25rem;margin-bottom:2rem">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue2));display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0">2</div>
+        <div>
+          <div style="font-weight:700;margin-bottom:0.3rem" id="as2-title">Get ETH on Base</div>
+          <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;margin-bottom:0.75rem" id="as2-desc">You need ETH on Base (not Ethereum Mainnet). Two options:</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem">
+              <div style="font-family:var(--mono);font-size:0.6rem;color:var(--blue);margin-bottom:0.5rem" id="as2-p1l">HAVE ETH ON ETHEREUM</div>
+              <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem" id="as2-p1d">Bridge it to Base for free</div>
+              <a href="https://bridge.base.org" target="_blank" id="as2-p1b"
+                 style="display:block;text-align:center;padding:0.5rem;background:transparent;color:var(--blue);border:1px solid var(--border);border-radius:8px;text-decoration:none;font-size:0.8rem;font-weight:600">
+                bridge.base.org →
+              </a>
+            </div>
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:1rem">
+              <div style="font-family:var(--mono);font-size:0.6rem;color:var(--blue);margin-bottom:0.5rem" id="as2-p2l">HAVE USDT ON BINANCE</div>
+              <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem" id="as2-p2d">Buy ETH, withdraw to Base</div>
+              <a href="https://www.binance.com" target="_blank" id="as2-p2b"
+                 style="display:block;text-align:center;padding:0.5rem;background:transparent;color:var(--blue);border:1px solid var(--border);border-radius:8px;text-decoration:none;font-size:0.8rem;font-weight:600">
+                Binance →
+              </a>
+            </div>
+          </div>
+          <div style="background:rgba(0,163,255,0.05);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:0.65rem 0.9rem;font-size:0.8rem;color:var(--muted);line-height:1.6;margin-top:0.75rem" id="as2-tip">
+            💡 You only need $10-20 of ETH for gas. The rest goes to MPX.
+          </div>
+        </div>
+      </div>
+
+      <!-- ADV STEP 3 -->
+      <div style="display:flex;gap:1.25rem">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue2));display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0">3</div>
+        <div>
+          <div style="font-weight:700;margin-bottom:0.3rem" id="as3-title">Swap ETH → MPX on Uniswap</div>
+          <div style="font-size:0.85rem;color:var(--muted);line-height:1.6;margin-bottom:0.75rem" id="as3-desc">Connect your wallet and swap. Link opens with MPX pre-selected.</div>
+          <a href="https://app.uniswap.org/swap?chain=base&outputCurrency=0x22D3f414438556d1B071cCfE52513d4d829400fd"
+             target="_blank" id="as3-btn"
+             style="display:inline-block;padding:0.6rem 1.25rem;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-weight:700;font-size:0.85rem;border-radius:8px;text-decoration:none">
+            Open Uniswap →
+          </a>
+          <div style="background:rgba(0,163,255,0.05);border-left:3px solid var(--blue);border-radius:0 8px 8px 0;padding:0.65rem 0.9rem;font-size:0.8rem;color:var(--muted);line-height:1.6;margin-top:0.75rem" id="as3-tip">
+            💡 Set slippage to 1-2% in Uniswap settings. If the swap fails, increase to 3%.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <!-- TECH -->
 <section id="tech">
@@ -1687,6 +1965,15 @@ setInterval(() => {
   }
 }, 2000);
 
+function copyNetVal(el, val) {
+  navigator.clipboard && navigator.clipboard.writeText(val);
+  var span = el.querySelectorAll('span')[1];
+  var orig = span.textContent;
+  span.textContent = '✓ Copied!';
+  span.style.color = '#00E676';
+  setTimeout(function() { span.textContent = orig; span.style.color = ''; }, 1000);
+}
+
 function copyText(val) {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(val);
@@ -1748,7 +2035,26 @@ const T = {
     p3desc: "MPX tokens live on Base mainnet. The cross-chain relayer monitors both chains — send MPX to receive wMPX on Ethereum, or burn wMPX to release MPX natively.",
     buyLabel: "Get MPX",
     buyTitle: "Buy <span class='accent'>Metriplex</span>",
-    buyIntro: "MPX lives on the <strong style='color:var(--white)'>Base network</strong> — a fast and cheap Ethereum Layer 2. To buy MPX you need ETH on Base, not on Ethereum Mainnet. This guide walks you through every step. The whole process takes about 10 minutes.",
+    buyIntro: "Choose how you want to buy MPX. New to crypto or experienced — we have the right path for you.",
+    bp1Badge: "⚡ Recommended", bp1Title: "Quick Buy",
+    bp1Desc: "No wallet setup. Create a secure wallet with fingerprint or Face ID and buy MPX in minutes.",
+    bp2Badge: "For existing wallets", bp2Title: "With My Wallet",
+    bp2Desc: "Already have MetaMask, Brave Wallet or Coinbase? Follow the step-by-step guide.",
+    bp1Btn: "Get Started →", bp2Btn: "Step-by-step guide →",
+    measyTitle: "Quick Buy — 3 steps", measySubt: "~5 minutes · No extension needed",
+    madvTitle: "Buy with existing wallet", madvSubt: "MetaMask · Brave · Coinbase Wallet",
+    ms1Title: "Create a free wallet with Coinbase",
+    ms1Desc: "Coinbase Smart Wallet creates a secure wallet using biometrics. No seed phrase. No extension.",
+    ms1Btn: "Create Wallet Free →",
+    ms1Tip: "💡 On mobile uses Face ID or fingerprint. On desktop uses your device security key.",
+    ms2Title: "Buy ETH on Base with your card",
+    ms2Desc: "Buy ETH on the Base network using your credit or debit card. You need ~$20-50 of ETH.",
+    ms2Btn: "Buy ETH with Card →",
+    ms2Tip: "💡 Select 'Base' as the network. ETH on Base has very low fees (less than $0.10).",
+    ms3Title: "Swap ETH → MPX on Uniswap",
+    ms3Desc: "Connect your Coinbase Wallet and swap your ETH for MPX. Link opens with MPX already selected.",
+    ms3Btn: "Swap ETH → MPX →",
+    ms3Tip: "💡 Set slippage to 1-2% in Uniswap settings. If the swap fails, increase to 3%.",
     gs1t: "Get a crypto wallet",
     gs1s: "You need a wallet that supports Base. MetaMask or Brave Wallet work perfectly.",
     ga1d: "Free browser extension", ga1b: "Download →",
@@ -1827,7 +2133,26 @@ const T = {
     p3desc: "Los tokens MPX viven en Base mainnet. El relayer cross-chain monitorea ambas cadenas — envía MPX para recibir wMPX en Ethereum, o quema wMPX para liberar MPX nativos.",
     buyLabel: "Obtener MPX",
     buyTitle: "Comprar <span class='accent'>Metriplex</span>",
-    buyIntro: "MPX vive en la red <strong style='color:var(--white)'>Base</strong> — una capa 2 de Ethereum rápida y económica. Para comprar MPX necesitas ETH en Base, no en Ethereum Mainnet. Esta guía te lleva por cada paso. El proceso completo toma unos 10 minutos.",
+    buyIntro: "Elige cómo quieres comprar MPX. Nuevo en crypto o con experiencia — tenemos la ruta correcta para ti.",
+    bp1Badge: "⚡ Recomendado", bp1Title: "Compra Rápida",
+    bp1Desc: "Sin configuración de billetera. Crea una billetera segura con huella o Face ID y compra MPX en minutos.",
+    bp2Badge: "Para billeteras existentes", bp2Title: "Con Mi Billetera",
+    bp2Desc: "¿Ya tienes MetaMask, Brave Wallet o Coinbase? Sigue la guía paso a paso.",
+    bp1Btn: "Comenzar →", bp2Btn: "Guía paso a paso →",
+    measyTitle: "Compra Rápida — 3 pasos", measySubt: "~5 minutos · Sin extensión necesaria",
+    madvTitle: "Comprar con billetera existente", madvSubt: "MetaMask · Brave · Coinbase Wallet",
+    ms1Title: "Crea una billetera gratis con Coinbase",
+    ms1Desc: "Coinbase Smart Wallet crea una billetera segura usando biometría. Sin frase semilla. Sin extensión.",
+    ms1Btn: "Crear Billetera Gratis →",
+    ms1Tip: "💡 En móvil usa Face ID o huella. En desktop usa la llave de seguridad de tu dispositivo.",
+    ms2Title: "Compra ETH en Base con tu tarjeta",
+    ms2Desc: "Compra ETH en la red Base usando tu tarjeta de crédito o débito. Necesitas ~$20-50 de ETH.",
+    ms2Btn: "Comprar ETH con Tarjeta →",
+    ms2Tip: "💡 Selecciona 'Base' como red. ETH en Base tiene comisiones muy bajas (menos de $0.10).",
+    ms3Title: "Cambiar ETH → MPX en Uniswap",
+    ms3Desc: "Conecta tu Coinbase Wallet y cambia ETH por MPX. El enlace abre Uniswap con MPX ya seleccionado.",
+    ms3Btn: "Cambiar ETH → MPX →",
+    ms3Tip: "💡 Configura el slippage al 1-2% en Uniswap. Si falla el swap, sube al 3%.",
     gs1t: "Obtener una billetera cripto",
     gs1s: "Necesitas una billetera que soporte la red Base. MetaMask o Brave Wallet funcionan perfectamente.",
     ga1d: "Extensión gratuita para el navegador", ga1b: "Descargar →",
