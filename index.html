@@ -1759,16 +1759,6 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
         </button>
       </div>
 
-      <!-- BEGINNER LINK -->
-      <div style="text-align:center; margin-bottom:1.5rem;">
-        <a href="/guide.html" id="guide-link" style="display:inline-flex; align-items:center; gap:8px; background:transparent; border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:12px 24px; color:#888; font-size:14px; text-decoration:none; transition:all 0.2s;"
-           onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.3)'"
-           onmouseout="this.style.color='#888';this.style.borderColor='rgba(255,255,255,0.12)'">
-          <span style="font-size:18px;">🎓</span>
-          <span id="guide-link-text">New to crypto? Step-by-step guide →</span>
-        </a>
-      </div>
-
       <!-- PATH 2: ADVANCED -->
       <div class="buy-path-card">
         <span class="buy-path-badge advanced" id="bp2-badge">For existing wallets</span>
@@ -1790,7 +1780,19 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
     </div>
 
     <!-- LIVE PRICE STRIP -->
-    <div class="buy-price-strip">
+    <div style="text-align:center; margin:2rem 0 1rem;">
+        <a href="/guide.html" id="guide-link" style="display:inline-flex; align-items:center; gap:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px 32px; color:#aaa; font-size:14px; text-decoration:none; transition:all 0.2s; font-family:inherit;"
+           onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.25)';this.style.background='rgba(255,255,255,0.06)'"
+           onmouseout="this.style.color='#aaa';this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(255,255,255,0.03)'">
+          <span style="font-size:20px;">🎓</span>
+          <span>
+            <span id="guide-link-text" style="display:block; font-size:14px;">New to crypto? Step-by-step guide →</span>
+            <span id="guide-link-sub" style="display:block; font-size:11px; color:#666; margin-top:2px; font-family:monospace; letter-spacing:0.05em;">8 STEPS · ~10 MIN · FROM $10</span>
+          </span>
+        </a>
+      </div>
+
+      <div class="buy-price-strip">
       <div class="buy-price-item">
         <div class="buy-price-label"><span class="live-dot"></span><span id="slive">LIVE PRICE</span></div>
         <div class="buy-price-val live" id="swap-price-val">Loading...</div>
@@ -2328,6 +2330,7 @@ const T = {
     navTech: "Technology",
     navRoadmap: "Roadmap",
     guideLinkText: "New to crypto? Step-by-step guide →",
+    guideLinkSub: "8 STEPS · ~10 MIN · FROM $10",
     navDemo: "Demo",
     demoLabel: "Interactive",
     demoTitle: "See how it <span class='accent'>works</span>",
@@ -2443,6 +2446,7 @@ const T = {
     navTech: "Tecnología",
     navRoadmap: "Hoja de ruta",
     guideLinkText: "¿Nuevo en crypto? Guía paso a paso →",
+    guideLinkSub: "8 PASOS · ~10 MIN · DESDE $10",
     navDemo: "Demo",
     demoLabel: "Interactivo",
     demoTitle: "Así es como <span class='accent'>funciona</span>",
@@ -2491,8 +2495,10 @@ function setLang(lang) {
   set('lang-btn', t.langBtn);
   set('nav-buy-link', t.navBuy);
   set('guide-link-text', t.guideLinkText);
+  set('guide-link-sub', t.guideLinkSub);
   set('nav-buy-link', t.navBuy);
   set('guide-link-text', t.guideLinkText);
+  set('guide-link-sub', t.guideLinkSub);
   set('nav-demo-link', t.navDemo);
   set('nav-rm-link', t.navRoadmap);
 
@@ -2597,6 +2603,7 @@ function setLang(lang) {
   set('demoGenHint', t.demoGenHint);
   set('nav-buy-link', t.navBuy);
   set('guide-link-text', t.guideLinkText);
+  set('guide-link-sub', t.guideLinkSub);
   set('nav-demo-link', t.navDemo);
   setQ('#roadmap .section-label', t.rmLabel);
   setQ('#roadmap .section-title', t.rmTitle, true);
