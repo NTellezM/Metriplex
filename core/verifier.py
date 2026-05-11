@@ -340,14 +340,19 @@ class CriterionResult:
         self.c7 = c7
         self.c8 = c8
         self.pass_all = c1 and c2 and c3 and c5 and c6 and c7 and c8
+        # Bit field encoding — criterion number maps to bit position:
+        # bit 0: c1 | bit 1: c2 | bit 2: c3
+        # bit 3: reserved=0 (c4 deprecated in v3, slot preserved)
+        # bit 4: c5 | bit 5: c6 | bit 6: c7 | bit 7: c8
         self.packed = (
             int(c1)
             | (int(c2) << 1)
             | (int(c3) << 2)
-            | (int(c5) << 3)
-            | (int(c6) << 4)
-            | (int(c7) << 5)
-            | (int(c8) << 6)
+            | (0       << 3)   # c4 deprecated — bit 3 always 0
+            | (int(c5) << 4)
+            | (int(c6) << 5)
+            | (int(c7) << 6)
+            | (int(c8) << 7)
         )
 
     def summary(self):
