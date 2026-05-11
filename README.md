@@ -1,5 +1,9 @@
 # Metriplex (MPX)
 
+<p align="center">
+  <img src="assets/logo6.png" alt="Metriplex" width="200"/>
+</p>
+
 ### *Order from chaos*
 
 **The first blockchain with fractal identity**
