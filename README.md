@@ -1,5 +1,3 @@
-<div align="center">
-
 # Metriplex (MPX)
 
 ### *Order from chaos*
@@ -12,8 +10,6 @@
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
 [![Solidity 0.8.20](https://img.shields.io/badge/Solidity-0.8.20-purple.svg)](contracts/Metriplex.sol)
 [![Network: Base](https://img.shields.io/badge/Network-Base-blue.svg)](https://base.org)
-
-</div>
 
 ---
 
@@ -29,6 +25,8 @@ Traditional crypto:  identity = hash(random_number)
 Metriplex:           identity = M₃(attractor(IFS))
 ```
 
+---
+
 ## Architecture
 
 ```
@@ -43,17 +41,22 @@ Metriplex:           identity = M₃(attractor(IFS))
 │             Ethereum / Base (EVM Layer 2)        │
 │                                                  │
 │      Metriplex.sol (ERC-20, MPX token)           │
-│      Uniswap V3 pair: MPX/ETH                   │
+│      Uniswap V4 pair: MPX/ETH (1% fee)          │
 └─────────────────────────────────────────────────┘
 ```
+
+---
 
 ## How it works
 
 ### Fractal Identity
+
 When you create a wallet, the system generates a private IFS — a set of 4 affine contractions {(Aᵢ, bᵢ)} in ℝ⁴. These contractions define a unique fractal attractor. The public key is the third-order moment tensor M₃ of that attractor, computed via the chaos game algorithm.
 
 ### ZK Proof (c1–c8 composite criterion)
+
 Every transaction includes a zero-knowledge proof that the sender knows an IFS whose attractor satisfies 8 geometric criteria simultaneously:
+
 - **c1** Auto-similarity (Δ_AS < θ_IFS)
 - **c2** Minimum variance (Var(φ̂) > σ²_min)
 - **c3** Fragment completeness (N_act/N > 0.50)
@@ -63,7 +66,9 @@ Every transaction includes a zero-knowledge proof that the sender knows an IFS w
 - **c8** Cluster ratio (P₅/μ > thresh)
 
 ### Cross-chain bridge
+
 The `relayer.py` oracle monitors both chains:
+
 - **Native → Ethereum**: User sends MPX to the Vault. Relayer detects the TX and calls `mint()` on the ERC-20 contract.
 - **Ethereum → Native**: User calls `burnForNative(amount, nativeRecipient)`. Relayer detects `BridgeBurn` event and releases MPX from the Vault.
 
@@ -71,22 +76,31 @@ The `relayer.py` oracle monitors both chains:
 
 ## Quick Start
 
-### 1. Install dependencies
+### 1. One-line install
+
 ```bash
-git clone https://github.com/NTellezM/metriplex
-cd metriplex
+curl -sSL https://metriplexmpx.xyz/install.sh | bash
+```
+
+### 2. Manual install
+
+```bash
+git clone https://github.com/NTellezM/Metriplex
+cd Metriplex
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure environment
+### 3. Configure environment
+
 ```bash
 cp .env.example .env
 # Edit .env with your values
 ```
 
-### 3. Run a node
+### 4. Run a node
+
 ```bash
 # Validator node (mines blocks)
 python main.py --miner-wallet pub_destino.json
@@ -98,7 +112,8 @@ python main.py --no-miner
 python main.py --api-port 8001 --p2p-port 65433
 ```
 
-### 4. Create a wallet
+### 5. Create a wallet
+
 ```bash
 python wallet_cli.py
 # Option 1: Create new wallet
@@ -107,12 +122,12 @@ python wallet_cli.py
 # Option 4: Send MPX
 ```
 
-### 5. Run the bridge relayer
+### 6. Run the bridge relayer
+
 ```bash
-# Set environment variables first (see .env.example)
 VAULT_PASSWORD=your_password \
 RELAYER_EVM_KEY=your_evm_private_key \
-WEB3_RPC=https://sepolia.drpc.org \
+WEB3_RPC=https://mainnet.base.org \
 python relayer.py
 ```
 
@@ -124,31 +139,33 @@ python relayer.py
 |-----------|-------|
 | Name | Metriplex |
 | Symbol | MPX |
-| Max Supply | 21,000,000 |
+| Max Supply | 21,000,000 (fixed forever) |
 | Decimals | 18 |
 | Network | Base (mainnet) |
-| Contract | `TBD` |
-| Uniswap | `TBD` |
+| Contract | [`0x22D3f414438556d1B071cCfE52513d4d829400fd`](https://basescan.org/token/0x22D3f414438556d1B071cCfE52513d4d829400fd) |
+| Uniswap V4 | [Trade MPX](https://app.uniswap.org/explore/tokens/base/0x22d3f414438556d1b071ccfe52513d4d829400fd) |
+| GeckoTerminal | [View pool](https://www.geckoterminal.com/base/pools/0x42f8cd7f7e80e8e1fa7b0d41e3a83e5c5b73b0e) |
 
 ### Distribution
+
 ```
-40% (8.4M)  ── Uniswap V3 liquidity (locked)
-30% (6.3M)  ── Bridge Vault (backing)
-20% (4.2M)  ── Team / Development
-10% (2.1M)  ── Community / Airdrop
+40% (8.4M)  ── Uniswap V4 liquidity
+60% (12.6M) ── Founder / development / future listings
 ```
+
+No investors. No private sale. No vesting.  
+Block reward: 50 MPX per block (native mining).
 
 ---
 
 ## Smart Contract (ERC-20)
 
-**Sepolia testnet (live):**  
+**Base mainnet (live):**  
 `0x22D3f414438556d1B071cCfE52513d4d829400fd`  
-[View on Etherscan](https://sepolia.etherscan.io/address/0x22D3f414438556d1B071cCfE52513d4d829400fd)
-
-**Mainnet:** Coming soon on Base.
+[View on BaseScan](https://basescan.org/token/0x22D3f414438556d1B071cCfE52513d4d829400fd)
 
 ### Deploy your own (Remix IDE)
+
 1. Open [remix.ethereum.org](https://remix.ethereum.org)
 2. Load `contracts/Metriplex.sol`
 3. Compile with Solidity 0.8.20
@@ -221,23 +238,6 @@ metriplex/
 
 ## License
 
-MIT © 2025 Metriplex Protocol
-
----
-
-<div align="center">
-
-**Metriplex** · *Order from chaos*
-
-[Twitter](https://twitter.com/MetriplexMPX) · [Telegram](https://t.me/MetriplexMPX) · [Whitepaper](docs/whitepaper.md)
-
-</div>
-
-
----
-
-## License
-
 This repository uses a **dual license structure**:
 
 | Component | License |
@@ -246,11 +246,10 @@ This repository uses a **dual license structure**:
 | Cryptographic Core (`core/`, `crypto/`) | [BUSL-1.1](LICENSE-CORE) → MIT on 2027-05-09 |
 | Whitepaper & Docs (`docs/`) | [CC BY 4.0](LICENSE-DOCS) |
 
-The cryptographic core (fractal identity, ZK criterion c1–c8, tensor operations)
-is available for non-production use. Production use requires a commercial license
-until May 2027, when it automatically becomes MIT. Contact: metriplexmpx@gmail.com
+The cryptographic core (fractal identity, ZK criterion c1–c8, tensor operations) is available for non-production use (research, education, personal). Production use requires a commercial license until May 2027, when it automatically becomes MIT.
 
 **Academic citation:**
+
 ```
 NTellezM (Nelson Tellez). "Metriplex: Fractal Identity as a Cryptographic Primitive
 on a Layer 1 Blockchain." 2026. https://github.com/NTellezM/Metriplex
@@ -260,5 +259,12 @@ on a Layer 1 Blockchain." 2026. https://github.com/NTellezM/Metriplex
 
 ## Contact
 
-Developer: ntellezm@gmail.com
-Project:   metriplexmpx@gmail.com
+- Developer: ntellezm@gmail.com
+- Project: metriplexmpx@gmail.com
+- Website: [metriplexmpx.xyz](https://metriplexmpx.xyz)
+- Twitter: [@MetriplexMPX](https://twitter.com/MetriplexMPX)
+- Whitepaper: [docs/whitepaper.md](docs/whitepaper.md)
+
+---
+
+**Metriplex** · *Order from chaos*
