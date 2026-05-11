@@ -1366,7 +1366,9 @@ footer {
     <li><a href="#demo" id="nav-demo-link">Demo</a></li>
     <li><a href="#roadmap" id="nav-rm-link">Roadmap</a></li>
     <li><a href="#buy" id="nav-buy-link">Get MPX</a></li>
-    <li><a href="https://github.com/NTellezM/Metriplex" target="_blank">GitHub</a></li>
+    <li><a href="https://github.com/NTellezM/Metriplex" target="_blank">GitHub</a>
+              <a href="/whitepaper.html" id="footer-wp-link">Whitepaper</a></li>
+    <li><a href="/whitepaper.html" id="nav-wp-link">Whitepaper</a></li>
   </ul>
   <div style="display:flex;align-items:center;gap:0.75rem">
     <button onclick="toggleLang()" id="lang-btn"
@@ -2362,6 +2364,7 @@ const T = {
     uniswapCtaSub: "Connect your wallet and swap ETH → MPX in seconds",
     uniswapCtaBtn: "Get MPX on Uniswap →",
     navDemo: "Demo",
+    navWhitepaper: "Whitepaper",
     demoLabel: "Interactive",
     demoTitle: "See how it <span class='accent'>works</span>",
     demoSubtitle: "Your private key is a fractal attractor — generated live in your browser using the chaos game algorithm.",
@@ -2483,6 +2486,7 @@ const T = {
     uniswapCtaBtn: "Obtener MPX en Uniswap →",
     chartLink: "Ver en DexScreener →",
     navDemo: "Demo",
+    navWhitepaper: "Whitepaper",
     demoLabel: "Interactivo",
     demoTitle: "Así es como <span class='accent'>funciona</span>",
     demoSubtitle: "Tu clave privada es un atractor fractal — generado en vivo en tu navegador con el algoritmo del juego del caos.",
@@ -2529,6 +2533,7 @@ function setLang(lang) {
   // ── NAV ──
   set('lang-btn', t.langBtn);
   set('nav-buy-link', t.navBuy);
+  set('nav-wp-link', t.navWhitepaper);
   set('guide-link-text', t.guideLinkText);
   set('guide-link-sub', t.guideLinkSub);
   set('chart-label', t.chartLabel);
@@ -2537,6 +2542,7 @@ function setLang(lang) {
   set('uniswap-cta-sub', t.uniswapCtaSub);
   set('uniswap-cta-btn-text', t.uniswapCtaBtn);
   set('nav-buy-link', t.navBuy);
+  set('nav-wp-link', t.navWhitepaper);
   set('guide-link-text', t.guideLinkText);
   set('guide-link-sub', t.guideLinkSub);
   set('chart-label', t.chartLabel);
@@ -2647,6 +2653,7 @@ function setLang(lang) {
   set('demoGenBtn', t.demoGenBtn);
   set('demoGenHint', t.demoGenHint);
   set('nav-buy-link', t.navBuy);
+  set('nav-wp-link', t.navWhitepaper);
   set('guide-link-text', t.guideLinkText);
   set('guide-link-sub', t.guideLinkSub);
   set('chart-label', t.chartLabel);
