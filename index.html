@@ -1852,7 +1852,7 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
                   transition:border-color 0.2s"
            onmouseover="this.style.borderColor='var(--blue)'"
            onmouseout="this.style.borderColor='var(--border)'">
-        CONTRACT (BASE) · CLICK TO COPY<br>
+        <span id="ct-label-text">CONTRACT (BASE) · CLICK TO COPY</span><br>
         <span style="color:var(--white);font-size:0.75rem">0x22D3f414438556d1B071cCfE52513d4d829400fd</span>
         <span id="swap-copied" style="display:none;color:#00E676;margin-left:1rem">✓ Copied!</span>
       </div>
@@ -2620,7 +2620,7 @@ function setLang(lang) {
   set('as2-p2b', lang==='es'?'Binance →':'Binance →');
   // Price strip
   set('slive', t.slive);
-  set('ct-label', lang==='es' ? 'CONTRATO (BASE) · CLIC PARA COPIAR' : 'CONTRACT (BASE) · CLICK TO COPY');
+  set('ct-label-text', lang==='es' ? 'CONTRATO (BASE) · CLIC PARA COPIAR' : 'CONTRACT (BASE) · CLICK TO COPY');
   var swapBtnUni = document.getElementById('swap-btn-uni');
   if (swapBtnUni) swapBtnUni.textContent = lang==='es' ? 'Comprar en Uniswap →' : 'Buy on Uniswap →';
 
