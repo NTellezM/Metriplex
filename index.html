@@ -1364,6 +1364,7 @@ footer {
     <li><a href="#what">About</a></li>
     <li><a href="#buy">Buy</a></li>
     <li><a href="#tech">Technology</a></li>
+    <li><a href="#demo" id="nav-demo-link">Demo</a></li>
     <li><a href="#roadmap" id="nav-rm-link">Roadmap</a></li>
     <li><a href="https://github.com/NTellezM/Metriplex" target="_blank">GitHub</a></li>
   </ul>
@@ -1542,16 +1543,16 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
 <!-- INTERACTIVE DEMO -->
 <section id="demo" style="padding:80px 0; background:var(--bg2, #0a0a0a);">
   <div style="max-width:900px; margin:0 auto; padding:0 24px;">
-    <div class="section-label">Interactive</div>
-    <h2 class="section-title">See how it <span class="accent">works</span></h2>
+    <div class="section-label" id="demoLabel">Interactive</div>
+    <h2 class="section-title" id="demoTitle">See how it <span class="accent">works</span></h2>
     <p style="color:var(--text2,#aaa); margin:0 0 2rem; font-size:1rem; line-height:1.7;">
-      Your private key is a fractal attractor — generated live in your browser using the chaos game algorithm.
+      <span id="demoSubtitle">Your private key is a fractal attractor — generated live in your browser using the chaos game algorithm.</span>
     </p>
     <div style="background:var(--card-bg,#111); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:1.5rem;">
       <div style="display:flex; gap:8px; margin-bottom:1.5rem; flex-wrap:wrap;">
-        <button onclick="mplxTab('demo')" id="btn-demo" class="mpx-tab active">Live demo</button>
-        <button onclick="mplxTab('compare')" id="btn-compare" class="mpx-tab">How it differs</button>
-        <button onclick="mplxTab('zk')" id="btn-zk" class="mpx-tab">ZK proof</button>
+        <button onclick="mplxTab('demo')" id="btn-demo" class="mpx-tab active" data-i18n="demoTab1">Live demo</button>
+        <button onclick="mplxTab('compare')" id="btn-compare" class="mpx-tab" data-i18n="demoTab2">How it differs</button>
+        <button onclick="mplxTab('zk')" id="btn-zk" class="mpx-tab" data-i18n="demoTab3">ZK proof</button>
       </div>
       <div id="mpx-demo">
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:1rem;">
@@ -1574,8 +1575,8 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
           <canvas id="mpx-canvas" width="800" height="260" style="width:100%; border-radius:8px; display:block;"></canvas>
         </div>
         <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-          <button onclick="mpxNewKey()" class="btn-primary" style="padding:10px 24px; font-size:14px;">Generate new key ↻</button>
-          <span style="font-size:12px; color:#888;">Each key produces a unique geometric shape</span>
+          <button onclick="mpxNewKey()" class="btn-primary" style="padding:10px 24px; font-size:14px;" id="demoGenBtn">Generate new key ↻</button>
+          <span style="font-size:12px; color:#888;" id="demoGenHint">Each key produces a unique geometric shape</span>
         </div>
       </div>
       <div id="mpx-compare" style="display:none;">
@@ -2314,7 +2315,16 @@ const T = {
     navAbout: "About",
     navBuy: "Buy",
     navTech: "Technology",
-    navRoadmap: "Roadmap"
+    navRoadmap: "Roadmap",
+    navDemo: "Demo",
+    demoLabel: "Interactive",
+    demoTitle: "See how it <span class='accent'>works</span>",
+    demoSubtitle: "Your private key is a fractal attractor — generated live in your browser using the chaos game algorithm.",
+    demoTab1: "Live demo",
+    demoTab2: "How it differs",
+    demoTab3: "ZK proof",
+    demoGenBtn: "Generate new key ↻",
+    demoGenHint: "Each key produces a unique geometric shape"
   },
   es: {
     eyebrow: "Base Mainnet · En vivo · ERC-20",
@@ -2419,7 +2429,16 @@ const T = {
     navAbout: "Acerca de",
     navBuy: "Comprar",
     navTech: "Tecnología",
-    navRoadmap: "Hoja de ruta"
+    navRoadmap: "Hoja de ruta",
+    navDemo: "Demo",
+    demoLabel: "Interactivo",
+    demoTitle: "Así es como <span class='accent'>funciona</span>",
+    demoSubtitle: "Tu clave privada es un atractor fractal — generado en vivo en tu navegador con el algoritmo del juego del caos.",
+    demoTab1: "Demo en vivo",
+    demoTab2: "En qué difiere",
+    demoTab3: "Prueba ZK",
+    demoGenBtn: "Generar nueva clave ↻",
+    demoGenHint: "Cada clave produce una forma geométrica única"
   }
 };
 
@@ -2550,6 +2569,15 @@ function setLang(lang) {
   techKeys.forEach((el, i) => { if (techKeyList[i]) el.textContent = techKeyList[i]; });
 
   // ── ROADMAP ──
+  set('demoLabel', t.demoLabel);
+  setQ('#demo .section-title', t.demoTitle, true);
+  set('demoSubtitle', t.demoSubtitle);
+  set('btn-demo', t.demoTab1);
+  set('btn-compare', t.demoTab2);
+  set('btn-zk', t.demoTab3);
+  set('demoGenBtn', t.demoGenBtn);
+  set('demoGenHint', t.demoGenHint);
+  set('nav-demo-link', t.navDemo);
   setQ('#roadmap .section-label', t.rmLabel);
   setQ('#roadmap .section-title', t.rmTitle, true);
   // Roadmap phase tags
