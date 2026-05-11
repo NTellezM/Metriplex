@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metriplex — Technical Whitepaper v1.0</title>
+<meta name="description" content="Metriplex Protocol — Technical Whitepaper. A Layer 1 blockchain with fractal identity based on Iterated Function Systems and ZK proofs.">
+<meta property="og:title" content="Metriplex — Technical Whitepaper">
+<meta property="og:description" content="Fractal identity as a cryptographic primitive on a Layer 1 blockchain.">
+<meta property="og:image" content="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo6.png">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<style>
+:root {
+  --bg:#080808; --bg2:#0f0f0f; --bg3:#161616; --card:#111;
+  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.12);
+  --text:#ececec; --muted:#888; --muted2:#555;
+  --green:#1D9E75; --blue:#1a7aff; --accent:#a78bfa;
+  --mono:'Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Georgia',serif;font-size:17px;line-height:1.8;}
+nav{position:sticky;top:0;z-index:100;background:rgba(8,8,8,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-logo img{width:36px;height:36px;border-radius:50%;}
+.nav-logo-text{font-family:var(--mono);font-size:13px;letter-spacing:0.15em;color:var(--text);}
+.nav-right{display:flex;align-items:center;gap:1rem;}
+.nav-link{font-size:13px;color:var(--muted);text-decoration:none;font-family:var(--mono);letter-spacing:0.05em;transition:color 0.2s;}
+.nav-link:hover{color:var(--text);}
+.nav-tag{font-family:var(--mono);font-size:11px;color:var(--green);border:1px solid rgba(29,158,117,0.3);padding:3px 10px;border-radius:20px;}
+.container{display:grid;grid-template-columns:220px 1fr;max-width:1100px;margin:0 auto;padding:3rem 2rem;gap:4rem;}
+.toc{position:sticky;top:80px;height:fit-content;}
+.toc-title{font-family:var(--mono);font-size:10px;letter-spacing:0.2em;color:var(--muted2);margin-bottom:1rem;text-transform:uppercase;}
+.toc ul{list-style:none;border-left:1px solid var(--border);}
+.toc li a{display:block;padding:5px 0 5px 14px;font-size:13px;color:var(--muted);text-decoration:none;font-family:var(--mono);letter-spacing:0.03em;transition:all 0.15s;border-left:2px solid transparent;margin-left:-1px;}
+.toc li a:hover,.toc li a.active{color:var(--green);border-left-color:var(--green);}
+.toc-sub a{font-size:11px;padding-left:24px;color:var(--muted2);}
+.content{min-width:0;}
+.wp-tag{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:0.2em;color:var(--green);border:1px solid rgba(29,158,117,0.3);padding:4px 14px;border-radius:20px;margin-bottom:1.5rem;}
+.wp-title{font-size:clamp(2rem,4vw,3rem);font-weight:normal;line-height:1.2;letter-spacing:-0.02em;margin-bottom:0.75rem;}
+.wp-title em{font-style:normal;color:var(--accent);}
+.wp-meta{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:0.05em;}
+.wp-meta span{margin-right:2rem;}
+.wp-abstract{background:var(--bg2);border:1px solid var(--border2);border-left:3px solid var(--green);border-radius:0 12px 12px 0;padding:1.5rem 2rem;margin:2rem 0 3rem;font-size:15px;color:var(--muted);line-height:1.8;}
+.wp-abstract strong{color:var(--green);font-style:normal;display:block;font-family:var(--mono);font-size:11px;letter-spacing:0.15em;margin-bottom:8px;}
+.wp-section{margin-bottom:4rem;scroll-margin-top:80px;}
+.wp-section h2{font-size:1.5rem;font-weight:normal;color:var(--text);margin-bottom:1.25rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);letter-spacing:-0.01em;}
+.wp-section h2 .sec-num{font-family:var(--mono);font-size:12px;color:var(--green);margin-right:10px;}
+.wp-section h3{font-size:1.1rem;font-weight:normal;color:var(--text);margin:2rem 0 0.75rem;}
+.wp-section h3 .sec-num{font-family:var(--mono);font-size:11px;color:var(--muted);margin-right:8px;}
+.wp-section p{color:var(--muted);margin-bottom:1rem;}
+.wp-section p strong{color:var(--text);}
+.wp-code{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;font-family:var(--mono);font-size:13px;color:#c9d1d9;overflow-x:auto;margin:1.25rem 0;line-height:1.7;white-space:pre;}
+.wp-code .kw{color:var(--accent);}
+.wp-code .val{color:var(--green);}
+.wp-code .cm{color:var(--muted2);}
+.wp-table-wrap{overflow-x:auto;margin:1.25rem 0;}
+.wp-table{width:100%;border-collapse:collapse;font-size:14px;}
+.wp-table th{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--muted);border-bottom:1px solid var(--border2);padding:8px 16px;text-align:left;background:var(--bg2);}
+.wp-table td{padding:10px 16px;border-bottom:1px solid var(--border);color:var(--muted);vertical-align:top;}
+.wp-table td:first-child{font-family:var(--mono);font-size:12px;color:var(--green);}
+.wp-table tr:last-child td{border-bottom:none;}
+.wp-math{background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.15);border-radius:10px;padding:1.25rem 1.5rem;font-family:var(--mono);font-size:14px;color:#c9d1d9;margin:1.25rem 0;line-height:2;overflow-x:auto;}
+.wp-callout{background:rgba(29,158,117,0.06);border:1px solid rgba(29,158,117,0.2);border-radius:10px;padding:1rem 1.25rem;margin:1.25rem 0;font-size:14px;color:var(--muted);line-height:1.7;}
+.wp-callout strong{color:var(--green);}
+.wp-warning{background:rgba(255,160,50,0.06);border:1px solid rgba(255,160,50,0.2);border-radius:10px;padding:1rem 1.25rem;margin:1.25rem 0;font-size:14px;color:var(--muted);line-height:1.7;}
+.wp-warning strong{color:#FFA032;}
+.criteria-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:1.25rem 0;}
+.criteria-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:0.875rem 1rem;}
+.criteria-card.deprecated{opacity:0.4;}
+.criteria-id{font-family:var(--mono);font-size:11px;color:var(--green);font-weight:bold;margin-bottom:4px;}
+.criteria-name{font-size:13px;color:var(--text);font-weight:500;margin-bottom:4px;}
+.criteria-formula{font-family:var(--mono);font-size:11px;color:var(--muted);}
+.roadmap-list{list-style:none;position:relative;}
+.roadmap-list::before{content:'';position:absolute;left:12px;top:0;bottom:0;width:1px;background:var(--border);}
+.roadmap-item{position:relative;padding:0 0 2rem 2.5rem;font-size:14px;}
+.roadmap-dot{position:absolute;left:0;top:4px;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:var(--mono);}
+.roadmap-dot.done{background:rgba(29,158,117,0.2);border:1px solid var(--green);color:var(--green);}
+.roadmap-dot.active{background:rgba(26,122,255,0.2);border:1px solid var(--blue);color:var(--blue);}
+.roadmap-dot.future{background:var(--bg3);border:1px solid var(--border2);color:var(--muted2);}
+.roadmap-phase{font-family:var(--mono);font-size:11px;color:var(--muted2);letter-spacing:0.1em;margin-bottom:4px;}
+.roadmap-title{font-size:15px;color:var(--text);font-weight:500;margin-bottom:4px;}
+.roadmap-desc{color:var(--muted);line-height:1.6;}
+.wp-citation{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.8;margin:2rem 0;}
+.wp-citation strong{color:var(--text);display:block;margin-bottom:8px;font-size:11px;letter-spacing:0.1em;}
+footer{border-top:1px solid var(--border);padding:2rem;text-align:center;font-family:var(--mono);font-size:12px;color:var(--muted2);}
+footer a{color:var(--muted);text-decoration:none;margin:0 1rem;}
+footer a:hover{color:var(--text);}
+@media(max-width:768px){.container{grid-template-columns:1fr;}.toc{display:none;}.criteria-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <img src="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo6.png" alt="MPX">
+    <span class="nav-logo-text">METRIPLEX</span>
+  </a>
+  <div class="nav-right">
+    <span class="nav-tag">WHITEPAPER v1.0</span>
+    <a href="/" class="nav-link">← Site</a>
+    <a href="https://github.com/NTellezM/Metriplex/blob/main/docs/whitepaper.md" target="_blank" class="nav-link">GitHub ↗</a>
+  </div>
+</nav>
+
+<div class="container">
+  <aside class="toc">
+    <div class="toc-title">Contents</div>
+    <ul>
+      <li><a href="#abstract">Abstract</a></li>
+      <li><a href="#s1">1. Identity Problem</a></li>
+      <li><a href="#s2">2. Fractal Identity</a></li>
+      <li class="toc-sub"><a href="#s2-1">2.1 IFS Private Key</a></li>
+      <li class="toc-sub"><a href="#s2-2">2.2 M₃ Public Key</a></li>
+      <li class="toc-sub"><a href="#s2-3">2.3 Security Reduction</a></li>
+      <li><a href="#s3">3. ZK Criterion</a></li>
+      <li><a href="#s4">4. Consensus</a></li>
+      <li><a href="#s5">5. Bridge</a></li>
+      <li><a href="#s6">6. Tokenomics</a></li>
+      <li><a href="#s7">7. Roadmap</a></li>
+      <li><a href="#s8">8. Open Problems</a></li>
+      <li><a href="#citation">Citation</a></li>
+    </ul>
+  </aside>
+
+  <main class="content">
+    <div style="margin-bottom:3rem;">
+      <div class="wp-tag">TECHNICAL WHITEPAPER</div>
+      <h1 class="wp-title">Metriplex Protocol<br><em>Order from chaos</em></h1>
+      <div class="wp-meta">
+        <span>Version 1.0</span>
+        <span>May 2026</span>
+        <span>NTellezM (Nelson Tellez)</span>
+        <span>CC BY 4.0</span>
+      </div>
+    </div>
+
+    <div class="wp-abstract" id="abstract">
+      <strong>ABSTRACT</strong>
+      Metriplex is a Layer 1 blockchain that replaces elliptic curve cryptography with fractal geometry as the foundation for cryptographic identity. Each account is represented by a unique strange attractor derived from a private Iterated Function System (IFS) in ℝ⁴. Transaction validity is proven through a composite geometric criterion (c1–c8) evaluated against this attractor, making forgery equivalent to solving the Inverse IFS Problem (IIFSP) — a problem conjectured to be computationally hard in the average case and structurally resistant to Shor's quantum algorithm. A working implementation with a live ERC-20 token on Base mainnet is available at github.com/NTellezM/Metriplex.
+    </div>
+
+    <section class="wp-section" id="s1">
+      <h2><span class="sec-num">1.</span>The Identity Problem in Traditional Blockchains</h2>
+      <p>In Bitcoin, Ethereum, and most existing blockchains, account identity is derived from elliptic curve cryptography (ECDSA or EdDSA). A private key is a 256-bit random integer; the public key is a point on an elliptic curve; the address is a hash of that point.</p>
+      <p>This system has three fundamental limitations:</p>
+      <div class="wp-code"><span class="kw">1. Dimensional poverty</span>
+   Identity is a 1-dimensional object (a number).
+   Two accounts cannot be distinguished geometrically — only numerically.
+
+<span class="kw">2. Quantum vulnerability</span>
+   Shor's algorithm breaks ECDSA in polynomial time
+   on a sufficiently large quantum computer.
+
+<span class="kw">3. No structural binding</span>
+   The private key has no mathematical relationship
+   to the space in which transactions operate.</div>
+      <p>Metriplex addresses all three by grounding identity in the geometry of fractal attractors — objects with no known group structure exploitable by quantum period-finding, intrinsically bound to the algebraic parameters that define them.</p>
+    </section>
+
+    <section class="wp-section" id="s2">
+      <h2><span class="sec-num">2.</span>Fractal Identity</h2>
+      <h3 id="s2-1"><span class="sec-num">2.1</span> The IFS Private Key</h3>
+      <p>A Metriplex private key is a set of <em>n</em> affine contractions in ℝ<sup>d</sup>:</p>
+      <div class="wp-math">K_priv = { (Aᵢ, bᵢ) }  for i = 1..n
+
+where:
+  Aᵢ ∈ ℝᵈˣᵈ  with ρ(Aᵢ) ∈ [0.30, 0.70]   (spectral radius constraint)
+  bᵢ ∈ ℝᵈ                                    (translation vector)
+  det(Aᵢ) > 0                                 (orientation-preserving, R1)
+  ‖φ₃_ref‖ > ε_sym                             (minimum asymmetry, R2)
+  n ≤ ⌊C(d+2,3)/3⌋                            (Kruskal uniqueness bound)</div>
+      <p>For the production parameters (<strong>n=4, d=4</strong>), these conditions guarantee a unique strange attractor μ_Q — the invariant measure of the system, whose existence follows from Banach's fixed-point theorem applied to the Hutchinson operator.</p>
+
+      <h3 id="s2-2"><span class="sec-num">2.2</span> The M₃ Public Key</h3>
+      <p>The public key is the third-order moment tensor of the attractor:</p>
+      <div class="wp-math">M₃ = E_μ[(x − μ̂) ⊗ (x − μ̂) ⊗ (x − μ̂)]
+
+Dimensions: 4×4×4 = 64 elements
+Encoding:   float64 → 512 bytes
+Algorithm:  chaos game (50,000 iterations, 300 burn-in)</div>
+      <p>The <strong>Kruskal-Comon theorem</strong> guarantees that M₃ uniquely identifies the IFS under generic conditions — no two distinct IFS systems in the constrained parameter space can produce identical moment tensors.</p>
+
+      <h3 id="s2-3"><span class="sec-num">2.3</span> Security Reduction</h3>
+      <p>The security of the scheme reduces to the hardness of the <strong>Inverse IFS Problem (IIFSP)</strong>: given M₃, find {(Aᵢ, bᵢ)} that produces it.</p>
+      <div class="wp-math">IIFSP  ≤ₚ  Tensor-Decomp-Sym
+
+Tensor-Decomp-Sym is NP-hard in the worst case
+(Hillar and Lim, 2013, Journal of the ACM 60(6)).</div>
+      <div class="wp-callout"><strong>Quantum resistance argument:</strong> Shor's algorithm exploits the periodic group structure of ℤ/nℤ via Quantum Fourier Transform. The map IFS → M₃ is not a group homomorphism and has no known periodic structure. Period-finding has no entry point. This is a structural argument, not a formal proof.</div>
+      <div class="wp-warning"><strong>⚠ Open problem:</strong> Average-case hardness of IIFSP has not been formally proven. A formal proof would constitute a significant cryptographic result.</div>
+    </section>
+
+    <section class="wp-section" id="s3">
+      <h2><span class="sec-num">3.</span>The Composite ZK Criterion (c1–c8)</h2>
+      <p>Every transaction includes a zero-knowledge proof that the prover controls an IFS whose attractor satisfies 7 active geometric criteria simultaneously. The criteria are calibrated during key generation and published as public parameters.</p>
+      <div class="criteria-grid">
+        <div class="criteria-card">
+          <div class="criteria-id">c1 — Δ_AS</div>
+          <div class="criteria-name">Auto-similarity</div>
+          <div class="criteria-formula">‖φ̂ − Σᵢ pᵢ φ̄(fᵢ(pos))‖² &lt; θ_IFS</div>
+        </div>
+        <div class="criteria-card">
+          <div class="criteria-id">c2 — Var</div>
+          <div class="criteria-name">Anti-concentration</div>
+          <div class="criteria-formula">Var(φ̂) > σ²_min</div>
+        </div>
+        <div class="criteria-card">
+          <div class="criteria-id">c3 — Frac</div>
+          <div class="criteria-name">Fragment completeness</div>
+          <div class="criteria-formula">N_act / N > 0.50</div>
+        </div>
+        <div class="criteria-card deprecated">
+          <div class="criteria-id">c4 — [DEPRECATED v3]</div>
+          <div class="criteria-name">Skewness of φ̂</div>
+          <div class="criteria-formula">bit 3 = 0 (reserved)</div>
+        </div>
+        <div class="criteria-card">
+          <div class="criteria-id">c5 — Skew</div>
+          <div class="criteria-name">Asymmetry fingerprint</div>
+          <div class="criteria-formula">‖φ₃(μ̂) − φ₃_ref‖ &lt; τ</div>
+        </div>
+        <div class="criteria-card">
+          <div class="criteria-id">c6 — Disp</div>
+          <div class="criteria-name">Pair dispersion</div>
+          <div class="criteria-formula">μ₂(d_pairs) > d²_min</div>
+        </div>
+        <div class="criteria-card">
+          <div class="criteria-id">c7 — Inv</div>
+          <div class="criteria-name">Mean invariance</div>
+          <div class="criteria-formula">ε_μ &lt; θ_μ</div>
+        </div>
+        <div class="criteria-card">
+          <div class="criteria-id">c8 — Ratio</div>
+          <div class="criteria-name">Min/mean ratio</div>
+          <div class="criteria-formula">P₅/μ(d_pairs) > thresh</div>
+        </div>
+      </div>
+      <div class="wp-callout"><strong>Empirical soundness:</strong> 0 out of 9 adversarial attacks pass all 7 active criteria simultaneously. Formal soundness probability remains an open problem.</div>
+      <h3>Packed bit field encoding</h3>
+      <div class="wp-code"><span class="cm">// Criterion result packed into 1 byte</span>
+bit 0: c1  | bit 1: c2  | bit 2: c3
+bit 3: <span class="val">0</span>   | <span class="cm">// reserved — c4 deprecated in protocol v3</span>
+bit 4: c5  | bit 5: c6  | bit 6: c7  | bit 7: c8
+
+packed = <span class="val">0b11010111</span> = <span class="val">0xD7</span>  <span class="cm">// all active criteria pass</span></div>
+    </section>
+
+    <section class="wp-section" id="s4">
+      <h2><span class="sec-num">4.</span>Consensus</h2>
+      <p>Metriplex uses a slot-based Proof-of-Stake variant. Each slot selects a leader deterministically:</p>
+      <div class="wp-code">leader = validators[sha256(prev_hash + slot) % |validators|]
+
+Block time:      10 seconds
+Fork resolution: Longest chain rule
+Chain sync:      TCP gossip protocol (network/p2p.py)</div>
+      <p>The current implementation operates as a single-node network. Multi-node BFT consensus is a Phase 2 milestone. Validators will eventually prove identity via ZK criterion as part of block production.</p>
+    </section>
+
+    <section class="wp-section" id="s5">
+      <h2><span class="sec-num">5.</span>Cross-Chain Bridge</h2>
+      <p>The Ethereum bridge uses a lock-and-mint / burn-and-release architecture operated by <code style="font-family:var(--mono);font-size:13px;color:var(--accent);">relayer.py</code>:</p>
+      <h3>Native → Ethereum (Base mainnet)</h3>
+      <div class="wp-code">1. User sends MPX to the Vault address (special IFS account)
+2. User includes target_eth_address in the transaction payload
+3. Relayer detects TX via polling
+4. Relayer calls mint(to, amount) on ERC-20 contract</div>
+      <h3>Ethereum → Native</h3>
+      <div class="wp-code">1. User calls burnForNative(amount, nativeRecipient)
+   nativeRecipient = JSON serialization of user's M₃ tensor
+2. Contract emits BridgeBurn event
+3. Relayer detects event and submits ZK-signed release TX</div>
+      <div class="wp-callout"><strong>Live contract on Base mainnet:</strong><br>
+      <span style="font-family:var(--mono);font-size:13px;color:var(--green);">0x22D3f414438556d1B071cCfE52513d4d829400fd</span></div>
+    </section>
+
+    <section class="wp-section" id="s6">
+      <h2><span class="sec-num">6.</span>Token Economics</h2>
+      <div class="wp-table-wrap">
+        <table class="wp-table">
+          <tr><th>Parameter</th><th>Value</th></tr>
+          <tr><td>Max supply</td><td>21,000,000 MPX — fixed forever</td></tr>
+          <tr><td>Network</td><td>Base (Ethereum L2)</td></tr>
+          <tr><td>Exchange</td><td>Uniswap V4 (ETH/MPX, 1% fee)</td></tr>
+          <tr><td>Distribution</td><td>40% Uniswap liquidity / 60% Founder + development</td></tr>
+          <tr><td>Block reward</td><td>50 MPX per block (native chain)</td></tr>
+          <tr><td>Bridge fee</td><td>1 MPX per cross-chain transfer</td></tr>
+          <tr><td>Private sale</td><td>None</td></tr>
+          <tr><td>Vesting</td><td>None</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="wp-section" id="s7">
+      <h2><span class="sec-num">7.</span>Roadmap</h2>
+      <ul class="roadmap-list">
+        <li class="roadmap-item">
+          <div class="roadmap-dot done">✓</div>
+          <div class="roadmap-phase">PHASE 1 — COMPLETE</div>
+          <div class="roadmap-title">Layer 1 Core + EVM Bridge</div>
+          <div class="roadmap-desc">Native blockchain, ZK proof system (45 passing tests), bidirectional bridge to Ethereum, MPX live on Base mainnet + Uniswap V4, open source.</div>
+        </li>
+        <li class="roadmap-item">
+          <div class="roadmap-dot active">→</div>
+          <div class="roadmap-phase">PHASE 2 — Q2 2026</div>
+          <div class="roadmap-title">Decentralization + Community</div>
+          <div class="roadmap-desc">10+ external holders, CoinGecko listing, liquidity pool $2,000+, multi-node testnet, validator network design.</div>
+        </li>
+        <li class="roadmap-item">
+          <div class="roadmap-dot future">3</div>
+          <div class="roadmap-phase">PHASE 3 — Q3 2026</div>
+          <div class="roadmap-title">Rust Rewrite — 100x Performance</div>
+          <div class="roadmap-desc">Cryptographic core in Rust with SIMD vectorization. Target: TX signing 4s → 40ms. 100+ TPS on public testnet.</div>
+        </li>
+        <li class="roadmap-item">
+          <div class="roadmap-dot future">4</div>
+          <div class="roadmap-phase">PHASE 4 — Q1 2027</div>
+          <div class="roadmap-title">Formal Security + Paper</div>
+          <div class="roadmap-desc">Independent security audit. arXiv paper: IFS as post-quantum primitive. DAO governance. CEX listing.</div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="wp-section" id="s8">
+      <h2><span class="sec-num">8.</span>Open Research Problems</h2>
+      <div class="wp-table-wrap">
+        <table class="wp-table">
+          <tr><th>#</th><th>Problem</th><th>Status</th></tr>
+          <tr><td>Q1</td><td>Average-case hardness of IIFSP</td><td style="color:#FFA032;">Open</td></tr>
+          <tr><td>Q2</td><td>Formal ZK proof of c1–c8 criterion (sigma protocol)</td><td style="color:#FFA032;">Open</td></tr>
+          <tr><td>Q3</td><td>Quantum resistance — Grover's algorithm on IIFSP</td><td style="color:#FFA032;">Open</td></tr>
+          <tr><td>Q4</td><td>Algebraic structure of map W → M₃(μ_W)</td><td style="color:#FFA032;">Open</td></tr>
+          <tr><td>Q5</td><td>Kruskal-Comon genericity conditions for n=4, d=4</td><td style="color:#FFA032;">Open</td></tr>
+          <tr><td>Q6</td><td>Rust SIMD performance for 50K chaos game iterations in 4D</td><td style="color:var(--blue);">Engineering</td></tr>
+        </table>
+      </div>
+      <p>Full research brief: <a href="https://github.com/NTellezM/Metriplex/blob/main/docs/" target="_blank" style="color:var(--accent);">github.com/NTellezM/Metriplex/docs/</a></p>
+    </section>
+
+    <section class="wp-section" id="citation">
+      <h2>Academic Citation</h2>
+      <div class="wp-citation">
+        <strong>CITE AS</strong>NTellezM (Nelson Tellez). "Metriplex: Fractal Identity as a Cryptographic
+Primitive on a Layer 1 Blockchain." 2026.
+https://github.com/NTellezM/Metriplex
+
+@misc{metriplex2026,
+  author  = {NTellezM (Nelson Tellez)},
+  title   = {Metriplex: Fractal Identity as a Cryptographic Primitive},
+  year    = {2026},
+  url     = {https://github.com/NTellezM/Metriplex},
+  license = {CC BY 4.0}
+}</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:1.5rem;">
+        <a href="https://github.com/NTellezM/Metriplex" target="_blank"
+           style="display:inline-flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:10px 20px;color:var(--muted);font-size:13px;text-decoration:none;font-family:var(--mono);transition:all 0.2s;"
+           onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'">
+          GitHub — Full codebase ↗
+        </a>
+        <a href="/"
+           style="display:inline-flex;align-items:center;gap:8px;background:var(--green);border-radius:10px;padding:10px 20px;color:#fff;font-size:13px;text-decoration:none;font-family:var(--mono);transition:all 0.2s;"
+           onmouseover="this.style.background='#16875f'" onmouseout="this.style.background='var(--green)'">
+          Get MPX →
+        </a>
+      </div>
+    </section>
+  </main>
+</div>
+
+<footer>
+  <div style="margin-bottom:0.5rem;">
+    <a href="/">Home</a>
+    <a href="https://github.com/NTellezM/Metriplex" target="_blank">GitHub</a>
+    <a href="https://basescan.org/token/0x22D3f414438556d1B071cCfE52513d4d829400fd" target="_blank">BaseScan</a>
+    <a href="mailto:metriplexmpx@gmail.com">Contact</a>
+  </div>
+  <div>© 2026 NTellezM (Nelson Tellez) · CC BY 4.0 · <em>Order from chaos</em></div>
+</footer>
+
+<script>
+var sections = document.querySelectorAll('[id]');
+var tocLinks = document.querySelectorAll('.toc a');
+window.addEventListener('scroll', function() {
+  var scrollY = window.scrollY + 100;
+  sections.forEach(function(sec) {
+    if (sec.offsetTop <= scrollY && sec.offsetTop + sec.offsetHeight > scrollY) {
+      tocLinks.forEach(function(l){l.classList.remove('active');});
+      var link = document.querySelector('.toc a[href="#'+sec.id+'"]');
+      if (link) link.classList.add('active');
+    }
+  });
+});
+</script>
+</body>
+</html>
