@@ -1362,10 +1362,10 @@ footer {
   </a>
   <ul class="nav-links">
     <li><a href="#what">About</a></li>
-    <li><a href="#buy">Buy</a></li>
     <li><a href="#tech">Technology</a></li>
     <li><a href="#demo" id="nav-demo-link">Demo</a></li>
     <li><a href="#roadmap" id="nav-rm-link">Roadmap</a></li>
+    <li><a href="#buy" id="nav-buy-link">Get MPX</a></li>
     <li><a href="https://github.com/NTellezM/Metriplex" target="_blank">GitHub</a></li>
   </ul>
   <div style="display:flex;align-items:center;gap:0.75rem">
@@ -1398,7 +1398,7 @@ footer {
     Your private key is a fractal attractor. Your public key is a 4×4×4 tensor.
   </p>
   <div class="hero-cta">
-    <a href="#buy" class="btn-primary">Buy MPX</a>
+    <a href="#buy" class="btn-primary">Get MPX</a>
     <a href="https://github.com/NTellezM/Metriplex" target="_blank" class="btn-secondary">View on GitHub →</a>
   </div>
 </section>
@@ -1733,9 +1733,9 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
 <section id="buy">
   <div class="buy-inner">
     <div class="section-label" id="buy-label">Get MPX</div>
-    <h2 class="section-title">Buy <span class="accent">Metriplex</span></h2>
+    <h2 class="section-title" id="buyTitle">Get <span class="accent">MPX</span></h2>
     <p style="color:var(--muted);font-size:1rem;line-height:1.8;max-width:780px;margin-bottom:2.5rem" id="buy-intro">
-      Choose how you want to buy MPX. New to crypto or experienced — we have the right path for you.
+      Support the project by acquiring MPX — starting from as little as $10. New to crypto or experienced, we have the right path for you.
     </p>
 
     <!-- TWO PATH CARDS -->
@@ -1745,7 +1745,7 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
       <div class="buy-path-card easy">
         <span class="buy-path-badge recommended" id="bp1-badge">⚡ Recommended</span>
         <div class="buy-path-icon">📱</div>
-        <div class="buy-path-title" id="bp1-title">Quick Buy</div>
+        <div class="buy-path-title" id="bp1-title">Quick Start</div>
         <p class="buy-path-desc" id="bp1-desc">No wallet setup. Create a secure wallet with fingerprint or Face ID and buy MPX in minutes.</p>
         <ul class="buy-path-features">
           <li id="bpf1-1">No browser extension needed</li>
@@ -1993,7 +1993,8 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
     <div>
       <div class="footer-col-title">Links</div>
       <ul class="footer-links">
-        <li><a href="https://github.com/NTellezM/Metriplex" target="_blank">GitHub</a></li>
+        <li><a href="#buy" id="nav-buy-link">Get MPX</a></li>
+    <li><a href="https://github.com/NTellezM/Metriplex" target="_blank">GitHub</a></li>
         <li><a href="https://github.com/NTellezM/Metriplex/blob/main/docs/whitepaper.md" target="_blank">Whitepaper</a></li>
         <li><a href="https://basescan.org/token/0x22D3f414438556d1B071cCfE52513d4d829400fd" target="_blank">BaseScan</a></li>
         <li><a href="https://app.uniswap.org/explore/tokens/base/0x22d3f414438556d1b071ccfe52513d4d829400fd" target="_blank">Uniswap</a></li>
@@ -2219,7 +2220,7 @@ const T = {
     heroTitle: "<span class='accent'>Fractal</span><br>Identity.",
     tagline: "Order from <span>chaos</span>",
     subtitle: "The first blockchain where your identity is a geometric shape, not a number. Your private key is a fractal attractor. Your public key is a 4×4×4 tensor.",
-    btnBuy: "Buy MPX",
+    btnBuy: "Get MPX",
     btnGithub: "View on GitHub →",
     statPriceLabel: "Price",
     statMcapLabel: "Market Cap",
@@ -2237,22 +2238,22 @@ const T = {
     p3title: "Native bridge to Ethereum",
     p3desc: "MPX tokens live on Base mainnet. The cross-chain relayer monitors both chains — send MPX to receive wMPX on Ethereum, or burn wMPX to release MPX natively.",
     buyLabel: "Get MPX",
-    buyTitle: "Buy <span class='accent'>Metriplex</span>",
-    buyIntro: "Choose how you want to buy MPX. New to crypto or experienced — we have the right path for you.",
-    bp1Badge: "⚡ Recommended", bp1Title: "Quick Buy",
+    buyTitle: "Get <span class='accent'>MPX</span>",
+    buyIntro: "Support the project by acquiring MPX — starting from as little as $10. New to crypto or experienced, we have the right path for you.",
+    bp1Badge: "⚡ Recommended", bp1Title: "Quick Start",
     bp1Desc: "No wallet setup. Create a secure wallet with fingerprint or Face ID and buy MPX in minutes.",
     bp2Badge: "For existing wallets", bp2Title: "With My Wallet",
     bp2Desc: "Already have MetaMask, Brave Wallet or Coinbase? Follow the step-by-step guide.",
     bp1Btn: "Get Started →", bp2Btn: "Step-by-step guide →",
-    measyTitle: "Quick Buy — 3 steps", measySubt: "~5 minutes · No extension needed",
+    measyTitle: "Quick Start — 3 steps", measySubt: "~5 minutes · No extension needed",
     madvTitle: "Buy with existing wallet", madvSubt: "MetaMask · Brave · Coinbase Wallet",
     ms1Title: "Create a free wallet with Coinbase",
     ms1Desc: "Coinbase Smart Wallet creates a secure wallet using biometrics. No seed phrase. No extension.",
     ms1Btn: "Create Wallet Free →",
     ms1Tip: "💡 On mobile uses Face ID or fingerprint. On desktop uses your device security key.",
-    ms2Title: "Buy ETH on Base with your card",
+    ms2Title: "Get ETH on Base with your card",
     ms2Desc: "Buy ETH on the Base network using your credit or debit card. You need ~$20-50 of ETH.",
-    ms2Btn: "Buy ETH with Card →",
+    ms2Btn: "Get ETH with Card →",
     ms2Tip: "💡 Select 'Base' as the network. ETH on Base has very low fees (less than $0.10).",
     ms3Title: "Swap ETH → MPX on Uniswap",
     ms3Desc: "Connect your Coinbase Wallet and swap your ETH for MPX. Link opens with MPX already selected.",
@@ -2313,7 +2314,7 @@ const T = {
     footerTagline: "Order from chaos.",
     langBtn: "ES",
     navAbout: "About",
-    navBuy: "Buy",
+    navBuy: "Get MPX",
     navTech: "Technology",
     navRoadmap: "Roadmap",
     navDemo: "Demo",
@@ -2331,7 +2332,7 @@ const T = {
     heroTitle: "<span class='accent'>Identidad</span><br>Fractal.",
     tagline: "Orden desde el <span>caos</span>",
     subtitle: "La primera blockchain donde tu identidad es una forma geométrica, no un número. Tu clave privada es un atractor fractal. Tu clave pública es un tensor 4×4×4.",
-    btnBuy: "Comprar MPX",
+    btnBuy: "Obtener MPX",
     btnGithub: "Ver en GitHub →",
     statPriceLabel: "Price",
     statMcapLabel: "Market Cap",
@@ -2351,22 +2352,22 @@ const T = {
     p3title: "Puente nativo a Ethereum",
     p3desc: "Los tokens MPX viven en Base mainnet. El relayer cross-chain monitorea ambas cadenas — envía MPX para recibir wMPX en Ethereum, o quema wMPX para liberar MPX nativos.",
     buyLabel: "Obtener MPX",
-    buyTitle: "Comprar <span class='accent'>Metriplex</span>",
-    buyIntro: "Elige cómo quieres comprar MPX. Nuevo en crypto o con experiencia — tenemos la ruta correcta para ti.",
-    bp1Badge: "⚡ Recomendado", bp1Title: "Compra Rápida",
+    buyTitle: "Obtener <span class='accent'>MPX</span>",
+    buyIntro: "Apoya el proyecto adquiriendo MPX — desde tan solo $10. Nuevo en crypto o con experiencia, tenemos la ruta correcta para ti.",
+    bp1Badge: "⚡ Recomendado", bp1Title: "Inicio Rápido",
     bp1Desc: "Sin configuración de billetera. Crea una billetera segura con huella o Face ID y compra MPX en minutos.",
     bp2Badge: "Para billeteras existentes", bp2Title: "Con Mi Billetera",
     bp2Desc: "¿Ya tienes MetaMask, Brave Wallet o Coinbase? Sigue la guía paso a paso.",
     bp1Btn: "Comenzar →", bp2Btn: "Guía paso a paso →",
-    measyTitle: "Compra Rápida — 3 pasos", measySubt: "~5 minutos · Sin extensión necesaria",
+    measyTitle: "Inicio Rápido — 3 pasos", measySubt: "~5 minutos · Sin extensión necesaria",
     madvTitle: "Comprar con billetera existente", madvSubt: "MetaMask · Brave · Coinbase Wallet",
     ms1Title: "Crea una billetera gratis con Coinbase",
     ms1Desc: "Coinbase Smart Wallet crea una billetera segura usando biometría. Sin frase semilla. Sin extensión.",
     ms1Btn: "Crear Billetera Gratis →",
     ms1Tip: "💡 En móvil usa Face ID o huella. En desktop usa la llave de seguridad de tu dispositivo.",
-    ms2Title: "Compra ETH en Base con tu tarjeta",
+    ms2Title: "Obtén ETH en Base con tu tarjeta",
     ms2Desc: "Compra ETH en la red Base usando tu tarjeta de crédito o débito. Necesitas ~$20-50 de ETH.",
-    ms2Btn: "Comprar ETH con Tarjeta →",
+    ms2Btn: "Obtener ETH con Tarjeta →",
     ms2Tip: "💡 Selecciona 'Base' como red. ETH en Base tiene comisiones muy bajas (menos de $0.10).",
     ms3Title: "Cambiar ETH → MPX en Uniswap",
     ms3Desc: "Conecta tu Coinbase Wallet y cambia ETH por MPX. El enlace abre Uniswap con MPX ya seleccionado.",
@@ -2427,7 +2428,7 @@ const T = {
     footerTagline: "Orden desde el caos.",
     langBtn: "EN",
     navAbout: "Acerca de",
-    navBuy: "Comprar",
+    navBuy: "Obtener MPX",
     navTech: "Tecnología",
     navRoadmap: "Hoja de ruta",
     navDemo: "Demo",
@@ -2476,7 +2477,10 @@ function setLang(lang) {
 
   // ── NAV ──
   set('lang-btn', t.langBtn);
-  setAll('.nav-links a', [t.navAbout, t.navBuy, t.navTech, t.navRoadmap]);
+  set('nav-buy-link', t.navBuy);
+  set('nav-buy-link', t.navBuy);
+  set('nav-demo-link', t.navDemo);
+  set('nav-rm-link', t.navRoadmap);
 
   // ── HERO ──
   setQ('.hero-eyebrow', t.eyebrow);
@@ -2577,6 +2581,7 @@ function setLang(lang) {
   set('btn-zk', t.demoTab3);
   set('demoGenBtn', t.demoGenBtn);
   set('demoGenHint', t.demoGenHint);
+  set('nav-buy-link', t.navBuy);
   set('nav-demo-link', t.navDemo);
   setQ('#roadmap .section-label', t.rmLabel);
   setQ('#roadmap .section-title', t.rmTitle, true);
