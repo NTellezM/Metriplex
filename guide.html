@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to get MPX — Metriplex Guide</title>
+<meta name="description" content="Step-by-step guide to get your first MPX tokens. No crypto experience needed.">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<style>
+:root {
+  --bg: #080808;
+  --bg2: #0f0f0f;
+  --bg3: #161616;
+  --card: #111111;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text: #f0f0f0;
+  --muted: #888;
+  --muted2: #555;
+  --blue: #1a7aff;
+  --green: #1D9E75;
+  --accent: #a78bfa;
+  --eth: #627EEA;
+  --base: #0052FF;
+  --bnb: #F3BA2F;
+  --mpx: #1D9E75;
+  --uni: #FF007A;
+  --mono: 'Courier New', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Georgia', serif;
+  font-size: 16px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+
+/* NAV */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(8,8,8,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 60px;
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.nav-logo img { width: 36px; height: 36px; border-radius: 50%; }
+.nav-logo-text { font-family: var(--mono); font-size: 13px; letter-spacing: 0.15em; color: var(--text); }
+.nav-right { display: flex; align-items: center; gap: 1rem; }
+.nav-back { font-size: 13px; color: var(--muted); text-decoration: none; font-family: var(--mono); letter-spacing: 0.05em; transition: color 0.2s; }
+.nav-back:hover { color: var(--text); }
+.lang-btn { background: transparent; border: 1px solid var(--border2); color: var(--muted); font-family: var(--mono); font-size: 12px; padding: 5px 12px; border-radius: 6px; cursor: pointer; transition: all 0.2s; letter-spacing: 0.05em; }
+.lang-btn:hover { color: var(--blue); border-color: var(--blue); }
+
+/* HERO */
+.hero {
+  text-align: center;
+  padding: 80px 2rem 60px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.hero-tag {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--green);
+  border: 1px solid rgba(29,158,117,0.3);
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 1.5rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: normal;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+}
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero p { font-size: 1.1rem; color: var(--muted); max-width: 500px; margin: 0 auto 2rem; }
+.time-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 30px; padding: 8px 20px;
+  font-size: 13px; color: var(--muted);
+}
+.time-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* PROGRESS */
+.progress-bar {
+  max-width: 700px; margin: 0 auto 60px;
+  padding: 0 2rem;
+  display: flex; align-items: center; gap: 0;
+}
+.prog-step {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.prog-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bg3); border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--muted); font-family: var(--mono);
+  transition: all 0.3s;
+}
+.prog-dot.active { background: var(--green); border-color: var(--green); color: #fff; }
+.prog-dot.done { background: rgba(29,158,117,0.2); border-color: var(--green); color: var(--green); }
+.prog-label { font-size: 10px; color: var(--muted2); font-family: var(--mono); letter-spacing: 0.05em; text-align: center; }
+.prog-line { flex: 1; height: 1px; background: var(--border2); margin-top: -16px; }
+
+/* STEPS */
+.steps { max-width: 700px; margin: 0 auto; padding: 0 2rem 80px; }
+
+.step-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 1rem;
+  display: none;
+  animation: fadeIn 0.4s ease;
+}
+.step-card.active { display: block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+.step-num {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--muted2); letter-spacing: 0.15em;
+  margin-bottom: 1rem;
+}
+.step-title {
+  font-size: 1.6rem; font-weight: normal;
+  line-height: 1.3; margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+}
+.step-desc { color: var(--muted); margin-bottom: 1.5rem; font-size: 0.95rem; }
+
+/* COIN VISUAL */
+.coin-visual {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex; align-items: center; gap: 1.5rem;
+}
+.coin-icon {
+  width: 64px; height: 64px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; flex-shrink: 0;
+  font-weight: bold;
+}
+.coin-info { flex: 1; }
+.coin-name { font-size: 1.1rem; font-weight: bold; margin-bottom: 4px; }
+.coin-ticker { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 8px; }
+.coin-fact { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.network-badge {
+  display: inline-block; font-family: var(--mono); font-size: 10px;
+  padding: 3px 8px; border-radius: 4px; letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+
+/* COMPARISON */
+.comparison {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-bottom: 1.5rem;
+}
+.comp-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 1rem;
+}
+.comp-card.wrong { border-color: rgba(255,60,60,0.2); }
+.comp-card.right { border-color: rgba(29,158,117,0.3); }
+.comp-label { font-size: 10px; font-family: var(--mono); letter-spacing: 0.1em; margin-bottom: 8px; }
+.comp-label.no { color: #ff6b6b; }
+.comp-label.yes { color: var(--green); }
+.comp-icon { font-size: 24px; margin-bottom: 6px; }
+.comp-name { font-size: 14px; font-weight: bold; margin-bottom: 4px; }
+.comp-note { font-size: 12px; color: var(--muted); }
+
+/* WALLET VISUAL */
+.wallet-visual {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+}
+.wallet-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.wallet-step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(167,139,250,0.15); border: 1px solid rgba(167,139,250,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-family: var(--mono); color: var(--accent);
+  flex-shrink: 0;
+}
+.wallet-step-text { font-size: 13px; color: var(--muted); }
+.wallet-step-text strong { color: var(--text); }
+
+/* FLOW VISUAL */
+.flow-visual {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; margin-bottom: 1.5rem; flex-wrap: wrap;
+}
+.flow-item {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 12px 16px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; min-width: 80px;
+}
+.flow-icon { font-size: 28px; }
+.flow-label { font-size: 11px; font-family: var(--mono); color: var(--muted); letter-spacing: 0.05em; }
+.flow-amount { font-size: 12px; color: var(--text); font-weight: bold; }
+.flow-arrow {
+  font-size: 20px; color: var(--muted2); padding: 0 4px;
+  flex-shrink: 0;
+}
+
+/* SUCCESS */
+.success-box {
+  background: rgba(29,158,117,0.08);
+  border: 1px solid rgba(29,158,117,0.25);
+  border-radius: 12px; padding: 1.5rem;
+  text-align: center; margin-bottom: 1.5rem;
+}
+.success-icon { font-size: 48px; margin-bottom: 12px; }
+.success-title { font-size: 1.4rem; margin-bottom: 8px; color: var(--green); }
+.success-desc { font-size: 14px; color: var(--muted); }
+
+/* TIP BOX */
+.tip {
+  background: rgba(167,139,250,0.06);
+  border-left: 3px solid rgba(167,139,250,0.4);
+  border-radius: 0 8px 8px 0;
+  padding: 12px 16px; margin-bottom: 1.5rem;
+  font-size: 13px; color: var(--muted); line-height: 1.6;
+}
+.tip strong { color: var(--accent); }
+
+/* BUTTONS */
+.btn-primary {
+  display: inline-block; width: 100%;
+  background: var(--green); color: #fff;
+  border: none; border-radius: 10px;
+  padding: 14px 24px; font-size: 15px;
+  cursor: pointer; text-align: center;
+  text-decoration: none; font-family: inherit;
+  transition: all 0.2s; margin-bottom: 10px;
+  letter-spacing: 0.01em;
+}
+.btn-primary:hover { background: #16875f; transform: translateY(-1px); }
+.btn-secondary {
+  display: inline-block; width: 100%;
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border2); border-radius: 10px;
+  padding: 13px 24px; font-size: 14px;
+  cursor: pointer; text-align: center;
+  text-decoration: none; font-family: inherit;
+  transition: all 0.2s; margin-bottom: 10px;
+}
+.btn-secondary:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+.btn-nav-row { display: flex; gap: 10px; margin-top: 1rem; }
+.btn-nav-row .btn-back {
+  flex: 1; background: transparent; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px; font-size: 14px; cursor: pointer;
+  font-family: inherit; transition: all 0.2s;
+}
+.btn-nav-row .btn-back:hover { color: var(--text); }
+.btn-nav-row .btn-next {
+  flex: 2; background: var(--bg3); color: var(--text);
+  border: 1px solid var(--border2); border-radius: 10px;
+  padding: 12px; font-size: 14px; cursor: pointer;
+  font-family: inherit; transition: all 0.2s; font-weight: bold;
+}
+.btn-nav-row .btn-next:hover { border-color: rgba(255,255,255,0.3); }
+
+/* FINAL CTA */
+.final-cta {
+  text-align: center; padding: 60px 2rem;
+  max-width: 500px; margin: 0 auto;
+}
+.final-cta h2 { font-size: 2rem; font-weight: normal; margin-bottom: 1rem; }
+.final-cta p { color: var(--muted); margin-bottom: 2rem; }
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .comparison { grid-template-columns: 1fr; }
+  .coin-visual { flex-direction: column; text-align: center; }
+  .flow-visual { gap: 4px; }
+  .flow-item { min-width: 60px; padding: 8px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <img src="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo6.png" alt="MPX">
+    <span class="nav-logo-text">METRIPLEX</span>
+  </a>
+  <div class="nav-right">
+    <a href="/" class="nav-back" id="nav-back-link">← Back to site</a>
+    <button class="lang-btn" onclick="toggleLang()" id="lang-btn">ES</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag" id="hero-tag">BEGINNER GUIDE</div>
+  <h1 id="hero-title">Get your first <em>MPX</em><br>in 8 simple steps</h1>
+  <p id="hero-desc">No experience needed. We explain everything from scratch — what a wallet is, what ETH is, and how to get MPX.</p>
+  <div class="time-badge">
+    <span class="time-dot"></span>
+    <span id="time-label">~10 minutes total · Minimum $10</span>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-bar" id="progress-bar">
+  <div class="prog-step">
+    <div class="prog-dot active" id="pd1">1</div>
+    <div class="prog-label" id="pl1">Wallet</div>
+  </div>
+  <div class="prog-line"></div>
+  <div class="prog-step">
+    <div class="prog-dot" id="pd2">2</div>
+    <div class="prog-label" id="pl2">ETH</div>
+  </div>
+  <div class="prog-line"></div>
+  <div class="prog-step">
+    <div class="prog-dot" id="pd3">3</div>
+    <div class="prog-label" id="pl3">Base</div>
+  </div>
+  <div class="prog-line"></div>
+  <div class="prog-step">
+    <div class="prog-dot" id="pd4">4</div>
+    <div class="prog-label" id="pl4">Buy ETH</div>
+  </div>
+  <div class="prog-line"></div>
+  <div class="prog-step">
+    <div class="prog-dot" id="pd5">5</div>
+    <div class="prog-label" id="pl5">Uniswap</div>
+  </div>
+  <div class="prog-line"></div>
+  <div class="prog-step">
+    <div class="prog-dot" id="pd6">6</div>
+    <div class="prog-label" id="pl6">Swap</div>
+  </div>
+  <div class="prog-line"></div>
+  <div class="prog-step">
+    <div class="prog-dot" id="pd7">7</div>
+    <div class="prog-label" id="pl7">MPX</div>
+  </div>
+  <div class="prog-line"></div>
+  <div class="prog-step">
+    <div class="prog-dot" id="pd8">8</div>
+    <div class="prog-label" id="pl8">Done!</div>
+  </div>
+</div>
+
+<!-- STEPS -->
+<div class="steps">
+
+  <!-- STEP 1: What is a wallet -->
+  <div class="step-card active" id="step1">
+    <div class="step-num" id="s1-num">STEP 1 OF 8</div>
+    <div class="step-title" id="s1-title">What is a crypto wallet?</div>
+    <div class="step-desc" id="s1-desc">Before buying anything, you need a wallet. Think of it like a bank account — but one that only you control.</div>
+
+    <div class="wallet-visual">
+      <div class="wallet-row">
+        <div class="wallet-step-num">1</div>
+        <div class="wallet-step-text" id="s1-w1"><strong>A wallet holds your crypto.</strong> Like a bank account, but without a bank.</div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">2</div>
+        <div class="wallet-step-text" id="s1-w2"><strong>No one can access it but you.</strong> Not even Metriplex.</div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">3</div>
+        <div class="wallet-step-text" id="s1-w3"><strong>You don't need to download anything.</strong> We use Coinbase Smart Wallet — it works in any browser with Face ID or fingerprint.</div>
+      </div>
+    </div>
+
+    <div class="tip" id="s1-tip"><strong>💡 Tip:</strong> Coinbase Smart Wallet is free, instant, and requires no seed phrase. Perfect for beginners.</div>
+
+    <a href="https://wallet.coinbase.com" target="_blank" class="btn-primary" id="s1-btn">Create your free wallet →</a>
+    <div class="btn-nav-row">
+      <button class="btn-next" onclick="goStep(2)" id="s1-next">I have a wallet — Next step →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: What is ETH -->
+  <div class="step-card" id="step2">
+    <div class="step-num" id="s2-num">STEP 2 OF 8</div>
+    <div class="step-title" id="s2-title">What is ETH?</div>
+    <div class="step-desc" id="s2-desc">To buy MPX, you first need ETH. Think of ETH as the fuel that powers crypto transactions.</div>
+
+    <div class="coin-visual">
+      <div class="coin-icon" style="background:rgba(98,126,234,0.15); color:#627EEA;">Ξ</div>
+      <div class="coin-info">
+        <div class="coin-name">Ethereum</div>
+        <div class="coin-ticker">ETH · The fuel of crypto</div>
+        <div class="coin-fact" id="s2-fact">ETH is the most widely used crypto after Bitcoin. You need a small amount to pay for transactions (called "gas fees"). On Base network, fees are less than $0.10.</div>
+      </div>
+    </div>
+
+    <div class="tip" id="s2-tip"><strong>💡 You only need $10–15 of ETH.</strong> A small part covers fees (~$0.10), the rest becomes MPX.</div>
+
+    <div class="btn-nav-row">
+      <button class="btn-back" onclick="goStep(1)" id="s2-back">← Back</button>
+      <button class="btn-next" onclick="goStep(3)" id="s2-next">Got it — Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: What is Base -->
+  <div class="step-card" id="step3">
+    <div class="step-num" id="s3-num">STEP 3 OF 8</div>
+    <div class="step-title" id="s3-title">What is the Base network?</div>
+    <div class="step-desc" id="s3-desc">MPX lives on a network called Base. It's important to understand the difference between networks.</div>
+
+    <div class="comparison">
+      <div class="comp-card wrong">
+        <div class="comp-label no" id="s3-no">✗ NOT THIS</div>
+        <div class="comp-icon">Ξ</div>
+        <div class="comp-name">ETH on Ethereum</div>
+        <div class="comp-note" id="s3-eth-note">Expensive fees ($5–50 per transaction). MPX is not here.</div>
+      </div>
+      <div class="comp-card right">
+        <div class="comp-label yes" id="s3-yes">✓ USE THIS</div>
+        <div class="comp-icon" style="color:var(--base);">🔵</div>
+        <div class="comp-name">ETH on Base</div>
+        <div class="comp-note" id="s3-base-note">Ultra-cheap fees (&lt;$0.10). MPX lives here. Built by Coinbase.</div>
+      </div>
+    </div>
+
+    <div class="comparison">
+      <div class="comp-card wrong">
+        <div class="comp-label no" id="s3-no2">✗ NOT THIS</div>
+        <div class="comp-icon" style="color:var(--bnb);">⬡</div>
+        <div class="comp-name">BNB (Binance)</div>
+        <div class="comp-note" id="s3-bnb-note">Different network. You can't buy MPX with BNB directly.</div>
+      </div>
+      <div class="comp-card wrong">
+        <div class="comp-label no" id="s3-no3">✗ NOT THIS</div>
+        <div class="comp-icon">◎</div>
+        <div class="comp-name">SOL (Solana)</div>
+        <div class="comp-note" id="s3-sol-note">Different blockchain entirely. MPX is not on Solana.</div>
+      </div>
+    </div>
+
+    <div class="tip" id="s3-tip"><strong>💡 The key rule:</strong> You need ETH specifically on the Base network. Not Ethereum mainnet, not BNB, not SOL.</div>
+
+    <div class="btn-nav-row">
+      <button class="btn-back" onclick="goStep(2)" id="s3-back">← Back</button>
+      <button class="btn-next" onclick="goStep(4)" id="s3-next">Understood — Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Buy ETH on Base -->
+  <div class="step-card" id="step4">
+    <div class="step-num" id="s4-num">STEP 4 OF 8</div>
+    <div class="step-title" id="s4-title">Buy ETH on Base with your card</div>
+    <div class="step-desc" id="s4-desc">Now you'll get ETH on the Base network using your credit or debit card. This is the only step that costs real money.</div>
+
+    <div class="wallet-visual">
+      <div class="wallet-row">
+        <div class="wallet-step-num">1</div>
+        <div class="wallet-step-text" id="s4-w1"><strong>Click the button below</strong> to open Coinbase Pay.</div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">2</div>
+        <div class="wallet-step-text" id="s4-w2"><strong>Make sure "Base" network is selected</strong> — not Ethereum mainnet.</div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">3</div>
+        <div class="wallet-step-text" id="s4-w3"><strong>Buy at least $10 of ETH.</strong> We recommend $15–20 to have a comfortable buffer for fees.</div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">4</div>
+        <div class="wallet-step-text" id="s4-w4"><strong>ETH will arrive in your wallet</strong> in a few minutes.</div>
+      </div>
+    </div>
+
+    <div class="tip" id="s4-tip"><strong>💡 Coming from Binance?</strong> You can buy ETH on Binance and withdraw it directly to your wallet address — select "Base" as the withdrawal network.</div>
+
+    <a href="https://pay.coinbase.com/buy/select-asset?appId=b4e22e63-4a12-4a72-a078-9e1a39e05461&defaultExperience=buy&defaultAsset=ETH&defaultNetwork=base" target="_blank" class="btn-primary" id="s4-btn">Buy ETH on Base →</a>
+    <div class="btn-nav-row">
+      <button class="btn-back" onclick="goStep(3)" id="s4-back">← Back</button>
+      <button class="btn-next" onclick="goStep(5)" id="s4-next">I have ETH on Base — Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 5: What is Uniswap -->
+  <div class="step-card" id="step5">
+    <div class="step-num" id="s5-num">STEP 5 OF 8</div>
+    <div class="step-title" id="s5-title">What is Uniswap?</div>
+    <div class="step-desc" id="s5-desc">To exchange your ETH for MPX, you'll use Uniswap — a decentralized exchange. No signup needed.</div>
+
+    <div class="coin-visual">
+      <div class="coin-icon" style="background:rgba(255,0,122,0.12); color:#FF007A; font-size:32px;">🦄</div>
+      <div class="coin-info">
+        <div class="coin-name">Uniswap</div>
+        <div class="coin-ticker">DEX · Decentralized Exchange</div>
+        <div class="coin-fact" id="s5-fact">Uniswap is like a currency exchange kiosk — but automatic and open 24/7. You connect your wallet, choose what you want to swap, and it happens instantly. No account, no KYC, no waiting.</div>
+      </div>
+    </div>
+
+    <div class="wallet-visual">
+      <div class="wallet-row">
+        <div class="wallet-step-num">✓</div>
+        <div class="wallet-step-text" id="s5-w1"><strong>No registration</strong> — just connect your wallet</div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">✓</div>
+        <div class="wallet-step-text" id="s5-w2"><strong>Non-custodial</strong> — your crypto never leaves your wallet until the swap</div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">✓</div>
+        <div class="wallet-step-text" id="s5-w3"><strong>Instant</strong> — swaps complete in seconds on Base network</div>
+      </div>
+    </div>
+
+    <div class="btn-nav-row">
+      <button class="btn-back" onclick="goStep(4)" id="s5-back">← Back</button>
+      <button class="btn-next" onclick="goStep(6)" id="s5-next">Got it — Next →</button>
+    </div>
+  </div>
+
+  <!-- STEP 6: The swap flow -->
+  <div class="step-card" id="step6">
+    <div class="step-num" id="s6-num">STEP 6 OF 8</div>
+    <div class="step-title" id="s6-title">How the swap works</div>
+    <div class="step-desc" id="s6-desc">Here's exactly what happens when you swap ETH for MPX:</div>
+
+    <div class="flow-visual">
+      <div class="flow-item">
+        <div class="flow-icon">💳</div>
+        <div class="flow-label" id="s6-f1">Your card</div>
+        <div class="flow-amount" style="color:var(--muted);">$10+</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item" style="border-color:rgba(98,126,234,0.3);">
+        <div class="flow-icon">Ξ</div>
+        <div class="flow-label" id="s6-f2">ETH on Base</div>
+        <div class="flow-amount" style="color:#627EEA;">~$9.90</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item" style="border-color:rgba(255,0,122,0.2);">
+        <div class="flow-icon">🦄</div>
+        <div class="flow-label" id="s6-f3">Uniswap V4</div>
+        <div class="flow-amount" style="color:#FF007A;">swap</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item" style="border-color:rgba(29,158,117,0.3);">
+        <div class="flow-icon">◈</div>
+        <div class="flow-label" id="s6-f4">MPX</div>
+        <div class="flow-amount" style="color:var(--green);">yours!</div>
+      </div>
+    </div>
+
+    <div class="wallet-visual">
+      <div class="wallet-row">
+        <div class="wallet-step-num">1</div>
+        <div class="wallet-step-text" id="s6-w1">Open Uniswap — MPX is pre-selected as the output token</div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">2</div>
+        <div class="wallet-step-text" id="s6-w2">Connect your Coinbase Wallet</div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">3</div>
+        <div class="wallet-step-text" id="s6-w3">Enter the amount of ETH to swap (start with $10)</div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">4</div>
+        <div class="wallet-step-text" id="s6-w4"><strong>Important:</strong> set slippage to 1–2% in Uniswap settings (⚙️ icon)</div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">5</div>
+        <div class="wallet-step-text" id="s6-w5">Click Swap and confirm in your wallet</div>
+      </div>
+    </div>
+
+    <div class="tip" id="s6-tip"><strong>💡 What is slippage?</strong> It's the maximum price change you accept during the swap. 1–2% is normal. If the swap fails, try increasing to 3%.</div>
+
+    <div class="btn-nav-row">
+      <button class="btn-back" onclick="goStep(5)" id="s6-back">← Back</button>
+      <button class="btn-next" onclick="goStep(7)" id="s6-next">Ready to swap →</button>
+    </div>
+  </div>
+
+  <!-- STEP 7: Do the swap -->
+  <div class="step-card" id="step7">
+    <div class="step-num" id="s7-num">STEP 7 OF 8</div>
+    <div class="step-title" id="s7-title">Swap ETH for MPX</div>
+    <div class="step-desc" id="s7-desc">This is it. Click the button below — Uniswap will open with MPX already selected. Connect your wallet and swap.</div>
+
+    <div class="coin-visual">
+      <div class="coin-icon" style="background:rgba(29,158,117,0.12); color:var(--green); font-size:24px;">◈</div>
+      <div class="coin-info">
+        <div class="coin-name">Metriplex (MPX)</div>
+        <div class="network-badge" style="background:rgba(0,82,255,0.1); color:#4488ff;">🔵 Base Network</div>
+        <div class="coin-fact" id="s7-fact">MPX is the token of the first blockchain with fractal identity. Fixed supply of 21,000,000 — like Bitcoin. Contract verified on BaseScan.</div>
+      </div>
+    </div>
+
+    <div class="tip" id="s7-tip"><strong>💡 Contract address (verify before swapping):</strong><br><span style="font-family:var(--mono); font-size:11px; color:var(--green); word-break:break-all;">0x22D3f414438556d1B071cCfE52513d4d829400fd</span></div>
+
+    <a href="https://app.uniswap.org/swap?chain=base&outputCurrency=0x22D3f414438556d1B071cCfE52513d4d829400fd" target="_blank" class="btn-primary" id="s7-btn">Open Uniswap — Swap ETH → MPX →</a>
+    <div class="btn-nav-row">
+      <button class="btn-back" onclick="goStep(6)" id="s7-back">← Back</button>
+      <button class="btn-next" onclick="goStep(8)" id="s7-next">I swapped — Done! →</button>
+    </div>
+  </div>
+
+  <!-- STEP 8: You did it -->
+  <div class="step-card" id="step8">
+    <div class="step-num" id="s8-num">STEP 8 OF 8</div>
+    <div class="step-title" id="s8-title">You did it! 🎉</div>
+    <div class="step-desc" id="s8-desc">You now hold MPX — a token backed by real cryptographic research and a working Layer 1 blockchain.</div>
+
+    <div class="success-box">
+      <div class="success-icon">◈</div>
+      <div class="success-title" id="s8-success-title">MPX is now in your wallet</div>
+      <div class="success-desc" id="s8-success-desc">Your identity on Metriplex is a geometric shape — a fractal attractor unique to you. Order from chaos.</div>
+    </div>
+
+    <div class="wallet-visual">
+      <div class="wallet-row">
+        <div class="wallet-step-num">→</div>
+        <div class="wallet-step-text" id="s8-w1"><strong>Track your MPX:</strong> <a href="https://basescan.org/token/0x22D3f414438556d1B071cCfE52513d4d829400fd" target="_blank" style="color:var(--accent);">BaseScan</a></div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">→</div>
+        <div class="wallet-step-text" id="s8-w2"><strong>Follow the project:</strong> <a href="https://twitter.com/MetriplexMPX" target="_blank" style="color:var(--accent);">@MetriplexMPX</a></div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">→</div>
+        <div class="wallet-step-text" id="s8-w3"><strong>Run a node:</strong> <a href="https://github.com/NTellezM/Metriplex" target="_blank" style="color:var(--accent);">github.com/NTellezM/Metriplex</a></div>
+      </div>
+      <div class="wallet-row">
+        <div class="wallet-step-num">→</div>
+        <div class="wallet-step-text" id="s8-w4"><strong>Questions?</strong> <a href="mailto:metriplexmpx@gmail.com" style="color:var(--accent);">metriplexmpx@gmail.com</a></div>
+      </div>
+    </div>
+
+    <a href="/" class="btn-primary" id="s8-btn">Back to Metriplex →</a>
+  </div>
+
+</div>
+
+<script>
+var currentStep = 1;
+var totalSteps = 8;
+
+function goStep(n) {
+  document.getElementById('step' + currentStep).classList.remove('active');
+  currentStep = n;
+  document.getElementById('step' + n).classList.add('active');
+  updateProgress();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function updateProgress() {
+  for (var i = 1; i <= totalSteps; i++) {
+    var dot = document.getElementById('pd' + i);
+    dot.classList.remove('active', 'done');
+    if (i < currentStep) dot.classList.add('done');
+    else if (i === currentStep) dot.classList.add('active');
+  }
+}
+
+// ── TRANSLATIONS ──
+var T = {
+  en: {
+    langBtn: 'ES',
+    navBack: '← Back to site',
+    heroTag: 'BEGINNER GUIDE',
+    heroTitle: 'Get your first <em>MPX</em><br>in 8 simple steps',
+    heroDesc: 'No experience needed. We explain everything from scratch — what a wallet is, what ETH is, and how to get MPX.',
+    timeLabel: '~10 minutes total · Minimum $10',
+    pl1:'Wallet', pl2:'ETH', pl3:'Base', pl4:'Buy ETH', pl5:'Uniswap', pl6:'Swap', pl7:'MPX', pl8:'Done!',
+    s1num:'STEP 1 OF 8', s1title:'What is a crypto wallet?',
+    s1desc:'Before buying anything, you need a wallet. Think of it like a bank account — but one that only you control.',
+    s1w1:'<strong>A wallet holds your crypto.</strong> Like a bank account, but without a bank.',
+    s1w2:'<strong>No one can access it but you.</strong> Not even Metriplex.',
+    s1w3:'<strong>You don\'t need to download anything.</strong> We use Coinbase Smart Wallet — it works in any browser with Face ID or fingerprint.',
+    s1tip:'<strong>💡 Tip:</strong> Coinbase Smart Wallet is free, instant, and requires no seed phrase. Perfect for beginners.',
+    s1btn:'Create your free wallet →',
+    s1next:'I have a wallet — Next step →',
+    s2num:'STEP 2 OF 8', s2title:'What is ETH?',
+    s2desc:'To buy MPX, you first need ETH. Think of ETH as the fuel that powers crypto transactions.',
+    s2fact:'ETH is the most widely used crypto after Bitcoin. You need a small amount to pay for transactions (called "gas fees"). On Base network, fees are less than $0.10.',
+    s2tip:'<strong>💡 You only need $10–15 of ETH.</strong> A small part covers fees (~$0.10), the rest becomes MPX.',
+    s2back:'← Back', s2next:'Got it — Next →',
+    s3num:'STEP 3 OF 8', s3title:'What is the Base network?',
+    s3desc:'MPX lives on a network called Base. It\'s important to understand the difference between networks.',
+    s3no:'✗ NOT THIS', s3yes:'✓ USE THIS',
+    s3ethnote:'Expensive fees ($5–50 per transaction). MPX is not here.',
+    s3basenote:'Ultra-cheap fees (<$0.10). MPX lives here. Built by Coinbase.',
+    s3no2:'✗ NOT THIS', s3bnbnote:'Different network. You can\'t buy MPX with BNB directly.',
+    s3no3:'✗ NOT THIS', s3solnote:'Different blockchain entirely. MPX is not on Solana.',
+    s3tip:'<strong>💡 The key rule:</strong> You need ETH specifically on the Base network. Not Ethereum mainnet, not BNB, not SOL.',
+    s3back:'← Back', s3next:'Understood — Next →',
+    s4num:'STEP 4 OF 8', s4title:'Buy ETH on Base with your card',
+    s4desc:'Now you\'ll get ETH on the Base network using your credit or debit card. This is the only step that costs real money.',
+    s4w1:'<strong>Click the button below</strong> to open Coinbase Pay.',
+    s4w2:'<strong>Make sure "Base" network is selected</strong> — not Ethereum mainnet.',
+    s4w3:'<strong>Buy at least $10 of ETH.</strong> We recommend $15–20 to have a comfortable buffer for fees.',
+    s4w4:'<strong>ETH will arrive in your wallet</strong> in a few minutes.',
+    s4tip:'<strong>💡 Coming from Binance?</strong> You can buy ETH on Binance and withdraw it directly to your wallet — select "Base" as the withdrawal network.',
+    s4btn:'Buy ETH on Base →',
+    s4back:'← Back', s4next:'I have ETH on Base — Next →',
+    s5num:'STEP 5 OF 8', s5title:'What is Uniswap?',
+    s5desc:'To exchange your ETH for MPX, you\'ll use Uniswap — a decentralized exchange. No signup needed.',
+    s5fact:'Uniswap is like a currency exchange kiosk — but automatic and open 24/7. You connect your wallet, choose what you want to swap, and it happens instantly. No account, no KYC, no waiting.',
+    s5w1:'<strong>No registration</strong> — just connect your wallet',
+    s5w2:'<strong>Non-custodial</strong> — your crypto never leaves your wallet until the swap',
+    s5w3:'<strong>Instant</strong> — swaps complete in seconds on Base network',
+    s5back:'← Back', s5next:'Got it — Next →',
+    s6num:'STEP 6 OF 8', s6title:'How the swap works',
+    s6desc:'Here\'s exactly what happens when you swap ETH for MPX:',
+    s6f1:'Your card', s6f2:'ETH on Base', s6f3:'Uniswap V4', s6f4:'MPX',
+    s6w1:'Open Uniswap — MPX is pre-selected as the output token',
+    s6w2:'Connect your Coinbase Wallet',
+    s6w3:'Enter the amount of ETH to swap (start with $10)',
+    s6w4:'<strong>Important:</strong> set slippage to 1–2% in Uniswap settings (⚙️ icon)',
+    s6w5:'Click Swap and confirm in your wallet',
+    s6tip:'<strong>💡 What is slippage?</strong> It\'s the maximum price change you accept during the swap. 1–2% is normal. If the swap fails, try increasing to 3%.',
+    s6back:'← Back', s6next:'Ready to swap →',
+    s7num:'STEP 7 OF 8', s7title:'Swap ETH for MPX',
+    s7desc:'This is it. Click the button below — Uniswap will open with MPX already selected. Connect your wallet and swap.',
+    s7fact:'MPX is the token of the first blockchain with fractal identity. Fixed supply of 21,000,000 — like Bitcoin. Contract verified on BaseScan.',
+    s7tip:'<strong>💡 Contract address (verify before swapping):</strong><br><span style="font-family:var(--mono); font-size:11px; color:var(--green); word-break:break-all;">0x22D3f414438556d1B071cCfE52513d4d829400fd</span>',
+    s7btn:'Open Uniswap — Swap ETH → MPX →',
+    s7back:'← Back', s7next:'I swapped — Done! →',
+    s8num:'STEP 8 OF 8', s8title:'You did it! 🎉',
+    s8desc:'You now hold MPX — a token backed by real cryptographic research and a working Layer 1 blockchain.',
+    s8successtitle:'MPX is now in your wallet',
+    s8successdesc:'Your identity on Metriplex is a geometric shape — a fractal attractor unique to you. Order from chaos.',
+    s8w1:'<strong>Track your MPX:</strong> <a href="https://basescan.org/token/0x22D3f414438556d1B071cCfE52513d4d829400fd" target="_blank" style="color:var(--accent);">BaseScan</a>',
+    s8w2:'<strong>Follow the project:</strong> <a href="https://twitter.com/MetriplexMPX" target="_blank" style="color:var(--accent);">@MetriplexMPX</a>',
+    s8w3:'<strong>Run a node:</strong> <a href="https://github.com/NTellezM/Metriplex" target="_blank" style="color:var(--accent);">github.com/NTellezM/Metriplex</a>',
+    s8w4:'<strong>Questions?</strong> <a href="mailto:metriplexmpx@gmail.com" style="color:var(--accent);">metriplexmpx@gmail.com</a>',
+    s8btn:'Back to Metriplex →'
+  },
+  es: {
+    langBtn: 'EN',
+    navBack: '← Volver al sitio',
+    heroTag: 'GUÍA PARA PRINCIPIANTES',
+    heroTitle: 'Obtén tu primer <em>MPX</em><br>en 8 pasos simples',
+    heroDesc: 'Sin experiencia necesaria. Explicamos todo desde cero — qué es una wallet, qué es ETH y cómo obtener MPX.',
+    timeLabel: '~10 minutos en total · Mínimo $10',
+    pl1:'Wallet', pl2:'ETH', pl3:'Base', pl4:'Comprar ETH', pl5:'Uniswap', pl6:'Swap', pl7:'MPX', pl8:'¡Listo!',
+    s1num:'PASO 1 DE 8', s1title:'¿Qué es una wallet de crypto?',
+    s1desc:'Antes de comprar cualquier cosa, necesitas una wallet. Piénsala como una cuenta bancaria — pero que solo tú controlas.',
+    s1w1:'<strong>Una wallet guarda tu crypto.</strong> Como una cuenta bancaria, pero sin banco.',
+    s1w2:'<strong>Nadie puede acceder a ella excepto tú.</strong> Ni siquiera Metriplex.',
+    s1w3:'<strong>No necesitas descargar nada.</strong> Usamos Coinbase Smart Wallet — funciona en cualquier navegador con Face ID o huella.',
+    s1tip:'<strong>💡 Consejo:</strong> Coinbase Smart Wallet es gratuita, instantánea y no requiere frase semilla. Perfecta para principiantes.',
+    s1btn:'Crear tu wallet gratuita →',
+    s1next:'Tengo wallet — Siguiente paso →',
+    s2num:'PASO 2 DE 8', s2title:'¿Qué es ETH?',
+    s2desc:'Para comprar MPX, primero necesitas ETH. Piensa en ETH como el combustible que impulsa las transacciones crypto.',
+    s2fact:'ETH es la crypto más usada después de Bitcoin. Necesitas una pequeña cantidad para pagar transacciones (llamadas "gas fees"). En la red Base, las comisiones son menos de $0.10.',
+    s2tip:'<strong>💡 Solo necesitas $10–15 de ETH.</strong> Una pequeña parte cubre las comisiones (~$0.10), el resto se convierte en MPX.',
+    s2back:'← Atrás', s2next:'Entendido — Siguiente →',
+    s3num:'PASO 3 DE 8', s3title:'¿Qué es la red Base?',
+    s3desc:'MPX vive en una red llamada Base. Es importante entender la diferencia entre redes.',
+    s3no:'✗ NO ESTO', s3yes:'✓ USA ESTO',
+    s3ethnote:'Comisiones caras ($5–50 por transacción). MPX no está aquí.',
+    s3basenote:'Comisiones ultra-baratas (<$0.10). MPX vive aquí. Creada por Coinbase.',
+    s3no2:'✗ NO ESTO', s3bnbnote:'Red diferente. No puedes comprar MPX con BNB directamente.',
+    s3no3:'✗ NO ESTO', s3solnote:'Blockchain completamente diferente. MPX no está en Solana.',
+    s3tip:'<strong>💡 La regla clave:</strong> Necesitas ETH específicamente en la red Base. No en Ethereum mainnet, no BNB, no SOL.',
+    s3back:'← Atrás', s3next:'Entendido — Siguiente →',
+    s4num:'PASO 4 DE 8', s4title:'Compra ETH en Base con tu tarjeta',
+    s4desc:'Ahora obtendrás ETH en la red Base usando tu tarjeta de crédito o débito. Este es el único paso que cuesta dinero real.',
+    s4w1:'<strong>Haz clic en el botón de abajo</strong> para abrir Coinbase Pay.',
+    s4w2:'<strong>Asegúrate de que esté seleccionada la red "Base"</strong> — no Ethereum mainnet.',
+    s4w3:'<strong>Compra al menos $10 de ETH.</strong> Recomendamos $15–20 para tener un margen cómodo para las comisiones.',
+    s4w4:'<strong>El ETH llegará a tu wallet</strong> en unos minutos.',
+    s4tip:'<strong>💡 ¿Vienes de Binance?</strong> Puedes comprar ETH en Binance y retirarlo directamente a tu wallet — selecciona "Base" como red de retiro.',
+    s4btn:'Comprar ETH en Base →',
+    s4back:'← Atrás', s4next:'Tengo ETH en Base — Siguiente →',
+    s5num:'PASO 5 DE 8', s5title:'¿Qué es Uniswap?',
+    s5desc:'Para cambiar tu ETH por MPX, usarás Uniswap — un exchange descentralizado. Sin registro necesario.',
+    s5fact:'Uniswap es como un quiosco de cambio de divisas — pero automático y abierto las 24 horas. Conectas tu wallet, eliges qué quieres intercambiar y sucede al instante. Sin cuenta, sin KYC, sin espera.',
+    s5w1:'<strong>Sin registro</strong> — solo conecta tu wallet',
+    s5w2:'<strong>No custodial</strong> — tu crypto nunca sale de tu wallet hasta el swap',
+    s5w3:'<strong>Instantáneo</strong> — los swaps se completan en segundos en la red Base',
+    s5back:'← Atrás', s5next:'Entendido — Siguiente →',
+    s6num:'PASO 6 DE 8', s6title:'Cómo funciona el swap',
+    s6desc:'Esto es exactamente lo que pasa cuando cambias ETH por MPX:',
+    s6f1:'Tu tarjeta', s6f2:'ETH en Base', s6f3:'Uniswap V4', s6f4:'MPX',
+    s6w1:'Abre Uniswap — MPX ya está pre-seleccionado como token de salida',
+    s6w2:'Conecta tu Coinbase Wallet',
+    s6w3:'Ingresa la cantidad de ETH a intercambiar (empieza con $10)',
+    s6w4:'<strong>Importante:</strong> configura el slippage al 1–2% en los ajustes de Uniswap (icono ⚙️)',
+    s6w5:'Haz clic en Swap y confirma en tu wallet',
+    s6tip:'<strong>💡 ¿Qué es el slippage?</strong> Es el cambio máximo de precio que aceptas durante el swap. 1–2% es normal. Si el swap falla, intenta aumentar al 3%.',
+    s6back:'← Atrás', s6next:'Listo para el swap →',
+    s7num:'PASO 7 DE 8', s7title:'Cambia ETH por MPX',
+    s7desc:'Aquí vamos. Haz clic en el botón de abajo — Uniswap se abrirá con MPX ya seleccionado. Conecta tu wallet y haz el swap.',
+    s7fact:'MPX es el token de la primera blockchain con identidad fractal. Suministro fijo de 21,000,000 — como Bitcoin. Contrato verificado en BaseScan.',
+    s7tip:'<strong>💡 Dirección del contrato (verifica antes de hacer el swap):</strong><br><span style="font-family:var(--mono); font-size:11px; color:var(--green); word-break:break-all;">0x22D3f414438556d1B071cCfE52513d4d829400fd</span>',
+    s7btn:'Abrir Uniswap — Cambiar ETH → MPX →',
+    s7back:'← Atrás', s7next:'Hice el swap — ¡Listo! →',
+    s8num:'PASO 8 DE 8', s8title:'¡Lo lograste! 🎉',
+    s8desc:'Ahora tienes MPX — un token respaldado por investigación criptográfica real y una blockchain Layer 1 funcional.',
+    s8successtitle:'MPX está ahora en tu wallet',
+    s8successdesc:'Tu identidad en Metriplex es una forma geométrica — un atractor fractal único para ti. Orden desde el caos.',
+    s8w1:'<strong>Rastrea tu MPX:</strong> <a href="https://basescan.org/token/0x22D3f414438556d1B071cCfE52513d4d829400fd" target="_blank" style="color:var(--accent);">BaseScan</a>',
+    s8w2:'<strong>Sigue el proyecto:</strong> <a href="https://twitter.com/MetriplexMPX" target="_blank" style="color:var(--accent);">@MetriplexMPX</a>',
+    s8w3:'<strong>Corre un nodo:</strong> <a href="https://github.com/NTellezM/Metriplex" target="_blank" style="color:var(--accent);">github.com/NTellezM/Metriplex</a>',
+    s8w4:'<strong>¿Preguntas?</strong> <a href="mailto:metriplexmpx@gmail.com" style="color:var(--accent);">metriplexmpx@gmail.com</a>',
+    s8btn:'Volver a Metriplex →'
+  }
+};
+
+var lang = 'en';
+
+function setLang(l) {
+  lang = l;
+  var t = T[l];
+  function set(id, val, html) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (html) el.innerHTML = val; else el.textContent = val;
+  }
+  function setH(id, val) { set(id, val, true); }
+
+  document.getElementById('lang-btn').textContent = t.langBtn;
+  setH('nav-back-link', t.navBack);
+  set('hero-tag', t.heroTag);
+  setH('hero-title', t.heroTitle);
+  set('hero-desc', t.heroDesc);
+  set('time-label', t.timeLabel);
+  for (var i=1;i<=8;i++) set('pl'+i, t['pl'+i]);
+  set('s1-num', t.s1num); set('s1-title', t.s1title); set('s1-desc', t.s1desc);
+  setH('s1-w1', t.s1w1); setH('s1-w2', t.s1w2); setH('s1-w3', t.s1w3);
+  setH('s1-tip', t.s1tip); set('s1-btn', t.s1btn); set('s1-next', t.s1next);
+  set('s2-num', t.s2num); set('s2-title', t.s2title); set('s2-desc', t.s2desc);
+  set('s2-fact', t.s2fact); setH('s2-tip', t.s2tip);
+  set('s2-back', t.s2back); set('s2-next', t.s2next);
+  set('s3-num', t.s3num); set('s3-title', t.s3title); set('s3-desc', t.s3desc);
+  set('s3-no', t.s3no); set('s3-yes', t.s3yes);
+  set('s3-eth-note', t.s3ethnote); set('s3-base-note', t.s3basenote);
+  set('s3-no2', t.s3no2); set('s3-bnb-note', t.s3bnbnote);
+  set('s3-no3', t.s3no3); set('s3-sol-note', t.s3solnote);
+  setH('s3-tip', t.s3tip); set('s3-back', t.s3back); set('s3-next', t.s3next);
+  set('s4-num', t.s4num); set('s4-title', t.s4title); set('s4-desc', t.s4desc);
+  setH('s4-w1', t.s4w1); setH('s4-w2', t.s4w2); setH('s4-w3', t.s4w3); setH('s4-w4', t.s4w4);
+  setH('s4-tip', t.s4tip); set('s4-btn', t.s4btn);
+  set('s4-back', t.s4back); set('s4-next', t.s4next);
+  set('s5-num', t.s5num); set('s5-title', t.s5title); set('s5-desc', t.s5desc);
+  set('s5-fact', t.s5fact);
+  setH('s5-w1', t.s5w1); setH('s5-w2', t.s5w2); setH('s5-w3', t.s5w3);
+  set('s5-back', t.s5back); set('s5-next', t.s5next);
+  set('s6-num', t.s6num); set('s6-title', t.s6title); set('s6-desc', t.s6desc);
+  set('s6-f1', t.s6f1); set('s6-f2', t.s6f2); set('s6-f3', t.s6f3); set('s6-f4', t.s6f4);
+  setH('s6-w1', t.s6w1); setH('s6-w2', t.s6w2); setH('s6-w3', t.s6w3);
+  setH('s6-w4', t.s6w4); setH('s6-w5', t.s6w5);
+  setH('s6-tip', t.s6tip); set('s6-back', t.s6back); set('s6-next', t.s6next);
+  set('s7-num', t.s7num); set('s7-title', t.s7title); set('s7-desc', t.s7desc);
+  set('s7-fact', t.s7fact); setH('s7-tip', t.s7tip); set('s7-btn', t.s7btn);
+  set('s7-back', t.s7back); set('s7-next', t.s7next);
+  set('s8-num', t.s8num); set('s8-title', t.s8title); set('s8-desc', t.s8desc);
+  set('s8-success-title', t.s8successtitle); set('s8-success-desc', t.s8successdesc);
+  setH('s8-w1', t.s8w1); setH('s8-w2', t.s8w2); setH('s8-w3', t.s8w3); setH('s8-w4', t.s8w4);
+  set('s8-btn', t.s8btn);
+}
+
+function toggleLang() {
+  setLang(lang === 'en' ? 'es' : 'en');
+}
+</script>
+</body>
+</html>
