@@ -19,7 +19,12 @@ core/verifier.py — Criterio de Convergencia Compuesto CAF v7
 c1: Δ_AS < θ_IFS            (auto-similaridad, pushforward ponderado)
 c2: Var(φ̂) > σ²_min         (anti-concentración)
 c3: N_act / N > 0.50         (completitud)
-c5: ‖φ₃(μ̂) − φ₃_ref‖ < τ  (huella de asimetría)
+c4: [DEPRECATED v3] Originally measured third-moment skewness of φ̂.
+    Removed in protocol iteration v3 (2025) after empirical analysis
+    showed c4 was redundant with c5 under the calibrated threshold
+    regime. The packed bit field preserves the c1-c8 numbering for
+    backward compatibility; c4's bit position (bit 3) is reserved=0.
+c5: ‖φ₃(μ̂) − φ₃_ref‖ < τ  (huella de asimetría — absorbs c4 function)
 c6: μ₂(d_pairs) > d²_min    (dispersión de pares, grado 2)
 c7: ε_μ < θ_μ                (invariancia de la media)
 c8: P₅/μ(d_pares) > thresh  (ratio min/media)
