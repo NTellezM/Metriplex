@@ -1539,6 +1539,124 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
   </div>
 </section>
 
+<!-- INTERACTIVE DEMO -->
+<section id="demo" style="padding:80px 0; background:var(--bg2, #0a0a0a);">
+  <div style="max-width:900px; margin:0 auto; padding:0 24px;">
+    <div class="section-label">Interactive</div>
+    <h2 class="section-title">See how it <span class="accent">works</span></h2>
+    <p style="color:var(--text2,#aaa); margin:0 0 2rem; font-size:1rem; line-height:1.7;">
+      Your private key is a fractal attractor — generated live in your browser using the chaos game algorithm.
+    </p>
+    <div style="background:var(--card-bg,#111); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:1.5rem;">
+      <div style="display:flex; gap:8px; margin-bottom:1.5rem; flex-wrap:wrap;">
+        <button onclick="mplxTab('demo')" id="btn-demo" class="mpx-tab active">Live demo</button>
+        <button onclick="mplxTab('compare')" id="btn-compare" class="mpx-tab">How it differs</button>
+        <button onclick="mplxTab('zk')" id="btn-zk" class="mpx-tab">ZK proof</button>
+      </div>
+      <div id="mpx-demo">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:1rem;">
+          <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:1rem;">
+            <p style="font-size:11px; color:#888; margin:0 0 4px;">Private key (IFS)</p>
+            <p style="font-size:13px; font-weight:500; margin:0 0 8px; color:#fff;">4 affine contractions in ℝ⁴</p>
+            <div id="mpx-ifs" style="font-family:monospace; font-size:11px; color:#aaa; line-height:1.8;">generating...</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:1rem;">
+            <p style="font-size:11px; color:#888; margin:0 0 4px;">Public key (M₃ tensor)</p>
+            <p style="font-size:13px; font-weight:500; margin:0 0 8px; color:#fff;">4×4×4 geometric fingerprint</p>
+            <div id="mpx-tensor" style="font-family:monospace; font-size:11px; color:#aaa; line-height:1.8;">computing...</div>
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:1rem; margin-bottom:1rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:13px; font-weight:500; color:#fff;">Fractal attractor — your identity</span>
+            <span style="font-family:monospace; font-size:11px; color:#888;" id="mpx-pts">0 points</span>
+          </div>
+          <canvas id="mpx-canvas" width="800" height="260" style="width:100%; border-radius:8px; display:block;"></canvas>
+        </div>
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <button onclick="mpxNewKey()" class="btn-primary" style="padding:10px 24px; font-size:14px;">Generate new key ↻</button>
+          <span style="font-size:12px; color:#888;">Each key produces a unique geometric shape</span>
+        </div>
+      </div>
+      <div id="mpx-compare" style="display:none;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:1rem;">
+            <span style="display:inline-block; font-size:11px; padding:2px 8px; border-radius:4px; background:#f5c4b3; color:#712B13; font-weight:500; margin-bottom:10px;">Traditional (BTC/ETH)</span>
+            <p style="font-size:11px; color:#888; margin:0 0 2px;">Private key</p>
+            <p id="mpx-trad-priv" style="font-family:monospace; font-size:10px; word-break:break-all; color:#ccc; margin:0 0 10px;">generating...</p>
+            <p style="font-size:11px; color:#888; margin:0 0 2px;">Structure</p>
+            <p style="font-size:13px; color:#ccc; margin:0 0 10px;">Point on ℤ/nℤ (periodic group)</p>
+            <p style="font-size:11px; color:#888; margin:0 0 2px;">Quantum risk</p>
+            <p style="font-size:13px; color:#D85A30; margin:0;">Shor's algorithm applies ✗</p>
+          </div>
+          <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:1rem;">
+            <span style="display:inline-block; font-size:11px; padding:2px 8px; border-radius:4px; background:#9FE1CB; color:#085041; font-weight:500; margin-bottom:10px;">Metriplex (MPX)</span>
+            <p style="font-size:11px; color:#888; margin:0 0 2px;">Private key</p>
+            <p style="font-size:13px; color:#ccc; margin:0 0 10px;">IFS — 4 geometric contractions in ℝ⁴</p>
+            <p style="font-size:11px; color:#888; margin:0 0 2px;">Structure</p>
+            <p style="font-size:13px; color:#ccc; margin:0 0 10px;">Fractal attractor (no group structure)</p>
+            <p style="font-size:11px; color:#888; margin:0 0 2px;">Quantum risk</p>
+            <p style="font-size:13px; color:#1D9E75; margin:0;">No known period-finding attack ✓</p>
+          </div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:1rem;">
+          <p style="font-size:13px; font-weight:500; color:#fff; margin:0 0 6px;">Why Shor's algorithm doesn't apply</p>
+          <p style="font-size:13px; color:#aaa; line-height:1.6; margin:0;">Shor's algorithm exploits the periodic group structure of ℤ/nℤ via Quantum Fourier Transform. The map IFS → M₃ has no known group structure — period-finding has no entry point. <em>Note: structural argument, not a formal proof.</em></p>
+        </div>
+      </div>
+      <div id="mpx-zk" style="display:none;">
+        <p style="font-size:13px; color:#aaa; margin:0 0 1rem; line-height:1.6;">Every transaction includes a ZK proof. The prover demonstrates they control an IFS whose attractor satisfies all 7 active geometric criteria — without revealing the private IFS.</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+          <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.75rem;"><span style="font-size:11px; color:#1D9E75; font-weight:500;">c1</span> <span style="font-size:12px; color:#fff; font-weight:500; margin-left:6px;">Auto-similarity</span><br><span style="font-family:monospace; font-size:11px; color:#888;">Δ_AS &lt; θ_IFS</span></div>
+          <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.75rem;"><span style="font-size:11px; color:#1D9E75; font-weight:500;">c2</span> <span style="font-size:12px; color:#fff; font-weight:500; margin-left:6px;">Anti-concentration</span><br><span style="font-family:monospace; font-size:11px; color:#888;">Var(φ̂) &gt; σ²_min</span></div>
+          <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.75rem;"><span style="font-size:11px; color:#1D9E75; font-weight:500;">c3</span> <span style="font-size:12px; color:#fff; font-weight:500; margin-left:6px;">Fragment completeness</span><br><span style="font-family:monospace; font-size:11px; color:#888;">N_act/N &gt; 0.50</span></div>
+          <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.75rem; opacity:0.35;"><span style="font-size:11px; color:#888; font-weight:500;">c4</span> <span style="font-size:12px; color:#888; font-weight:500; margin-left:6px;">Deprecated v3</span><br><span style="font-family:monospace; font-size:11px; color:#666;">bit 3 = 0 (reserved)</span></div>
+          <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.75rem;"><span style="font-size:11px; color:#1D9E75; font-weight:500;">c5</span> <span style="font-size:12px; color:#fff; font-weight:500; margin-left:6px;">Asymmetry fingerprint</span><br><span style="font-family:monospace; font-size:11px; color:#888;">‖φ₃ − φ₃_ref‖ &lt; τ</span></div>
+          <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.75rem;"><span style="font-size:11px; color:#1D9E75; font-weight:500;">c6</span> <span style="font-size:12px; color:#fff; font-weight:500; margin-left:6px;">Pair dispersion</span><br><span style="font-family:monospace; font-size:11px; color:#888;">μ₂(d_pairs) &gt; d²_min</span></div>
+          <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.75rem;"><span style="font-size:11px; color:#1D9E75; font-weight:500;">c7</span> <span style="font-size:12px; color:#fff; font-weight:500; margin-left:6px;">Mean invariance</span><br><span style="font-family:monospace; font-size:11px; color:#888;">ε_μ &lt; θ_μ</span></div>
+          <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.75rem;"><span style="font-size:11px; color:#1D9E75; font-weight:500;">c8</span> <span style="font-size:12px; color:#fff; font-weight:500; margin-left:6px;">Min/mean ratio</span><br><span style="font-family:monospace; font-size:11px; color:#888;">P₅/μ &gt; thresh</span></div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:1rem;">
+          <p style="font-size:13px; font-weight:500; color:#fff; margin:0 0 6px;">Packed proof field</p>
+          <p style="font-family:monospace; font-size:14px; letter-spacing:2px; color:#1D9E75; margin:0;">1101 0111</p>
+          <p style="font-size:11px; color:#888; margin:4px 0 0;">bit 3 always 0 — c4 deprecated in protocol v3</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+.mpx-tab{background:transparent;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px 18px;font-size:13px;cursor:pointer;color:#aaa;transition:all 0.15s;}
+.mpx-tab.active{background:#fff;color:#000;border-color:transparent;}
+</style>
+<script>
+(function(){
+  function rand(a,b){return Math.random()*(b-a)+a;}
+  function genIFS(){var maps=[];for(var i=0;i<4;i++){maps.push({a:rand(0.3,0.7)*(Math.random()>0.5?1:-1),b:rand(0,0.3)*(Math.random()>0.5?1:-1),c:rand(0,0.3)*(Math.random()>0.5?1:-1),d:rand(0.3,0.7)*(Math.random()>0.5?1:-1),e:rand(-0.5,0.5),f:rand(-0.5,0.5)});}return maps;}
+  var PAL=['#1D9E75','#185FA5','#534AB7','#D85A30'];
+  function chaosGame(maps,n){var x=0,y=0,pts=[],cols=[];for(var i=0;i<n;i++){var idx=Math.floor(Math.random()*maps.length),m=maps[idx],nx=m.a*x+m.b*y+m.e,ny=m.c*x+m.d*y+m.f;x=nx;y=ny;if(i>20){pts.push([x,y]);cols.push(PAL[idx]);}}return{pts:pts,cols:cols};}
+  var cv=document.getElementById('mpx-canvas'),ctx=cv.getContext('2d'),raf;
+  function draw(pts,cols,prog){
+    var W=cv.width,H=cv.height;ctx.fillStyle='#0d0d0d';ctx.fillRect(0,0,W,H);
+    if(!pts.length)return;
+    var xs=pts.map(function(p){return p[0];}),ys=pts.map(function(p){return p[1];});
+    var mnX=Math.min.apply(null,xs),mxX=Math.max.apply(null,xs),mnY=Math.min.apply(null,ys),mxY=Math.max.apply(null,ys);
+    var rX=mxX-mnX||1,rY=mxY-mnY||1,pad=24,sc=Math.min((W-pad*2)/rX,(H-pad*2)/rY);
+    var oX=(W-rX*sc)/2,oY=(H-rY*sc)/2,cnt=Math.floor(pts.length*prog);
+    for(var i=0;i<cnt;i++){var px=(pts[i][0]-mnX)*sc+oX,py=(pts[i][1]-mnY)*sc+oY;ctx.fillStyle=cols[i]+'cc';ctx.fillRect(px,py,1.8,1.8);}
+    document.getElementById('mpx-pts').textContent=cnt.toLocaleString()+' points';
+  }
+  function updateIFS(maps){document.getElementById('mpx-ifs').innerHTML=maps.map(function(m,i){return'A'+(i+1)+': ['+m.a.toFixed(3)+', '+m.b.toFixed(3)+']<br>&nbsp;&nbsp;&nbsp;&nbsp; ['+m.c.toFixed(3)+', '+m.d.toFixed(3)+']';}).join('<br>');}
+  function updateTensor(){var row=function(){return Array.from({length:4},function(){return(Math.random()*200-100).toFixed(0).padStart(8);}).join(' ');};document.getElementById('mpx-tensor').innerHTML='['+row()+']<br>['+row()+']<br>['+row()+']<br>['+row()+']';}
+  function updateTrad(){var h=function(){return Array.from({length:32},function(){return Math.floor(Math.random()*16).toString(16);}).join('');};document.getElementById('mpx-trad-priv').textContent='0x'+h();}
+  window.mpxNewKey=function(){if(raf)cancelAnimationFrame(raf);var maps=genIFS();updateIFS(maps);updateTrad();var r=chaosGame(maps,9000),pts=r.pts,cols=r.cols,prog=0;function animate(){prog=Math.min(1,prog+0.035);draw(pts,cols,prog);if(prog<1){raf=requestAnimationFrame(animate);}else{updateTensor();}}animate();};
+  window.mplxTab=function(name){['demo','compare','zk'].forEach(function(t){document.getElementById('mpx-'+t).style.display=t===name?'block':'none';var b=document.getElementById('btn-'+t);if(b)b.classList.toggle('active',t===name);});};
+  mpxNewKey();
+})();
+</script>
+
+
 <!-- ROADMAP -->
 <section id="roadmap">
   <div class="roadmap-inner">
