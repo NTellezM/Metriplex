@@ -1738,6 +1738,18 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
       Support the project by acquiring MPX — starting from as little as $10. New to crypto or experienced, we have the right path for you.
     </p>
 
+    <!-- BEGINNER GUIDE BANNER -->
+    <a href="/guide.html" id="guide-link" style="display:flex; align-items:center; gap:16px; background:linear-gradient(135deg,rgba(29,158,117,0.08),rgba(29,158,117,0.03)); border:1px solid rgba(29,158,117,0.2); border-radius:14px; padding:16px 24px; color:#aaa; font-size:14px; text-decoration:none; transition:all 0.2s; font-family:inherit; margin-bottom:1.5rem;"
+       onmouseover="this.style.borderColor='rgba(29,158,117,0.5)';this.style.color='#fff'"
+       onmouseout="this.style.borderColor='rgba(29,158,117,0.2)';this.style.color='#aaa'">
+      <div style="width:44px;height:44px;border-radius:10px;background:rgba(29,158,117,0.15);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎓</div>
+      <div style="flex:1;">
+        <div id="guide-link-text" style="font-size:15px;color:#e0e0e0;font-weight:500;margin-bottom:3px;">New to crypto? Step-by-step guide →</div>
+        <div id="guide-link-sub" style="font-size:11px;color:#1D9E75;font-family:monospace;letter-spacing:0.08em;">8 STEPS · ~10 MIN · FROM $10</div>
+      </div>
+      <div style="font-size:20px;color:rgba(29,158,117,0.6);flex-shrink:0;">›</div>
+    </a>
+
     <!-- TWO PATH CARDS -->
     <div class="buy-paths-grid">
 
@@ -1779,6 +1791,22 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
 
     </div>
 
+    <!-- UNISWAP CTA -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <div>
+        <div style="font-size:1.1rem;font-weight:600;color:#fff;margin-bottom:4px;" id="uniswap-cta-title">Ready? Get MPX on Uniswap</div>
+        <div style="font-size:13px;color:#888;" id="uniswap-cta-sub">Connect your wallet and swap ETH → MPX in seconds</div>
+      </div>
+      <a href="https://app.uniswap.org/swap?chain=base&outputCurrency=0x22D3f414438556d1B071cCfE52513d4d829400fd"
+         target="_blank" id="uniswap-cta-btn"
+         style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#00A3FF,#0066CC);color:#fff;font-weight:700;font-size:15px;padding:14px 28px;border-radius:12px;text-decoration:none;transition:all 0.2s;white-space:nowrap;flex-shrink:0;"
+         onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,163,255,0.35)'"
+         onmouseout="this.style.transform='';this.style.boxShadow=''">
+        <span style="font-size:18px;">🦄</span>
+        <span id="uniswap-cta-btn-text">Get MPX on Uniswap →</span>
+      </a>
+    </div>
+
     <!-- DEXSCREENER CHART -->
     <div style="margin-bottom:2rem;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -1790,7 +1818,7 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
       </div>
       <div style="border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,0.07);">
         <iframe
-          src="https://dexscreener.com/base/0x22d3f414438556d1b071ccfe52513d4d829400fd?embed=1&theme=dark&trades=0&info=0"
+          src="https://dexscreener.com/base/0x22d3f414438556d1b071ccfe52513d4d829400fd?embed=1&theme=dark&trades=1&info=0"
           style="width:100%; height:400px; border:none; display:block;"
           title="MPX/ETH price chart">
         </iframe>
@@ -1798,18 +1826,6 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
     </div>
 
     <!-- LIVE PRICE STRIP -->
-    <div style="text-align:center; margin:2rem 0 1rem;">
-        <a href="/guide.html" id="guide-link" style="display:inline-flex; align-items:center; gap:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px 32px; color:#aaa; font-size:14px; text-decoration:none; transition:all 0.2s; font-family:inherit;"
-           onmouseover="this.style.color='#fff';this.style.borderColor='rgba(255,255,255,0.25)';this.style.background='rgba(255,255,255,0.06)'"
-           onmouseout="this.style.color='#aaa';this.style.borderColor='rgba(255,255,255,0.1)';this.style.background='rgba(255,255,255,0.03)'">
-          <span style="font-size:20px;">🎓</span>
-          <span>
-            <span id="guide-link-text" style="display:block; font-size:14px;">New to crypto? Step-by-step guide →</span>
-            <span id="guide-link-sub" style="display:block; font-size:11px; color:#666; margin-top:2px; font-family:monospace; letter-spacing:0.05em;">8 STEPS · ~10 MIN · FROM $10</span>
-          </span>
-        </a>
-      </div>
-
       <div class="buy-price-strip">
       <div class="buy-price-item">
         <div class="buy-price-label"><span class="live-dot"></span><span id="slive">LIVE PRICE</span></div>
@@ -2351,6 +2367,9 @@ const T = {
     guideLinkSub: "8 STEPS · ~10 MIN · FROM $10",
     chartLabel: "LIVE CHART · MPX/ETH · BASE",
     chartLink: "View on DexScreener →",
+    uniswapCtaTitle: "Ready? Get MPX on Uniswap",
+    uniswapCtaSub: "Connect your wallet and swap ETH → MPX in seconds",
+    uniswapCtaBtn: "Get MPX on Uniswap →",
     navDemo: "Demo",
     demoLabel: "Interactive",
     demoTitle: "See how it <span class='accent'>works</span>",
@@ -2468,6 +2487,9 @@ const T = {
     guideLinkText: "¿Nuevo en crypto? Guía paso a paso →",
     guideLinkSub: "8 PASOS · ~10 MIN · DESDE $10",
     chartLabel: "GRÁFICO EN VIVO · MPX/ETH · BASE",
+    uniswapCtaTitle: "¿Listo? Obtén MPX en Uniswap",
+    uniswapCtaSub: "Conecta tu wallet e intercambia ETH → MPX en segundos",
+    uniswapCtaBtn: "Obtener MPX en Uniswap →",
     chartLink: "Ver en DexScreener →",
     navDemo: "Demo",
     demoLabel: "Interactivo",
@@ -2520,11 +2542,17 @@ function setLang(lang) {
   set('guide-link-sub', t.guideLinkSub);
   set('chart-label', t.chartLabel);
   set('chart-link', t.chartLink);
+  set('uniswap-cta-title', t.uniswapCtaTitle);
+  set('uniswap-cta-sub', t.uniswapCtaSub);
+  set('uniswap-cta-btn-text', t.uniswapCtaBtn);
   set('nav-buy-link', t.navBuy);
   set('guide-link-text', t.guideLinkText);
   set('guide-link-sub', t.guideLinkSub);
   set('chart-label', t.chartLabel);
   set('chart-link', t.chartLink);
+  set('uniswap-cta-title', t.uniswapCtaTitle);
+  set('uniswap-cta-sub', t.uniswapCtaSub);
+  set('uniswap-cta-btn-text', t.uniswapCtaBtn);
   set('nav-demo-link', t.navDemo);
   set('nav-rm-link', t.navRoadmap);
 
@@ -2632,6 +2660,9 @@ function setLang(lang) {
   set('guide-link-sub', t.guideLinkSub);
   set('chart-label', t.chartLabel);
   set('chart-link', t.chartLink);
+  set('uniswap-cta-title', t.uniswapCtaTitle);
+  set('uniswap-cta-sub', t.uniswapCtaSub);
+  set('uniswap-cta-btn-text', t.uniswapCtaBtn);
   set('nav-demo-link', t.navDemo);
   setQ('#roadmap .section-label', t.rmLabel);
   setQ('#roadmap .section-title', t.rmTitle, true);
