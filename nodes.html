@@ -90,6 +90,18 @@ footer{border-top:1px solid var(--border);padding:1.5rem 2rem;text-align:center;
 footer a{color:var(--muted);text-decoration:none;margin:0 0.75rem;}
 footer a:hover{color:var(--text);}
 .hidden{display:none;}
+
+.nw3d{position:relative;border-radius:14px;overflow:hidden;background:#020408;height:500px;margin-bottom:1rem;}
+.nw3d canvas{display:block;width:100%;height:100%;}
+.nw3d .hud{position:absolute;top:14px;left:16px;display:flex;flex-direction:column;gap:5px;}
+.nw3d .hrow{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.35);}
+.nw3d .hdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.nw3d .hval{color:rgba(255,255,255,0.75);font-weight:500;}
+.nw3d .tip3d{position:absolute;background:rgba(5,8,16,0.96);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,0.75);pointer-events:none;display:none;line-height:1.75;min-width:190px;}
+.nw3d .bot{position:absolute;bottom:10px;left:0;right:0;display:flex;justify-content:center;gap:24px;}
+.nw3d .bstat{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,0.25);}
+.nw3d .bstat span{color:rgba(29,158,117,0.8);}
+.nw3d .drag-hint{position:absolute;bottom:30px;right:16px;font-family:var(--mono);font-size:10px;color:rgba(255,255,255,0.2);}
 </style>
 </head>
 <body>
@@ -112,7 +124,21 @@ footer a:hover{color:var(--text);}
   <p class="sub">Real-time status of the Metriplex Layer 1 blockchain. Phase 1 — single validator node running on Base-connected infrastructure.</p>
 
   <!-- PHASE -->
-  <div class="phase-badge">
+    <!-- 3D NETWORK VISUALIZATION -->
+  <div class="nw3d" id="nw3d">
+    <canvas id="cv3d"></canvas>
+    <div class="hud" id="hud3d"></div>
+    <div class="bot">
+      <div class="bstat">HEIGHT<span id="s3-h"> —</span></div>
+      <div class="bstat">MEMPOOL<span id="s3-m"> —</span></div>
+      <div class="bstat">NODES<span id="s3-n"> 1</span></div>
+      <div class="bstat">CONSENSUS<span> slot PoS</span></div>
+    </div>
+    <div class="tip3d" id="tip3d"></div>
+    <div class="drag-hint">drag to rotate</div>
+  </div>
+
+<div class="phase-badge">
     <span class="phase-dot"></span>
     Phase 1 — Single validator · Multi-node testnet coming Q2 2026
   </div>
@@ -342,6 +368,310 @@ function showRegStatus(type, text){
 // Auto-refresh every 30 seconds
 fetchNodeInfo();
 setInterval(fetchNodeInfo, 30000);
+</script>
+
+<script>
+(function(){
+var NODE_URL='https://thigh-flyaway-tacky.ngrok-free.dev';
+var cv=document.getElementById('cv3d');
+var ctx=cv.getContext('2d');
+var nw=document.getElementById('nw3d');
+var W,H;
+function resize(){W=cv.width=nw.offsetWidth;H=cv.height=nw.offsetHeight;}
+resize();window.addEventListener('resize',resize);
+
+function hash(s){var h=5381;for(var i=0;i<s.length;i++)h=((h<<5)+h^s.charCodeAt(i))>>>0;return h;}
+function rng(seed){var s=seed>>>0;return function(){s^=s<<13;s^=s>>>17;s^=s<<5;return(s>>>0)/4294967296;};}
+function genIFS(a){
+  var r=rng(hash(a)),m=[];
+  for(var i=0;i<4;i++){var sr=r()*0.4+0.3,rot=r()*Math.PI*2;m.push({a:sr*Math.cos(rot)*(r()>0.5?1:-1),b:sr*Math.sin(rot)*(r()>0.5?1:-1),c:-sr*Math.sin(rot)*(r()>0.5?1:-1),d:sr*Math.cos(rot)*(r()>0.5?1:-1),e:(r()-0.5)*1.0,f:(r()-0.5)*1.0,g:(r()-0.5)*0.4});}
+  return m;
+}
+var PAL=[[29,158,117],[24,95,165],[83,74,183],[216,90,48]];
+function genPts(m,n){
+  var x=0,y=0,z=0,pts=[];
+  for(var i=0;i<n;i++){var idx=Math.floor(Math.random()*4),mi=m[idx];var nx=mi.a*x+mi.b*y+mi.e,ny=mi.c*x+mi.d*y+mi.f,nz=mi.g*z+(mi.a+mi.d)*0.1*x;x=nx;y=ny;z=nz;if(i>30)pts.push([x,y,z,PAL[idx]]);}
+  return pts;
+}
+function rot3(p,rx,ry){
+  var x=p[0],y=p[1],z=p[2];
+  var cy=Math.cos(ry),sy=Math.sin(ry),y1=cy*y-sy*z,z1=sy*y+cy*z;
+  var cx2=Math.cos(rx),sx2=Math.sin(rx),x2=cx2*x+sx2*z1,z2=-sx2*x+cx2*z1;
+  return[x2,y1,z2];
+}
+function proj(p,cx,cy,fov){var z=p[2]+fov;if(z<0.1)z=0.1;var s=fov/z;return[cx+p[0]*s,cy+p[1]*s,s];}
+
+// Dynamic node registry — starts with genesis, new nodes added from API/registration
+var GNODES=[
+  {id:'node-0',label:'node-0',sub:'genesis · online',
+   addr:'0x5c347bf4c84a5ADFb3776DF91fC6d849530890e8',
+   phi:0,theta:0.3,r:180,col:[29,158,117],alpha:1.0,sz:48,status:'online',
+   chainH:1,mempool:0},
+  {id:'zicheng588',label:'@zicheng588',sub:'pending validator',
+   addr:'0x638f97b5c3d1fa7e23c1b4ae52c8c1a0d68a0777',
+   phi:1.1,theta:0.8,r:200,col:[255,160,50],alpha:0.65,sz:32,status:'pending',
+   chainH:0,mempool:0},
+  {id:'v-future-1',label:'validator-2',sub:'Q2 2026',
+   addr:'0xaaa2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0',
+   phi:2.4,theta:1.2,r:190,col:[100,90,160],alpha:0.18,sz:20,status:'future',
+   chainH:0,mempool:0},
+  {id:'v-future-2',label:'validator-3',sub:'Q2 2026',
+   addr:'0xbbb1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9',
+   phi:3.8,theta:0.5,r:195,col:[100,90,160],alpha:0.18,sz:20,status:'future',
+   chainH:0,mempool:0},
+  {id:'v-future-3',label:'validator-4',sub:'Q3 2026',
+   addr:'0xccc0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8',
+   phi:5.1,theta:1.5,r:185,col:[70,70,90],alpha:0.12,sz:16,status:'future',
+   chainH:0,mempool:0},
+];
+
+// Precompute
+GNODES.forEach(function(n,i){
+  n.maps=genIFS(n.addr);
+  n.pts=genPts(n.maps,n.status==='online'?900:n.status==='pending'?500:200);
+  n.bx=n.r*Math.sin(n.theta)*Math.cos(n.phi);
+  n.by=n.r*Math.sin(n.theta)*Math.sin(n.phi);
+  n.bz=n.r*Math.cos(n.theta);
+  n.ox=0;n.oy=0;
+  n.dvx=(Math.random()-0.5)*0.007;
+  n.dvy=(Math.random()-0.5)*0.005;
+});
+
+function addNode(cfg){
+  // Add a new node dynamically
+  var phi=Math.random()*Math.PI*2;
+  var theta=Math.random()*Math.PI;
+  var r=175+Math.random()*30;
+  var n={
+    id:cfg.id||'node-'+GNODES.length,
+    label:cfg.label||cfg.id,
+    sub:cfg.sub||'new validator',
+    addr:cfg.addr||'0x'+Math.random().toString(16).slice(2).padEnd(40,'0'),
+    phi:phi,theta:theta,r:r,
+    col:cfg.col||[26,122,255],
+    alpha:0.7,sz:28,status:cfg.status||'pending',
+    chainH:0,mempool:0
+  };
+  n.maps=genIFS(n.addr);
+  n.pts=genPts(n.maps,400);
+  n.bx=r*Math.sin(theta)*Math.cos(phi);
+  n.by=r*Math.sin(theta)*Math.sin(phi);
+  n.bz=r*Math.cos(theta);
+  n.ox=0;n.oy=0;n.dvx=(Math.random()-0.5)*0.007;n.dvy=(Math.random()-0.5)*0.005;
+  GNODES.push(n);
+  updateHUD();
+  return n;
+}
+window.mpxAddNode=addNode;
+
+function updateHUD(){
+  var hud=document.getElementById('hud3d');
+  if(!hud)return;
+  hud.innerHTML='';
+  GNODES.forEach(function(n){
+    if(n.status==='future')return;
+    var col=n.status==='online'?'#1D9E75':n.status==='pending'?'#FFA032':'rgba(255,255,255,0.2)';
+    var glow=n.status==='online'?';box-shadow:0 0 5px #1D9E75':'';
+    var val=n.status==='online'?'height '+n.chainH:n.status==='pending'?'awaiting':n.sub;
+    var vcol=n.status==='online'?'rgba(255,255,255,0.75)':n.status==='pending'?'#FFA032':'rgba(255,255,255,0.2)';
+    hud.innerHTML+='<div class="hrow"><div class="hdot" style="background:'+col+glow+'"></div>'+n.label+'<span class="hval" style="color:'+vcol+'">'+val+'</span></div>';
+  });
+  document.getElementById('s3-n').textContent=' '+GNODES.filter(function(n){return n.status!=='future';}).length;
+}
+updateHUD();
+
+var particles=[];
+function emit(fi,ti){
+  var f=GNODES[fi],to=GNODES[ti];
+  if(!f||!to)return;
+  for(var i=0;i<14;i++){
+    particles.push({fx:f.bx,fy:f.by,fz:f.bz,tx:to.bx,ty:to.by,tz:to.bz,
+      p:Math.random()*0.2,spd:0.003+Math.random()*0.003,col:f.col,a:0.9,sz:1.2+Math.random()});
+  }
+}
+
+var stars=[];
+for(var i=0;i<280;i++){
+  var th2=Math.acos(2*Math.random()-1),ph2=Math.random()*Math.PI*2,rr=360+Math.random()*180;
+  stars.push({x:rr*Math.sin(th2)*Math.cos(ph2),y:rr*Math.sin(th2)*Math.sin(ph2),z:rr*Math.cos(th2),r:Math.random()*1.1,a:Math.random()*0.35+0.1,tw:Math.random()*Math.PI*2});
+}
+
+var ringPts=[];
+for(var i=0;i<100;i++){var a2=i/100*Math.PI*2;ringPts.push([Math.cos(a2)*155,Math.sin(a2)*155,0]);}
+
+var rx3=0.25,ry3=0,dry3=0.003;
+var isDrag=false,lastMX=0,lastMY=0;
+cv.addEventListener('mousedown',function(e){isDrag=true;lastMX=e.clientX;lastMY=e.clientY;dry3=0;});
+cv.addEventListener('mousemove',function(e){
+  if(isDrag){ry3+=(e.clientX-lastMX)*0.005;rx3+=(e.clientY-lastMY)*0.003;lastMX=e.clientX;lastMY=e.clientY;}
+});
+cv.addEventListener('mouseup',function(){isDrag=false;dry3=0.003;});
+cv.addEventListener('mouseleave',function(){isDrag=false;dry3=0.003;document.getElementById('tip3d').style.display='none';});
+
+var t3=0,blkT=0;
+
+function draw3(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#020408';ctx.fillRect(0,0,W,H);
+  if(!isDrag)ry3+=dry3;
+  var cx=W/2,cy=H/2,fov=380;
+
+  // Stars
+  for(var i=0;i<stars.length;i++){
+    var s=stars[i];var rp=rot3([s.x,s.y,s.z],rx3,ry3);var pp=proj(rp,cx,cy,fov);
+    var tw=Math.sin(t3*0.015+s.tw)*0.2+s.a;
+    ctx.beginPath();ctx.arc(pp[0],pp[1],s.r*pp[2],0,Math.PI*2);
+    ctx.fillStyle='rgba(255,255,255,'+Math.max(0,Math.min(1,tw))+')';ctx.fill();
+  }
+
+  // Ring
+  var rring=ringPts.map(function(p){var rp=rot3(p,rx3,ry3);return proj(rp,cx,cy,fov);});
+  ctx.beginPath();
+  for(var i=0;i<rring.length;i++){if(i===0)ctx.moveTo(rring[i][0],rring[i][1]);else ctx.lineTo(rring[i][0],rring[i][1]);}
+  ctx.closePath();ctx.strokeStyle='rgba(29,158,117,0.05)';ctx.lineWidth=0.5;ctx.stroke();
+
+  // Update drift
+  GNODES.forEach(function(n){
+    n.ox+=n.dvx;n.oy+=n.dvy;
+    if(Math.abs(n.ox)>8)n.dvx*=-1;if(Math.abs(n.oy)>6)n.dvy*=-1;
+    n.cx3=n.bx+n.ox;n.cy3=n.by+n.oy;n.cz3=n.bz;
+  });
+
+  // Connections — genesis connects to all non-future
+  for(var i=1;i<GNODES.length;i++){
+    var a3=GNODES[0],b3=GNODES[i];
+    var dashed=b3.status!=='online';
+    var rpa=rot3([a3.cx3,a3.cy3,a3.cz3],rx3,ry3),rpb=rot3([b3.cx3,b3.cy3,b3.cz3],rx3,ry3);
+    var ppa=proj(rpa,cx,cy,fov),ppb=proj(rpb,cx,cy,fov);
+    ctx.save();if(dashed)ctx.setLineDash([3,7]);
+    ctx.beginPath();ctx.moveTo(ppa[0],ppa[1]);
+    var mx2=(ppa[0]+ppb[0])/2+(ppa[1]-ppb[1])*0.08,my2=(ppa[1]+ppb[1])/2+(ppb[0]-ppa[0])*0.08;
+    ctx.quadraticCurveTo(mx2,my2,ppb[0],ppb[1]);
+    var alpha3=b3.status==='online'?0.2:b3.status==='pending'?0.1:0.04;
+    ctx.strokeStyle='rgba('+a3.col[0]+','+a3.col[1]+','+a3.col[2]+','+alpha3+')';
+    ctx.lineWidth=0.8;ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  }
+
+  // Particles
+  var alive=[];
+  for(var i=0;i<particles.length;i++){
+    var p=particles[i];p.p+=p.spd;if(p.p>=1)continue;alive.push(p);
+    var px3=p.fx+(p.tx-p.fx)*p.p,py3=p.fy+(p.ty-p.fy)*p.p,pz3=p.fz+(p.tz-p.fz)*p.p;
+    var rpp2=rot3([px3,py3,pz3],rx3,ry3),ppp=proj(rpp2,cx,cy,fov);
+    var fade=p.p<0.15?p.p/0.15:p.p>0.85?(1-p.p)/0.15:1;
+    ctx.beginPath();ctx.arc(ppp[0],ppp[1],p.sz*ppp[2]*0.5,0,Math.PI*2);
+    ctx.fillStyle='rgba('+p.col[0]+','+p.col[1]+','+p.col[2]+','+p.a*fade+')';ctx.fill();
+  }
+  particles=alive;
+
+  // Nodes sorted by depth
+  var ns=GNODES.map(function(n){
+    var rp3=rot3([n.cx3,n.cy3,n.cz3],rx3,ry3);var pp3=proj(rp3,cx,cy,fov);
+    return{n:n,rp:rp3,pp:pp3};
+  }).sort(function(a,b){return a.rp[2]-b.rp[2];});
+
+  ns.forEach(function(nd){
+    var n=nd.n,pp3=nd.pp,rp3=nd.rp;
+    var depth=Math.max(0.3,Math.min(1.2,(fov-rp3[2])/(fov+200)));
+    var sc3=pp3[2],sz=n.sz*sc3*depth,sx=pp3[0],sy=pp3[1];
+
+    if(n.status==='online'){
+      var pulse=0.5+Math.sin(t3*0.04)*0.5;
+      ctx.beginPath();ctx.arc(sx,sy,sz+12*pulse,0,Math.PI*2);
+      ctx.fillStyle='rgba('+n.col[0]+','+n.col[1]+','+n.col[2]+','+0.04*pulse+')';ctx.fill();
+      ctx.beginPath();ctx.arc(sx,sy,sz+2,0,Math.PI*2);
+      ctx.strokeStyle='rgba('+n.col[0]+','+n.col[1]+','+n.col[2]+',0.25)';ctx.lineWidth=0.5;ctx.stroke();
+    } else if(n.status==='pending'){
+      var p2=0.4+Math.sin(t3*0.025)*0.4;
+      ctx.beginPath();ctx.arc(sx,sy,sz+5,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,160,50,'+0.06*p2+')';ctx.fill();
+    }
+
+    var pts=n.pts;
+    var xs=pts.map(function(p){return p[0];}),ys=pts.map(function(p){return p[1];}),zs2=pts.map(function(p){return p[2];});
+    var mnX=Math.min.apply(null,xs),mxX=Math.max.apply(null,xs),mnY=Math.min.apply(null,ys),mxY=Math.max.apply(null,ys);
+    var rX=mxX-mnX||1,rY=mxY-mnY||1;
+    var asc=Math.min((sz*2-4)/rX,(sz*2-4)/rY)*0.85;
+    var aoX=sx-rX*asc/2,aoY=sy-rY*asc/2;
+    var zmin2=Math.min.apply(null,zs2),zmax2=Math.max.apply(null,zs2),zr2=zmax2-zmin2||1;
+    var step=n.status==='online'?1:2;
+    for(var pi=0;pi<pts.length;pi+=step){
+      var pt=pts[pi],pdepth=(pt[2]-zmin2)/zr2;
+      var palpha=n.alpha*(n.status==='online'?0.5+pdepth*0.5:0.4)*depth;
+      var pc=pt[3];
+      ctx.fillStyle='rgba('+pc[0]+','+pc[1]+','+pc[2]+','+palpha+')';
+      var psz=(n.status==='online'?1.5:0.8)*sc3*depth*(0.6+pdepth*0.5);
+      ctx.fillRect((pt[0]-mnX)*asc+aoX,(pt[1]-mnY)*asc+aoY,psz,psz);
+    }
+
+    ctx.font='9px monospace';ctx.textAlign='center';
+    ctx.fillStyle='rgba('+n.col[0]+','+n.col[1]+','+n.col[2]+','+(n.status==='online'?0.85:n.status==='pending'?0.65:0.2)*depth+')';
+    ctx.fillText(n.label,sx,sy+sz+13);
+    ctx.font='8px monospace';
+    ctx.fillStyle='rgba(255,255,255,'+(n.status==='online'?0.3:0.12)*depth+')';
+    ctx.fillText(n.sub,sx,sy+sz+24);
+    ctx.textAlign='left';
+    n._sx=sx;n._sy=sy;n._sr=sz;
+  });
+
+  ctx.font='500 10px monospace';ctx.textAlign='center';
+  ctx.fillStyle='rgba(255,255,255,0.06)';
+  ctx.fillText('METRIPLEX NETWORK · drag to rotate',cx,H-12);
+  ctx.textAlign='left';
+
+  blkT++;
+  if(blkT>200){
+    blkT=0;
+    // Emit to all online nodes
+    GNODES.forEach(function(n,i){if(i>0&&n.status==='online'){emit(0,i);setTimeout(function(){emit(i,0);},600);}});
+  }
+  t3++;requestAnimationFrame(draw3);
+}
+draw3();
+
+// Tooltip
+cv.addEventListener('mousemove',function(e){
+  var rect=cv.getBoundingClientRect();var mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  var tip=document.getElementById('tip3d');var found=false;
+  GNODES.forEach(function(n){
+    if(!n._sx)return;
+    var dx=mx-n._sx,dy=my-n._sy;
+    if(dx*dx+dy*dy<(n._sr+12)*(n._sr+12)){
+      found=true;
+      var s=n.status==='online'?'<span style="color:#1D9E75">online</span>':n.status==='pending'?'<span style="color:#FFA032">awaiting testnet</span>':'<span style="color:rgba(255,255,255,0.3)">'+n.sub+'</span>';
+      var info='<b style="color:rgba(255,255,255,0.9)">'+n.id+'</b><br>Status: '+s+'<br>';
+      if(n.status==='online')info+='Chain: '+n.chainH+' blocks<br>Mempool: '+n.mempool+' TXs<br>';
+      info+='Identity: IFS · M₃ tensor';
+      tip.innerHTML=info;tip.style.display='block';
+      tip.style.left=Math.min(mx+14,W-210)+'px';tip.style.top=Math.max(my-70,8)+'px';
+    }
+  });
+  if(!found)tip.style.display='none';
+});
+
+// Live data — updates genesis node and checks for new validators
+async function fetchLive3(){
+  try{
+    var r=await fetch(NODE_URL+'/info',{headers:{'ngrok-skip-browser-warning':'1'}});
+    var d=await r.json();
+    GNODES[0].chainH=d.chain_length||1;
+    GNODES[0].mempool=d.mempool_size||0;
+    document.getElementById('s3-h').textContent=' '+(d.chain_length||1);
+    document.getElementById('s3-m').textContent=' '+(d.mempool_size||0);
+    // Check peers — if node reports peers, add them as online nodes
+    if(d.peers&&d.peers.length){
+      d.peers.forEach(function(peer){
+        var exists=GNODES.find(function(n){return n.id===peer.id||n.id===peer.addr;});
+        if(!exists){
+          mpxAddNode({id:peer.id||peer.addr,label:peer.id||peer.addr.slice(0,10),sub:'connected validator',addr:peer.addr||peer.id,col:[26,122,255],status:'online'});
+        }
+      });
+    }
+    updateHUD();
+  }catch(e){GNODES[0].sub='offline';updateHUD();}
+}
+fetchLive3();setInterval(fetchLive3,30000);
+})();
 </script>
 </body>
 </html>
