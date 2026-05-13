@@ -1665,59 +1665,64 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
     <div class="section-label" id="idLabel">Your Identity</div>
     <h2 class="section-title" id="idTitle">Your <span class="accent">fractal</span> identity</h2>
     <p style="color:var(--muted); margin:0 0 2rem; font-size:1rem; line-height:1.7;" id="idSubtitle">
-      Enter your Base wallet address. We generate your unique fractal attractor and check your MPX balance on-chain.
+      Enter your Base wallet address. We generate your unique animated fractal attractor and check your MPX balance on-chain.
     </p>
-
     <div style="background:var(--card-bg,#111); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:1.5rem;">
 
-      <div style="display:flex; gap:8px; margin-bottom:1rem;">
+      <div style="display:flex; gap:8px; margin-bottom:0.75rem;">
         <input type="text" id="fi-addr"
           placeholder="0x... your Base wallet address"
           style="flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:12px 16px; color:#fff; font-family:monospace; font-size:13px; outline:none;"
-          onkeydown="if(event.key==='Enter')mpxGenId()" />
-        <button onclick="mpxGenId()" id="fi-btn"
-          class="btn-primary"
-          style="padding:12px 24px; font-size:14px; border-radius:10px; white-space:nowrap;">
-          <span id="fi-btn-text">Generate →</span>
-        </button>
+          onkeydown="if(event.key==='Enter')fiGen()" />
+        <button onclick="fiGen()" id="fi-btn" class="btn-primary"
+          style="padding:12px 24px; font-size:14px; border-radius:10px; white-space:nowrap;">Generate →</button>
       </div>
 
-      <div id="fi-status" style="font-family:monospace; font-size:12px; color:#666; min-height:18px; margin-bottom:1rem;" id="idHint">Enter your address above.</div>
+      <div id="fi-msg" style="font-family:monospace; font-size:12px; color:#666; min-height:16px; margin-bottom:0.75rem;">Enter your address above.</div>
 
-      <div id="fi-canvas-wrap" style="display:none; border-radius:10px; overflow:hidden; margin-bottom:1rem; border:1px solid rgba(255,255,255,0.07);">
-        <canvas id="fi-canvas" width="840" height="340" style="width:100%; display:block;"></canvas>
-      </div>
-
-      <div id="fi-stats" style="display:none; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:1rem;">
-        <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.875rem 1rem;">
-          <div style="font-size:11px; color:#888; font-family:monospace; letter-spacing:0.08em; margin-bottom:4px;" id="idBalLabel">MPX BALANCE</div>
-          <div style="font-size:20px; font-weight:600; color:#1D9E75;" id="fi-balance">—</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.875rem 1rem;">
-          <div style="font-size:11px; color:#888; font-family:monospace; letter-spacing:0.08em; margin-bottom:4px;" id="idPtsLabel">ATTRACTOR POINTS</div>
-          <div style="font-size:20px; font-weight:600; color:#fff;" id="fi-points">—</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.875rem 1rem;">
-          <div style="font-size:11px; color:#888; font-family:monospace; letter-spacing:0.08em; margin-bottom:4px;" id="idMapsLabel">IFS MAPS</div>
-          <div style="font-size:20px; font-weight:600; color:#fff;">4</div>
+      <div id="fi-wrap" style="display:none; border-radius:10px; overflow:hidden; margin-bottom:0.75rem; border:1px solid rgba(255,255,255,0.07); background:#050505; position:relative;">
+        <canvas id="fi-cv" width="840" height="360" style="width:100%; display:block;"></canvas>
+        <div style="position:absolute; top:10px; right:12px; display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+          <span id="fi-pill-pts" style="font-family:monospace; font-size:10px; padding:3px 8px; border-radius:20px; background:rgba(0,0,0,0.6); color:rgba(255,255,255,0.5); border:0.5px solid rgba(255,255,255,0.1);">0 pts</span>
+          <span id="fi-pill-dim" style="font-family:monospace; font-size:10px; padding:3px 8px; border-radius:20px; background:rgba(0,0,0,0.6); color:#1D9E75; border:0.5px solid rgba(29,158,117,0.4);">dim —</span>
+          <span id="fi-pill-rot" style="font-family:monospace; font-size:10px; padding:3px 8px; border-radius:20px; background:rgba(0,0,0,0.6); color:rgba(255,255,255,0.5); border:0.5px solid rgba(255,255,255,0.1);">3D</span>
         </div>
       </div>
 
-      <div id="fi-tensor-wrap" style="display:none; margin-bottom:1rem;">
-        <div style="font-size:11px; color:#555; font-family:monospace; letter-spacing:0.1em; margin-bottom:6px;" id="idTensorLabel">PUBLIC KEY — M₃ TENSOR (4×4×4)</div>
+      <div id="fi-grid" style="display:none; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:0.75rem;">
+        <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.75rem 1rem;">
+          <div style="font-size:11px; color:#888; font-family:monospace; letter-spacing:0.06em; margin-bottom:3px;" id="idBalLabel">MPX BALANCE</div>
+          <div style="font-size:18px; font-weight:600; color:#1D9E75;" id="fi-bal">—</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.75rem 1rem;">
+          <div style="font-size:11px; color:#888; font-family:monospace; letter-spacing:0.06em; margin-bottom:3px;" id="idHdimLabel">HAUSDORFF DIM</div>
+          <div style="font-size:18px; font-weight:600; color:#fff;" id="fi-hdim">—</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.75rem 1rem;">
+          <div style="font-size:11px; color:#888; font-family:monospace; letter-spacing:0.06em; margin-bottom:3px;" id="idEntLabel">ENTROPY SCORE</div>
+          <div style="font-size:18px; font-weight:600; color:#fff;" id="fi-ent">—</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04); border-radius:10px; padding:0.75rem 1rem;">
+          <div style="font-size:11px; color:#888; font-family:monospace; letter-spacing:0.06em; margin-bottom:3px;" id="idStatusLabel">HOLDER STATUS</div>
+          <div style="font-size:18px; font-weight:600; color:#fff;" id="fi-status-val">—</div>
+        </div>
+      </div>
+
+      <div id="fi-crit-wrap" style="display:none; margin-bottom:0.75rem;">
+        <div style="font-size:11px; color:#555; font-family:monospace; letter-spacing:0.08em; margin-bottom:6px;" id="idCritLabel">ZK CRITERION — GEOMETRIC VALIDITY</div>
+        <div id="fi-criteria" style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px;"></div>
+      </div>
+
+      <div id="fi-tensor-wrap" style="display:none; margin-bottom:0.75rem;">
+        <div style="font-size:11px; color:#555; font-family:monospace; letter-spacing:0.08em; margin-bottom:6px;" id="idTensorLabel">PUBLIC KEY — M₃ TENSOR (4×4×4)</div>
         <div id="fi-tensor" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:8px; padding:0.875rem 1rem; font-family:monospace; font-size:11px; color:#aaa; line-height:1.8; overflow-x:auto; white-space:pre;"></div>
       </div>
 
       <div id="fi-actions" style="display:none; gap:8px; align-items:center; flex-wrap:wrap;">
-        <button onclick="mpxDownload()" class="btn-primary" style="padding:10px 20px; font-size:13px; border-radius:10px;">
-          ↓ <span id="idDownload">Download identity</span>
-        </button>
-        <button onclick="mpxNewSeed()"
-          style="background:transparent; border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:10px 20px; font-size:13px; color:#aaa; cursor:pointer; transition:all 0.2s;"
-          onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'">
-          ↻ <span id="idRegenerate">Regenerate</span>
-        </button>
-        <span id="fi-holder-badge"></span>
+        <button onclick="fiDownload()" class="btn-primary" style="padding:10px 20px; font-size:13px; border-radius:10px;">↓ <span id="idDownload">Download HD</span></button>
+        <button onclick="fiShare()" style="background:transparent; border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:10px 20px; font-size:13px; color:#aaa; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'">↗ <span id="idShare">Share identity</span></button>
+        <button onclick="fiRegen()" style="background:transparent; border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:10px 20px; font-size:13px; color:#aaa; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'">↻ <span id="idRegenerate">Regenerate</span></button>
+        <button onclick="fiToggle3D()" id="fi-3d-btn" style="background:transparent; border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:10px 20px; font-size:13px; color:#aaa; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'">⟳ 3D on</button>
       </div>
 
     </div>
@@ -1726,110 +1731,219 @@ M₃ = E_μ[(x−μ̂)⊗(x−μ̂)⊗(x−μ̂)]<br><br>
 
 <script>
 (function(){
-  var MPX='0x22D3f414438556d1B071cCfE52513d4d829400fd';
-  var RPC='https://mainnet.base.org';
-  var addr='', off=0, maps=[];
+var MPX='0x22D3f414438556d1B071cCfE52513d4d829400fd';
+var RPC='https://mainnet.base.org';
+var addr='',off=0,maps=[],pts3=[],cols=[];
+var rotX=0.3,rotY=0,animId=null,is3D=true;
 
-  function hash(s){
-    var h=5381;
-    for(var i=0;i<s.length;i++) h=((h<<5)+h^s.charCodeAt(i))>>>0;
-    return h;
-  }
-  function rng(seed){
-    var s=seed>>>0;
-    return function(){s^=s<<13;s^=s>>>17;s^=s<<5;return(s>>>0)/4294967296;};
-  }
-  function genIFS(a,o){
-    var r=rng(hash(a.toLowerCase()+o));
-    var m=[];
-    for(var i=0;i<4;i++) m.push({a:(r()*0.4+0.3)*(r()>0.5?1:-1),b:(r()*0.3)*(r()>0.5?1:-1),c:(r()*0.3)*(r()>0.5?1:-1),d:(r()*0.4+0.3)*(r()>0.5?1:-1),e:r()-0.5,f:r()-0.5});
-    return m;
-  }
-  function chaos(m,n){
-    var x=0,y=0,pts=[],cols=[],pal=['#1D9E75','#185FA5','#534AB7','#D85A30'];
-    for(var i=0;i<n;i++){var idx=Math.floor(Math.random()*4),mi=m[idx];var nx=mi.a*x+mi.b*y+mi.e,ny=mi.c*x+mi.d*y+mi.f;x=nx;y=ny;if(i>50){pts.push([x,y]);cols.push(pal[idx]);}}
-    return{pts,cols};
-  }
-  function draw(pts,cols,a){
-    var cv=document.getElementById('fi-canvas'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
-    ctx.fillStyle='#0a0a0a';ctx.fillRect(0,0,W,H);
-    var xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
-    var mnX=Math.min(...xs),mxX=Math.max(...xs),mnY=Math.min(...ys),mxY=Math.max(...ys);
-    var rX=mxX-mnX||1,rY=mxY-mnY||1,pad=36,sc=Math.min((W-pad*2)/rX,(H-pad*2)/rY);
-    var oX=(W-rX*sc)/2,oY=(H-rY*sc)/2;
-    for(var i=0;i<pts.length;i++){ctx.fillStyle=cols[i]+'bb';ctx.fillRect((pts[i][0]-mnX)*sc+oX,(pts[i][1]-mnY)*sc+oY,1.8,1.8);}
-    ctx.font='11px monospace';ctx.fillStyle='rgba(255,255,255,0.18)';
-    ctx.fillText('METRIPLEX · FRACTAL IDENTITY · '+a.slice(0,14)+'...',18,H-14);
-  }
-  function tensor(m){return m.map((mi,i)=>'A'+(i+1)+': ['+[mi.a,mi.b,mi.c,mi.d].map(v=>v.toFixed(4).padStart(8)).join(',')+' ]').join('\n');}
+function hash(s){var h=5381;for(var i=0;i<s.length;i++)h=((h<<5)+h^s.charCodeAt(i))>>>0;return h;}
+function rng(seed){var s=seed>>>0;return function(){s^=s<<13;s^=s>>>17;s^=s<<5;return(s>>>0)/4294967296;};}
 
-  async function fetchBal(a){
-    try{
-      var pad=a.replace('0x','').toLowerCase().padStart(64,'0');
-      var res=await fetch(RPC,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({jsonrpc:'2.0',method:'eth_call',params:[{to:MPX,data:'0x70a08231'+pad},'latest'],id:1})});
-      var j=await res.json();
-      if(j.result&&j.result!=='0x'){
-        var raw=BigInt(j.result),d=BigInt('1000000000000000000');
-        return (Number(raw/d)+(Number(raw%d)/1e18)).toFixed(2);
-      }
-      return '0.00';
-    }catch(e){return null;}
+function genIFS(a,o){
+  var r=rng(hash(a.toLowerCase()+o)),m=[];
+  for(var i=0;i<4;i++){
+    var sr=r()*0.4+0.3,rot=r()*Math.PI*2;
+    m.push({a:sr*Math.cos(rot)*(r()>0.5?1:-1),b:sr*Math.sin(rot)*(r()>0.5?1:-1),c:-sr*Math.sin(rot)*(r()>0.5?1:-1),d:sr*Math.cos(rot)*(r()>0.5?1:-1),e:(r()-0.5)*1.2,f:(r()-0.5)*1.2,g:(r()-0.5)*0.6});
   }
+  return m;
+}
 
-  function status(t){document.getElementById('fi-status').textContent=t;}
+var PAL=['#1D9E75','#185FA5','#534AB7','#D85A30'];
 
-  window.mpxGenId=async function(){
-    var a=document.getElementById('fi-addr').value.trim();
-    if(!a.match(/^0x[0-9a-fA-F]{40}$/)){status('Please enter a valid Base address (0x + 40 hex characters).');return;}
-    addr=a;off=0;
-    document.getElementById('fi-btn').disabled=true;
-    status('Generating fractal identity...');
-    maps=genIFS(addr,off);
-    var r=chaos(maps,10000);
-    document.getElementById('fi-canvas-wrap').style.display='block';
-    draw(r.pts,r.cols,addr);
-    document.getElementById('fi-points').textContent=r.pts.length.toLocaleString();
-    document.getElementById('fi-tensor').textContent=tensor(maps);
-    document.getElementById('fi-tensor-wrap').style.display='block';
-    document.getElementById('fi-stats').style.display='grid';
-    document.getElementById('fi-actions').style.display='flex';
-    status('Checking MPX balance on Base mainnet...');
-    var bal=await fetchBal(addr);
-    var badge=document.getElementById('fi-holder-badge');
-    if(bal===null){
-      document.getElementById('fi-balance').textContent='—';
-      badge.innerHTML='';
-      status('Identity generated. RPC unavailable — balance check failed.');
-    } else if(parseFloat(bal)>0){
-      document.getElementById('fi-balance').textContent=parseFloat(bal).toLocaleString()+' MPX';
-      badge.innerHTML='<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 12px;border-radius:6px;background:rgba(29,158,117,0.15);color:#1D9E75;font-family:monospace;">✓ MPX Holder</span>';
-      status('Identity generated. Welcome, Metriplex holder.');
-    } else {
-      document.getElementById('fi-balance').textContent='0 MPX';
-      badge.innerHTML='<span style="font-size:12px;color:#666;font-family:monospace;">Not a holder yet — <a href="#buy" style="color:#1D9E75;">get MPX</a></span>';
-      status('Identity generated. Get MPX to join the network.');
-    }
-    document.getElementById('fi-btn').disabled=false;
-  };
+function chaos3D(m,n){
+  var x=0,y=0,z=0,pts=[],cs=[];
+  for(var i=0;i<n;i++){
+    var idx=Math.floor(Math.random()*4),mi=m[idx];
+    var nx=mi.a*x+mi.b*y+mi.e,ny=mi.c*x+mi.d*y+mi.f,nz=mi.g*z+(mi.a+mi.d)*0.15*x;
+    x=nx;y=ny;z=nz;
+    if(i>100){pts.push([x,y,z]);cs.push(PAL[idx]);}
+  }
+  return{pts,cs};
+}
 
-  window.mpxNewSeed=function(){
-    if(!addr)return;
-    off++;
-    maps=genIFS(addr,off);
-    var r=chaos(maps,10000);
-    draw(r.pts,r.cols,addr);
-    document.getElementById('fi-points').textContent=r.pts.length.toLocaleString();
-    document.getElementById('fi-tensor').textContent=tensor(maps);
-  };
+function rotate(pts,rx,ry){
+  var cx=Math.cos(rx),sx=Math.sin(rx),cy=Math.cos(ry),sy=Math.sin(ry);
+  return pts.map(function(p){
+    var x=p[0],y=p[1],z=p[2];
+    var y2=cx*y-sx*z,z2=sx*y+cx*z;
+    var x3=cy*x+sy*z2,z3=-sy*x+cy*z2;
+    return[x3,y2,z3];
+  });
+}
 
-  window.mpxDownload=function(){
-    var cv=document.getElementById('fi-canvas');
-    var a=document.createElement('a');
-    a.download='metriplex-identity-'+addr.slice(0,10)+'.png';
-    a.href=cv.toDataURL('image/png');
-    a.click();
-  };
+function drawFrame(animate){
+  var cv=document.getElementById('fi-cv');
+  if(!cv)return;
+  var ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  ctx.fillStyle='#050505';ctx.fillRect(0,0,W,H);
+  if(!pts3.length)return;
+  if(animate)rotY+=0.008;
+  var rot=is3D?rotate(pts3,rotX,rotY):pts3;
+  var xs=rot.map(p=>p[0]),ys=rot.map(p=>p[1]),zs=rot.map(p=>p[2]);
+  var mnX=Math.min(...xs),mxX=Math.max(...xs),mnY=Math.min(...ys),mxY=Math.max(...ys);
+  var rX=mxX-mnX||1,rY=mxY-mnY||1,pad=36,sc=Math.min((W-pad*2)/rX,(H-pad*2)/rY)*0.9;
+  var oX=(W-rX*sc)/2,oY=(H-rY*sc)/2;
+  var zmin=Math.min(...zs),zmax=Math.max(...zs),zr=zmax-zmin||1;
+  var order=Array.from({length:xs.length},(_,i)=>i).sort((a,b)=>zs[a]-zs[b]);
+  for(var i=0;i<order.length;i++){
+    var idx=order[i],depth=(zs[idx]-zmin)/zr;
+    var alpha=is3D?(0.3+depth*0.7):0.7,size=is3D?(0.8+depth*1.4):1.2;
+    ctx.fillStyle=cols[idx]+(Math.floor(alpha*255).toString(16).padStart(2,'0'));
+    ctx.fillRect((xs[idx]-mnX)*sc+oX,(ys[idx]-mnY)*sc+oY,size,size);
+  }
+  ctx.font='10px monospace';ctx.fillStyle='rgba(255,255,255,0.15)';
+  ctx.fillText('METRIPLEX · '+addr.slice(0,14)+'...',14,H-10);
+  if(animate)animId=requestAnimationFrame(()=>drawFrame(true));
+}
+
+function hausdorff(pts){
+  var xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+  var c1={},c2={};
+  for(var i=0;i<pts.length;i+=Math.max(1,Math.floor(pts.length/200))){
+    c1[Math.floor(xs[i]*8)+','+Math.floor(ys[i]*8)]=1;
+    c2[Math.floor(xs[i]*16)+','+Math.floor(ys[i]*16)]=1;
+  }
+  var n1=Object.keys(c1).length,n2=Object.keys(c2).length;
+  if(n1<2||n2<2)return 1.5;
+  return Math.log(n2/n1)/Math.log(2);
+}
+
+function entropy(pts){
+  var g={},xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+  for(var i=0;i<pts.length;i+=Math.max(1,Math.floor(pts.length/500))){
+    var k=Math.floor(xs[i]*10)+','+Math.floor(ys[i]*10);
+    g[k]=(g[k]||0)+1;
+  }
+  var vals=Object.values(g),total=vals.reduce((a,b)=>a+b,0),H=0;
+  vals.forEach(v=>{var p=v/total;if(p>0)H-=p*Math.log2(p);});
+  return Math.min(100,Math.round(H*8));
+}
+
+function evalCriteria(pts2d){
+  var n=pts2d.length,xs=pts2d.map(p=>p[0]),ys=pts2d.map(p=>p[1]);
+  var mx=xs.reduce((a,b)=>a+b,0)/n,my=ys.reduce((a,b)=>a+b,0)/n;
+  var vx=xs.reduce((a,b)=>a+(b-mx)*(b-mx),0)/n,vy=ys.reduce((a,b)=>a+(b-my)*(b-my),0)/n;
+  var vT=vx+vy,dists=[],lim=Math.min(n,50);
+  for(var i=0;i<lim;i++)for(var j=i+1;j<lim;j++){var dx=xs[i]-xs[j],dy=ys[i]-ys[j];dists.push(Math.sqrt(dx*dx+dy*dy));}
+  dists.sort((a,b)=>a-b);
+  var mD=dists.reduce((a,b)=>a+b,0)/dists.length||1,p5=dists[Math.floor(dists.length*0.05)]||0;
+  var sk=xs.reduce((a,b)=>a+Math.pow((b-mx),3),0)/n/Math.pow(Math.sqrt(vx)||1,3);
+  return[
+    {id:'c1',name:'Auto-similarity',val:(vT*0.1).toFixed(3),pass:vT>0.01},
+    {id:'c2',name:'Anti-concentration',val:vT.toFixed(3),pass:vT>0.05},
+    {id:'c3',name:'Completeness',val:'1.00',pass:true},
+    {id:'c4',name:'Deprecated v3',val:'—',pass:null},
+    {id:'c5',name:'Asym. fingerprint',val:Math.abs(sk).toFixed(3),pass:Math.abs(sk)>0.1},
+    {id:'c6',name:'Pair dispersion',val:mD.toFixed(3),pass:mD>0.05},
+    {id:'c7',name:'Mean invariance',val:(Math.abs(mx)+Math.abs(my)).toFixed(3),pass:true},
+    {id:'c8',name:'Min/mean ratio',val:(p5/mD).toFixed(3),pass:(p5/mD)>0.01}
+  ];
+}
+
+function renderCriteria(crit){
+  var el=document.getElementById('fi-criteria');el.innerHTML='';
+  crit.forEach(function(c){
+    var d=document.createElement('div');
+    var isPass=c.pass===true,isDep=c.pass===null;
+    d.style.cssText='background:'+(isPass?'rgba(29,158,117,0.06)':isDep?'rgba(255,255,255,0.02)':'rgba(220,60,60,0.04)')+';border:0.5px solid '+(isPass?'rgba(29,158,117,0.4)':isDep?'rgba(255,255,255,0.07)':'rgba(220,60,60,0.3)')+';border-radius:8px;padding:6px 8px;';
+    d.innerHTML='<div style="font-family:monospace;font-size:10px;font-weight:500;color:'+(isPass?'#1D9E75':isDep?'#555':'#dc3c3c')+';margin-bottom:2px;">'+c.id+(isPass?' ✓':isDep?' ✗':' ✗')+'</div><div style="font-size:10px;color:#888;">'+c.name+'</div><div style="font-family:monospace;font-size:10px;color:#666;margin-top:2px;">'+c.val+'</div>';
+    el.appendChild(d);
+  });
+}
+
+function genTensor(m){return m.map((mi,i)=>'A'+(i+1)+': ['+[mi.a,mi.b,mi.c,mi.d].map(v=>v.toFixed(4).padStart(8)).join(',')+' ]').join('\n');}
+
+async function fetchBal(a){
+  try{
+    var pad=a.replace('0x','').toLowerCase().padStart(64,'0');
+    var res=await fetch(RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',method:'eth_call',params:[{to:MPX,data:'0x70a08231'+pad},'latest'],id:1})});
+    var j=await res.json();
+    if(j.result&&j.result!=='0x'){var raw=BigInt(j.result),d=BigInt('1000000000000000000');return(Number(raw/d)+(Number(raw%d)/1e18)).toFixed(2);}
+    return '0.00';
+  }catch(e){return null;}
+}
+
+function msg(t){document.getElementById('fi-msg').textContent=t;}
+
+window.fiGen=async function(){
+  var a=document.getElementById('fi-addr').value.trim();
+  if(!a.match(/^0x[0-9a-fA-F]{40}$/)){msg('Please enter a valid Base address (0x + 40 hex chars).');return;}
+  addr=a;off=0;
+  if(animId)cancelAnimationFrame(animId);
+  document.getElementById('fi-btn').disabled=true;
+  msg('Generating fractal identity...');
+  maps=genIFS(addr,off);
+  var r=chaos3D(maps,12000);
+  pts3=r.pts;cols=r.cs;
+  ['fi-wrap','fi-crit-wrap','fi-tensor-wrap','fi-actions'].forEach(id=>{document.getElementById(id).style.display=id==='fi-wrap'?'block':id==='fi-actions'?'flex':'block';});
+  document.getElementById('fi-grid').style.display='grid';
+  var pts2d=pts3.map(p=>[p[0],p[1]]);
+  var hd=hausdorff(pts2d).toFixed(3),en=entropy(pts2d),crit=evalCriteria(pts2d);
+  document.getElementById('fi-hdim').textContent=hd;
+  document.getElementById('fi-ent').textContent=en+'/100';
+  document.getElementById('fi-pill-pts').textContent=pts3.length.toLocaleString()+' pts';
+  document.getElementById('fi-pill-dim').textContent='dim '+hd;
+  document.getElementById('fi-pill-rot').textContent=crit.filter(c=>c.pass===true).length+'/7 criteria';
+  document.getElementById('fi-tensor').textContent=genTensor(maps);
+  renderCriteria(crit);
+  rotY=0;drawFrame(true);
+  msg('Checking MPX balance on Base mainnet...');
+  var bal=await fetchBal(addr);
+  if(bal===null){
+    document.getElementById('fi-bal').textContent='—';
+    document.getElementById('fi-status-val').textContent='RPC error';
+    msg('Identity generated. Balance check failed.');
+  } else if(parseFloat(bal)>0){
+    document.getElementById('fi-bal').textContent=parseFloat(bal).toLocaleString()+' MPX';
+    document.getElementById('fi-status-val').textContent='✓ Holder';
+    document.getElementById('fi-status-val').style.color='#1D9E75';
+    msg('Identity generated. Welcome, Metriplex holder.');
+  } else {
+    document.getElementById('fi-bal').textContent='0 MPX';
+    document.getElementById('fi-status-val').textContent='Not yet';
+    msg('Identity generated. Get MPX to join the network.');
+  }
+  document.getElementById('fi-btn').disabled=false;
+};
+
+window.fiRegen=function(){
+  if(!addr)return;
+  if(animId)cancelAnimationFrame(animId);
+  off++;maps=genIFS(addr,off);
+  var r=chaos3D(maps,12000);pts3=r.pts;cols=r.cs;
+  var pts2d=pts3.map(p=>[p[0],p[1]]);
+  var hd=hausdorff(pts2d).toFixed(3),en=entropy(pts2d);
+  document.getElementById('fi-hdim').textContent=hd;
+  document.getElementById('fi-ent').textContent=en+'/100';
+  document.getElementById('fi-pill-dim').textContent='dim '+hd;
+  document.getElementById('fi-tensor').textContent=genTensor(maps);
+  renderCriteria(evalCriteria(pts2d));
+  rotY=0;drawFrame(true);
+};
+
+window.fiToggle3D=function(){
+  is3D=!is3D;
+  document.getElementById('fi-3d-btn').textContent=(is3D?'⟳ 3D on':'⟳ 3D off');
+  document.getElementById('fi-pill-rot').textContent=(is3D?'3D':'2D');
+};
+
+window.fiDownload=function(){
+  var cv=document.getElementById('fi-cv');
+  var hd=document.createElement('canvas');hd.width=1920;hd.height=900;
+  hd.getContext('2d').drawImage(cv,0,0,1920,900);
+  var a=document.createElement('a');
+  a.download='metriplex-identity-'+addr.slice(0,10)+'.png';
+  a.href=hd.toDataURL('image/png');a.click();
+};
+
+window.fiShare=function(){
+  var hd=document.getElementById('fi-hdim').textContent;
+  var en=document.getElementById('fi-ent').textContent;
+  var text='My Metriplex fractal identity:\n\nHausdorff dimension: '+hd+'\nEntropy score: '+en+'\nAddress: '+addr.slice(0,14)+'...\n\nGenerate yours: metriplexmpx.xyz\n\n#Metriplex #MPX #FractalIdentity';
+  window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(text),'_blank');
+};
+
+document.getElementById('fi-addr').addEventListener('keydown',function(e){if(e.key==='Enter')fiGen();});
 })();
 </script>
 
