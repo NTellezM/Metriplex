@@ -333,7 +333,11 @@ window.mpxActivateNode=activateNode;
 async function fetchNodeInfo(){
   try{
     var res = await fetch(NODE_URL+'/info', {
-      headers:{'ngrok-skip-browser-warning':'1'}
+      headers:{
+        'ngrok-skip-browser-warning':'1',
+        'Accept':'application/json'
+      },
+      mode:'cors'
     });
     var data = await res.json();
     document.getElementById('chain-height').textContent = data.chain_length || '—';
