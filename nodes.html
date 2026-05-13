@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metriplex Network — Node Status</title>
+<meta name="description" content="Live Metriplex network status — active nodes, chain height, and validator registration.">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<style>
+:root{--bg:#060606;--bg2:#0f0f0f;--bg3:#161616;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--text:#ececec;--muted:#777;--muted2:#444;--green:#1D9E75;--blue:#1a7aff;--accent:#a78bfa;--red:#dc3c3c;--mono:'Courier New',monospace;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Georgia',serif;font-size:15px;line-height:1.7;min-height:100vh;}
+nav{position:sticky;top:0;z-index:100;background:rgba(6,6,6,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:58px;}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-logo img{width:34px;height:34px;border-radius:50%;}
+.nav-logo-text{font-family:var(--mono);font-size:12px;letter-spacing:0.15em;color:var(--text);}
+.nav-right{display:flex;align-items:center;gap:1rem;}
+.nav-link{font-size:12px;color:var(--muted);text-decoration:none;font-family:var(--mono);transition:color 0.2s;}
+.nav-link:hover{color:var(--text);}
+.nav-tag{font-family:var(--mono);font-size:10px;color:var(--green);border:1px solid rgba(29,158,117,0.3);padding:3px 10px;border-radius:20px;}
+.wrap{max-width:780px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
+.page-tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:0.2em;color:var(--green);border:1px solid rgba(29,158,117,0.3);padding:3px 12px;border-radius:20px;margin-bottom:1.25rem;}
+h1{font-size:1.8rem;font-weight:normal;line-height:1.2;letter-spacing:-0.02em;margin-bottom:0.5rem;}
+h1 em{font-style:normal;color:var(--accent);}
+.sub{font-size:13px;color:var(--muted);margin-bottom:2rem;line-height:1.7;}
+.card{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:1.25rem;margin-bottom:1rem;}
+.clabel{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;color:var(--muted);margin-bottom:1rem;}
+
+/* NETWORK STATUS */
+.net-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.25rem;}
+.net-stat{background:var(--bg3);border-radius:10px;padding:0.875rem 1rem;}
+.net-stat-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.06em;margin-bottom:4px;}
+.net-stat-val{font-size:1.3rem;font-weight:500;color:var(--text);}
+.net-stat-val.g{color:var(--green);}
+.net-stat-val.b{color:var(--blue);}
+
+/* PHASE BADGE */
+.phase-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(29,158,117,0.08);border:1px solid rgba(29,158,117,0.2);border-radius:8px;padding:8px 14px;font-family:var(--mono);font-size:11px;color:var(--green);margin-bottom:1rem;}
+.phase-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* NODE TABLE */
+.node-table{width:100%;border-collapse:collapse;font-size:13px;}
+.node-table th{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--muted);border-bottom:1px solid var(--border2);padding:8px 12px;text-align:left;}
+.node-table td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted);vertical-align:middle;}
+.node-table tr:last-child td{border-bottom:none;}
+.node-table td:first-child{font-family:var(--mono);font-size:12px;}
+.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px;}
+.status-dot.online{background:var(--green);}
+.status-dot.offline{background:var(--muted2);}
+.status-dot.pending{background:#FFA032;}
+.node-type{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;}
+.node-type.validator{background:rgba(29,158,117,0.1);color:var(--green);border:1px solid rgba(29,158,117,0.2);}
+.node-type.observer{background:rgba(26,122,255,0.1);color:var(--blue);border:1px solid rgba(26,122,255,0.2);}
+.node-type.pending{background:rgba(255,160,50,0.1);color:#FFA032;border:1px solid rgba(255,160,50,0.2);}
+
+/* LIVE BLOCK */
+.live-block{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1rem;margin-bottom:1rem;font-family:var(--mono);font-size:12px;}
+.live-block-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);}
+.live-block-row:last-child{border-bottom:none;}
+.lbk{color:var(--muted);font-size:11px;}
+.lbv{color:var(--text);word-break:break-all;text-align:right;max-width:320px;}
+.lbv.g{color:var(--green);}
+
+/* REGISTER FORM */
+.fgroup{margin-bottom:0.875rem;}
+.flabel{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--muted);margin-bottom:5px;display:block;}
+.finput{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:8px;padding:11px 14px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;transition:border-color 0.2s;}
+.finput:focus{border-color:rgba(255,255,255,0.25);}
+.finput::placeholder{color:var(--muted2);}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.btn-register{width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;cursor:pointer;font-family:inherit;transition:all 0.2s;margin-top:0.25rem;}
+.btn-register:hover{background:#16875f;transform:translateY(-1px);}
+.sbox{border-radius:8px;padding:0.875rem 1rem;margin-top:0.75rem;font-size:12px;font-family:var(--mono);display:none;}
+.sbox.success{background:rgba(29,158,117,0.07);border:1px solid rgba(29,158,117,0.18);color:var(--green);}
+.sbox.error{background:rgba(220,60,60,0.07);border:1px solid rgba(220,60,60,0.18);color:#ff6666;}
+
+/* INSTALL */
+.code-block{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;font-family:var(--mono);font-size:12px;color:#c9d1d9;line-height:1.8;overflow-x:auto;white-space:pre;margin-bottom:0.875rem;}
+.code-block .cm{color:var(--muted2);}
+.code-block .g{color:var(--green);}
+
+/* REFRESH */
+.refresh-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;}
+.refresh-btn{background:transparent;border:1px solid var(--border2);border-radius:6px;padding:5px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);cursor:pointer;transition:all 0.2s;}
+.refresh-btn:hover{color:var(--text);border-color:rgba(255,255,255,0.25);}
+.last-update{font-family:var(--mono);font-size:11px;color:var(--muted2);}
+
+footer{border-top:1px solid var(--border);padding:1.5rem 2rem;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted2);}
+footer a{color:var(--muted);text-decoration:none;margin:0 0.75rem;}
+footer a:hover{color:var(--text);}
+.hidden{display:none;}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo">
+    <img src="https://raw.githubusercontent.com/NTellezM/Metriplex/main/assets/logo6.png" alt="MPX">
+    <span class="nav-logo-text">METRIPLEX</span>
+  </a>
+  <div class="nav-right">
+    <span class="nav-tag">NETWORK</span>
+    <a href="/" class="nav-link">← Site</a>
+    <a href="/app.html" class="nav-link">App</a>
+    <a href="/whitepaper.html" class="nav-link">Whitepaper</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="page-tag">NETWORK STATUS</div>
+  <h1>Metriplex <em>live network</em></h1>
+  <p class="sub">Real-time status of the Metriplex Layer 1 blockchain. Phase 1 — single validator node running on Base-connected infrastructure.</p>
+
+  <!-- PHASE -->
+  <div class="phase-badge">
+    <span class="phase-dot"></span>
+    Phase 1 — Single validator · Multi-node testnet coming Q2 2026
+  </div>
+
+  <!-- LIVE STATS -->
+  <div class="card">
+    <div class="refresh-row">
+      <div class="clabel">LIVE CHAIN STATS</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="last-update" id="last-update">—</span>
+        <button class="refresh-btn" onclick="fetchNodeInfo()">↻ Refresh</button>
+      </div>
+    </div>
+    <div class="net-stats">
+      <div class="net-stat">
+        <div class="net-stat-label">CHAIN HEIGHT</div>
+        <div class="net-stat-val g" id="chain-height">—</div>
+      </div>
+      <div class="net-stat">
+        <div class="net-stat-label">MEMPOOL TXs</div>
+        <div class="net-stat-val" id="mempool">—</div>
+      </div>
+      <div class="net-stat">
+        <div class="net-stat-label">NODE STATUS</div>
+        <div class="net-stat-val g" id="node-status">—</div>
+      </div>
+    </div>
+    <div class="live-block" id="block-info">
+      <div class="live-block-row"><span class="lbk">LATEST BLOCK HASH</span><span class="lbv" id="latest-hash">—</span></div>
+      <div class="live-block-row"><span class="lbk">CONSENSUS</span><span class="lbv g">Slot-based Proof of Stake</span></div>
+      <div class="live-block-row"><span class="lbk">BLOCK TIME</span><span class="lbv">10 seconds</span></div>
+      <div class="live-block-row"><span class="lbk">IDENTITY</span><span class="lbv g">IFS fractal attractor · M₃ tensor</span></div>
+      <div class="live-block-row"><span class="lbk">ZK CRITERION</span><span class="lbv g">c1–c8 composite · 7 active</span></div>
+    </div>
+  </div>
+
+  <!-- NODE TABLE -->
+  <div class="card">
+    <div class="clabel">ACTIVE NODES</div>
+    <table class="node-table">
+      <thead>
+        <tr>
+          <th>NODE</th>
+          <th>TYPE</th>
+          <th>STATUS</th>
+          <th>VERSION</th>
+          <th>LOCATION</th>
+        </tr>
+      </thead>
+      <tbody id="node-tbody">
+        <tr>
+          <td><span class="status-dot online"></span>node-0 (genesis)</td>
+          <td><span class="node-type validator">Validator</span></td>
+          <td id="node-0-status" style="color:var(--green);">online</td>
+          <td style="font-family:var(--mono);font-size:11px;">v1.0 · Python</td>
+          <td style="font-family:var(--mono);font-size:11px;">SA · private</td>
+        </tr>
+        <tr>
+          <td><span class="status-dot pending"></span>@zicheng588</td>
+          <td><span class="node-type pending">Pending</span></td>
+          <td style="color:#FFA032;">awaiting testnet</td>
+          <td style="font-family:var(--mono);font-size:11px;">—</td>
+          <td style="font-family:var(--mono);font-size:11px;">—</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:12px;">Multi-node P2P network launches Q2 2026. Register below to be among the first validators.</p>
+  </div>
+
+  <!-- RUN A NODE -->
+  <div class="card">
+    <div class="clabel">RUN A NODE</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;">One-line install:</p>
+    <div class="code-block"><span class="g">curl</span> -sSL https://metriplexmpx.xyz/install.sh | bash</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;">Manual setup:</p>
+    <div class="code-block"><span class="cm"># Clone and install</span>
+git clone https://github.com/NTellezM/Metriplex
+cd Metriplex
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+
+<span class="cm"># Run validator node</span>
+python3 main.py --api-port 8000 --p2p-port 65432
+
+<span class="cm"># Run observer node (no mining)</span>
+python3 main.py --no-miner</div>
+    <p style="font-size:11px;color:var(--muted);font-family:var(--mono);">Full documentation: <a href="https://github.com/NTellezM/Metriplex" target="_blank" style="color:var(--accent);">github.com/NTellezM/Metriplex</a></p>
+  </div>
+
+  <!-- REGISTER -->
+  <div class="card">
+    <div class="clabel">REGISTER AS VALIDATOR</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.25rem;">Sign up to be notified when the public testnet launches and receive bootstrap node configuration.</p>
+    <div class="frow">
+      <div class="fgroup">
+        <label class="flabel">ALIAS / HANDLE</label>
+        <input class="finput" type="text" id="reg-alias" placeholder="@yourhandle or name" />
+      </div>
+      <div class="fgroup">
+        <label class="flabel">CONTACT (Twitter/Telegram/Email)</label>
+        <input class="finput" type="text" id="reg-contact" placeholder="@handle or email" />
+      </div>
+    </div>
+    <div class="fgroup">
+      <label class="flabel">NODE IP (optional — if already running)</label>
+      <input class="finput" type="text" id="reg-ip" placeholder="e.g. 123.45.67.89:65432 or leave blank" />
+    </div>
+    <div class="fgroup">
+      <label class="flabel">NOTES (optional)</label>
+      <input class="finput" type="text" id="reg-notes" placeholder="hardware specs, location, etc." />
+    </div>
+    <button class="btn-register" onclick="registerNode()">Register as validator →</button>
+    <div class="sbox" id="reg-sbox">
+      <div id="reg-sbox-text"></div>
+    </div>
+  </div>
+
+  <!-- NETWORK ARCHITECTURE -->
+  <div class="card">
+    <div class="clabel">NETWORK ARCHITECTURE</div>
+    <div style="display:grid;gap:8px;">
+      <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:13px;color:var(--muted);">Layer</span>
+        <span style="font-family:var(--mono);font-size:12px;">Layer 1 · native blockchain</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:13px;color:var(--muted);">Identity</span>
+        <span style="font-family:var(--mono);font-size:12px;color:var(--green);">IFS fractal attractor · M₃ tensor</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:13px;color:var(--muted);">Consensus</span>
+        <span style="font-family:var(--mono);font-size:12px;">Slot-based Proof of Stake</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:13px;color:var(--muted);">ZK proof</span>
+        <span style="font-family:var(--mono);font-size:12px;">c1–c8 composite criterion</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
+        <span style="font-size:13px;color:var(--muted);">P2P protocol</span>
+        <span style="font-family:var(--mono);font-size:12px;">TCP gossip · port 65432</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:7px 0;">
+        <span style="font-size:13px;color:var(--muted);">Bridge</span>
+        <span style="font-family:var(--mono);font-size:12px;color:#4488ff;">Bidirectional ↔ Ethereum Base</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <div style="margin-bottom:0.5rem;">
+    <a href="/">Home</a>
+    <a href="/app.html">App</a>
+    <a href="/whitepaper.html">Whitepaper</a>
+    <a href="https://github.com/NTellezM/Metriplex" target="_blank">GitHub</a>
+    <a href="https://basescan.org/token/0x22D3f414438556d1B071cCfE52513d4d829400fd" target="_blank">BaseScan</a>
+  </div>
+  <div>Metriplex Network · metriplexmpx.xyz</div>
+</footer>
+
+<script>
+var NODE_URL = 'https://thigh-flyaway-tacky.ngrok-free.dev';
+var GITHUB_TOKEN = '';
+
+async function fetchNodeInfo(){
+  try{
+    var res = await fetch(NODE_URL+'/info', {
+      headers:{'ngrok-skip-browser-warning':'1'}
+    });
+    var data = await res.json();
+    document.getElementById('chain-height').textContent = data.chain_length || '—';
+    document.getElementById('mempool').textContent = data.mempool_size || '0';
+    document.getElementById('node-status').textContent = 'online';
+    document.getElementById('node-0-status').textContent = 'online';
+    document.getElementById('node-0-status').style.color = 'var(--green)';
+    var hash = data.latest_block_hash || '—';
+    document.getElementById('latest-hash').textContent = hash.length > 32 ? hash.slice(0,16)+'...'+hash.slice(-8) : hash;
+    var now = new Date();
+    document.getElementById('last-update').textContent = 'updated '+now.toTimeString().slice(0,8);
+  } catch(e){
+    document.getElementById('node-status').textContent = 'unreachable';
+    document.getElementById('node-status').style.color = 'var(--red)';
+    document.getElementById('node-0-status').textContent = 'offline';
+    document.getElementById('node-0-status').style.color = 'var(--muted2)';
+    document.getElementById('last-update').textContent = 'fetch failed';
+  }
+}
+
+function registerNode(){
+  var alias = document.getElementById('reg-alias').value.trim();
+  var contact = document.getElementById('reg-contact').value.trim();
+  var ip = document.getElementById('reg-ip').value.trim();
+  var notes = document.getElementById('reg-notes').value.trim();
+
+  if(!alias || !contact){
+    showRegStatus('error','Please fill in alias and contact fields.');
+    return;
+  }
+
+  var body = '**Validator Registration**\n\n';
+  body += '- **Alias:** '+alias+'\n';
+  body += '- **Contact:** '+contact+'\n';
+  if(ip) body += '- **Node IP:** '+ip+'\n';
+  if(notes) body += '- **Notes:** '+notes+'\n';
+  body += '\n*Registered via metriplexmpx.xyz/nodes.html*';
+
+  var mailtoLink = 'mailto:metriplexmpx@gmail.com'
+    +'?subject='+encodeURIComponent('[Validator Registration] '+alias)
+    +'&body='+encodeURIComponent(body);
+
+  window.open(mailtoLink);
+  showRegStatus('success','Opening email client... Your registration will be sent to metriplexmpx@gmail.com. You will receive bootstrap config when the testnet launches.');
+  document.getElementById('reg-alias').value='';
+  document.getElementById('reg-contact').value='';
+  document.getElementById('reg-ip').value='';
+  document.getElementById('reg-notes').value='';
+}
+
+function showRegStatus(type, text){
+  var box = document.getElementById('reg-sbox');
+  box.className = 'sbox '+type;
+  box.style.display = 'block';
+  document.getElementById('reg-sbox-text').textContent = text;
+}
+
+// Auto-refresh every 30 seconds
+fetchNodeInfo();
+setInterval(fetchNodeInfo, 30000);
+</script>
+</body>
+</html>
