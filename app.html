@@ -31,6 +31,11 @@ h1 em{font-style:normal;color:var(--accent);}
 .id-box canvas{display:block;width:100%;}
 .id-box-addr{font-family:var(--mono);font-size:10px;padding:3px 10px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);}
 .id-box-addr.active{color:var(--green);}
+.id-tech{padding:6px 10px 8px;border-top:1px solid var(--border);display:none;}
+.id-tech-row{display:flex;justify-content:space-between;padding:2px 0;}
+.id-tech-key{font-family:var(--mono);font-size:9px;color:var(--muted2);letter-spacing:0.05em;}
+.id-tech-val{font-family:var(--mono);font-size:9px;color:var(--muted);}
+.id-tech-val.g{color:var(--green);}
 .id-arrow{font-size:20px;color:var(--muted2);text-align:center;}
 .metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1rem;}
 .metric{background:var(--bg3);border-radius:8px;padding:0.75rem;}
@@ -109,12 +114,24 @@ footer a:hover{color:var(--text);}
         <div class="id-box-label">YOUR IDENTITY</div>
         <canvas id="cv-from" width="280" height="130"></canvas>
         <div class="id-box-addr active" id="addr-from">—</div>
+        <div class="id-tech" id="tech-from">
+          <div class="id-tech-row"><span class="id-tech-key">PRIVATE KEY</span><span class="id-tech-val">IFS · 4 contractions in ℝ⁴</span></div>
+          <div class="id-tech-row"><span class="id-tech-key">PUBLIC KEY</span><span class="id-tech-val">M₃ tensor · 4×4×4 = 512 bytes</span></div>
+          <div class="id-tech-row"><span class="id-tech-key">HAUSDORFF DIM</span><span class="id-tech-val g" id="tech-from-hdim">—</span></div>
+          <div class="id-tech-row"><span class="id-tech-key">ZK CRITERION</span><span class="id-tech-val g">c1–c8 · 7 active</span></div>
+        </div>
       </div>
       <div class="id-arrow">→</div>
       <div class="id-box">
         <div class="id-box-label">RECIPIENT IDENTITY</div>
         <canvas id="cv-to" width="280" height="130"></canvas>
         <div class="id-box-addr" id="addr-to">enter address below</div>
+        <div class="id-tech" id="tech-to">
+          <div class="id-tech-row"><span class="id-tech-key">PRIVATE KEY</span><span class="id-tech-val">IFS · 4 contractions in ℝ⁴</span></div>
+          <div class="id-tech-row"><span class="id-tech-key">PUBLIC KEY</span><span class="id-tech-val">M₃ tensor · 4×4×4 = 512 bytes</span></div>
+          <div class="id-tech-row"><span class="id-tech-key">HAUSDORFF DIM</span><span class="id-tech-val g" id="tech-to-hdim">—</span></div>
+          <div class="id-tech-row"><span class="id-tech-key">ZK CRITERION</span><span class="id-tech-val g">c1–c8 · 7 active</span></div>
+        </div>
       </div>
     </div>
     <canvas class="transfer-canvas" id="cv-transfer" width="640" height="70"></canvas>
@@ -284,7 +301,10 @@ async function onConnected(){
   var fromMaps=genIFS(userAddr);
   drawIFS('cv-from',fromMaps);
   $('addr-from').textContent=userAddr.slice(0,8)+'...'+userAddr.slice(-6);
-  $('from-hdim').textContent=calcHdim(fromMaps);
+  var fhdim=calcHdim(fromMaps);
+  $('from-hdim').textContent=fhdim;
+  $('tech-from-hdim').textContent=fhdim;
+  $('tech-from').style.display='block';
   drawEmpty('cv-to','enter address below');
   var[bal,eth,price]=await Promise.all([getMPXBal(userAddr),getETHBal(userAddr),getPrice()]);
   mpxBal=bal;mpxPrice=price;
@@ -304,6 +324,9 @@ $('send-to').addEventListener('input',function(){
       drawIFS('cv-to',genIFS(val));
       $('addr-to').textContent=val.slice(0,8)+'...'+val.slice(-6);
       $('addr-to').className='id-box-addr active';
+      var thdim=calcHdim(genIFS(val));
+      $('tech-to-hdim').textContent=thdim;
+      $('tech-to').style.display='block';
     },350);
   } else {
     drawEmpty('cv-to','enter address below');
