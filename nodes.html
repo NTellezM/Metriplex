@@ -188,24 +188,9 @@ footer a:hover{color:var(--text);}
           <th>LOCATION</th>
         </tr>
       </thead>
-      <tbody id="node-tbody">
-        <tr>
-          <td><span class="status-dot online"></span>node-0 (genesis)</td>
-          <td><span class="node-type validator">Validator</span></td>
-          <td id="node-0-status" style="color:var(--green);">online</td>
-          <td style="font-family:var(--mono);font-size:11px;">v1.0 · Python</td>
-          <td style="font-family:var(--mono);font-size:11px;">SA · private</td>
-        </tr>
-        <tr>
-          <td><span class="status-dot pending"></span>@zicheng588</td>
-          <td><span class="node-type pending">Pending</span></td>
-          <td style="color:#FFA032;">awaiting testnet</td>
-          <td style="font-family:var(--mono);font-size:11px;">—</td>
-          <td style="font-family:var(--mono);font-size:11px;">—</td>
-        </tr>
-      </tbody>
+      <tbody id="node-tbody"></tbody>
     </table>
-    <p style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:12px;">Multi-node P2P network launches Q2 2026. Register below to be among the first validators.</p>
+    <p style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:12px;" id="nodes-summary">Loading network status...</p>
   </div>
 
   <!-- RUN A NODE -->
@@ -304,6 +289,47 @@ python3 main.py --no-miner</div>
 var NODE_URL = 'https://thigh-flyaway-tacky.ngrok-free.dev';
 var GITHUB_TOKEN = '';
 
+var NODE_REGISTRY = [
+  {id:'node-0',label:'node-0 (genesis)',type:'validator',status:'online',version:'v1.0 · Python',location:'SA · private',chainH:1,mempool:0},
+  {id:'zicheng588',label:'@zicheng588',type:'pending',status:'pending',version:'—',location:'—',chainH:0,mempool:0},
+  {id:'NT',label:'NT',type:'pending',status:'pending',version:'—',location:'SA · private',chainH:0,mempool:0},
+];
+
+function renderTable(){
+  var tbody=document.getElementById('node-tbody');
+  if(!tbody)return;
+  tbody.innerHTML='';
+  NODE_REGISTRY.forEach(function(n){
+    var dotClass=n.status==='online'?'online':n.status==='pending'?'pending':'offline';
+    var typeClass=n.status==='online'?'validator':'pending';
+    var typeLabel=n.status==='online'?'Validator':'Pending';
+    var statusColor=n.status==='online'?'var(--green)':'#FFA032';
+    var statusText=n.status==='online'?'online ·  block '+n.chainH:'awaiting testnet';
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td><span class="status-dot '+dotClass+'"></span>'+n.label+'</td>'+
+      '<td><span class="node-type '+typeClass+'">'+typeLabel+'</span></td>'+
+      '<td style="color:'+statusColor+';">'+statusText+'</td>'+
+      '<td style="font-family:var(--mono);font-size:11px;">'+n.version+'</td>'+
+      '<td style="font-family:var(--mono);font-size:11px;">'+n.location+'</td>';
+    tbody.appendChild(tr);
+  });
+  var online=NODE_REGISTRY.filter(function(n){return n.status==='online';}).length;
+  var pending=NODE_REGISTRY.filter(function(n){return n.status==='pending';}).length;
+  var summary=document.getElementById('nodes-summary');
+  if(summary)summary.textContent=online+' active validator'+(online!==1?'s':'')+' · '+pending+' pending · register below to join the network';
+  var phase=document.getElementById('phase-text');
+  if(phase){
+    if(online>=2)phase.textContent='Phase 2 — Multi-node testnet LIVE · '+online+' validators online';
+    else phase.textContent='Phase 1 — Single validator · Multi-node testnet coming Q2 2026';
+  }
+}
+
+function activateNode(id){
+  var n=NODE_REGISTRY.find(function(n){return n.id===id;});
+  if(n){n.status='online';renderTable();}
+}
+window.mpxActivateNode=activateNode;
+
 async function fetchNodeInfo(){
   try{
     var res = await fetch(NODE_URL+'/info', {
@@ -311,6 +337,21 @@ async function fetchNodeInfo(){
     });
     var data = await res.json();
     document.getElementById('chain-height').textContent = data.chain_length || '—';
+    NODE_REGISTRY[0].chainH = data.chain_length || 1;
+    NODE_REGISTRY[0].mempool = data.mempool_size || 0;
+    NODE_REGISTRY[0].status = 'online';
+    // Check peers from API
+    if(data.peers && data.peers.length){
+      data.peers.forEach(function(peer){
+        var exists=NODE_REGISTRY.find(function(n){return n.id===peer.id||n.label===peer.id;});
+        if(!exists){
+          NODE_REGISTRY.push({id:peer.id,label:peer.id,type:'validator',status:'online',version:'v1.0 · Python',location:'—',chainH:data.chain_length||1,mempool:0});
+        } else {
+          exists.status='online';exists.chainH=data.chain_length||1;
+        }
+      });
+    }
+    renderTable();
     document.getElementById('mempool').textContent = data.mempool_size || '0';
     document.getElementById('node-status').textContent = 'online';
     document.getElementById('node-0-status').textContent = 'online';
@@ -366,6 +407,7 @@ function showRegStatus(type, text){
 }
 
 // Auto-refresh every 30 seconds
+renderTable();
 fetchNodeInfo();
 setInterval(fetchNodeInfo, 30000);
 </script>
