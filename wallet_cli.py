@@ -25,7 +25,7 @@ from crypto.keys import derive_public_key_with_attractor, generate_private_key
 from crypto.keystore import load_keystore, save_keystore
 from crypto.signatures import sign_transaction
 
-NODE_URL = "http://localhost:8000"
+NODE_URL = "http://localhost:8001"
 
 
 def get_tensor_hash(m3_tensor: list) -> str:
