@@ -109,9 +109,10 @@ class CAFNode:
 
             if msg_type == "HANDSHAKE":
                 new_peer = payload.get("data")
-                if new_peer not in self.peers and str(self.port) not in new_peer:
-                    self.peers.add(new_peer)
-                    print(f"[Red] 🤝 Peer enlazado: {new_peer}")
+                if str(self.port) not in new_peer:
+                    if new_peer not in self.peers:
+                        self.peers.add(new_peer)
+                        print(f"[Red] 🤝 Peer enlazado: {new_peer}")
 
                     # Devolver saludo
                     response = json.dumps(
