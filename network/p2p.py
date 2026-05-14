@@ -23,9 +23,10 @@ from network.mempool import Mempool
 
 
 class CAFNode:
-    def __init__(self, host: str, port: int, blockchain: Blockchain, mempool: Mempool):
+    def __init__(self, host: str, port: int, blockchain: Blockchain, mempool: Mempool, host_public: str = None):
         self.host = host
         self.port = port
+        self.host_public = host_public or host
         self.blockchain = blockchain
         self.mempool = mempool
         self.peers = set()
@@ -61,7 +62,7 @@ class CAFNode:
         if self.peers:
             # 1. Informar existencia
             handshake = json.dumps(
-                {"type": "HANDSHAKE", "data": f"127.0.0.1:{self.port}"}
+                {"type": "HANDSHAKE", "data": f"{self.host_public}:{self.port}"}
             ).encode()
             await self._broadcast(handshake)
 
@@ -82,7 +83,7 @@ class CAFNode:
             {
                 "type": "REQUEST_CHAIN_SYNC",
                 "last_index": local_height,
-                "requester": f"127.0.0.1:{self.port}",
+                "requester": f"{self.host_public}:{self.port}",
             }
         ).encode()
         await self._broadcast(req_msg)
@@ -116,7 +117,7 @@ class CAFNode:
 
                     # Devolver saludo
                     response = json.dumps(
-                        {"type": "HANDSHAKE", "data": f"127.0.0.1:{self.port}"}
+                        {"type": "HANDSHAKE", "data": f"{self.host_public}:{self.port}"}
                     ).encode()
                     writer.write(response)
                     await writer.drain()
@@ -271,7 +272,7 @@ class CAFNode:
                         req_msg = json.dumps(
                             {
                                 "type": "REQUEST_FULL_CHAIN",
-                                "requester": f"127.0.0.1:{self.port}",
+                                "requester": f"{self.host_public}:{self.port}",
                             }
                         ).encode()
                         await self._broadcast(req_msg)
@@ -381,6 +382,18 @@ class CAFNode:
                 )
                 writer.write(message)
                 await writer.drain()
+                try:
+                    response = await asyncio.wait_for(reader.read(4096), timeout=2.0)
+                    if response:
+                        import json as _json
+                        resp = _json.loads(response.decode())
+                        if resp.get("type") == "HANDSHAKE":
+                            new_peer = resp.get("data")
+                            if new_peer and new_peer not in self.peers and str(self.port) not in new_peer:
+                                self.peers.add(new_peer)
+                                print(f"[Red] 🤝 Peer enlazado: {new_peer}")
+                except Exception:
+                    pass
                 writer.close()
                 await writer.wait_closed()
 

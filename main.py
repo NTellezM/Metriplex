@@ -37,6 +37,7 @@ async def main():
     parser.add_argument(
         "--peer", type=str, default=None, help="IP:Puerto de un nodo conocido"
     )
+    parser.add_argument("--public-ip", type=str, default=None, help="IP publica de este nodo")
     parser.add_argument(
         "--no-miner",
         action="store_true",
@@ -68,7 +69,8 @@ async def main():
     print("[✓] Mempool inicializado.")
 
     p2p_node = CAFNode(
-        host=P2P_HOST, port=args.p2p_port, blockchain=blockchain, mempool=mempool
+        host=P2P_HOST, port=args.p2p_port, blockchain=blockchain, mempool=mempool,
+        host_public=getattr(args, "public_ip", None) or P2P_HOST
     )
 
     if args.peer:
