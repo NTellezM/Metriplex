@@ -97,6 +97,17 @@ class CAFNode:
     ):
         # Buffer de 10 MB para soportar segmentos enteros de cadena (Block Sync)
         data = await reader.read(10485760)
+        if len(data) == 10485760 or (data and data[-1:] != b'}'):
+            chunks = [data]
+            while True:
+                try:
+                    chunk = await asyncio.wait_for(reader.read(65536), timeout=1.0)
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+                except asyncio.TimeoutError:
+                    break
+            data = b"".join(chunks)
         if not data:
             writer.close()
             await writer.wait_closed()
@@ -161,6 +172,7 @@ class CAFNode:
                         print(f"[Red] Error enviando segmento a {requester_addr}: {e}")
 
             elif msg_type == "CHAIN_SEGMENT":
+                print(f"[Debug] Procesando CHAIN_SEGMENT")
                 # Recibimos una carga de bloques para ponernos al día
                 blocks_data = payload.get("blocks", [])
                 if not blocks_data:
