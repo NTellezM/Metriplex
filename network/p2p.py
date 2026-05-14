@@ -389,14 +389,9 @@ class CAFNode:
                         resp = _json.loads(response.decode())
                         if resp.get("type") == "HANDSHAKE":
                             new_peer = resp.get("data")
-<<<<<<< Updated upstream
-                            if new_peer and new_peer not in self.peers and str(self.port) not in new_peer:
-                                self.peers.add(new_peer)
-=======
                             if new_peer and str(self.port) not in new_peer:
                                 if new_peer not in self.peers:
                                     self.peers.add(new_peer)
->>>>>>> Stashed changes
                                 print(f"[Red] 🤝 Peer enlazado: {new_peer}")
                 except Exception:
                     pass
