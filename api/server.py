@@ -44,6 +44,10 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         allow_headers=["*"],
     )
 
+    @app.get("/peers")
+    async def get_peers():
+        return {"peers": list(p2p_node.peers)}
+
     @app.get("/info")
     async def get_node_info():
         return {
