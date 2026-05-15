@@ -15,6 +15,7 @@ Soporta configuración de puertos por CLI y roles de red (Validador/Observador).
 import argparse
 import asyncio
 import sys
+import socket
 
 import uvicorn
 
@@ -57,9 +58,56 @@ async def main():
 
     rol_nodo = "OBSERVADOR (Full Node)" if args.no_miner else "VALIDADOR (Minero)"
 
-    print("==================================================")
-    print(f" NODO CAF | API: {args.api_port} | P2P: {args.p2p_port} | ROL: {rol_nodo}")
-    print("==================================================")
+    # --- Auto-detección de IP pública ---
+    BOOTSTRAP_PEERS = [
+        "157.180.113.24:65432",  # node-0 genesis
+        "157.180.113.24:65433",  # NT-vps
+    ]
+
+    if args.public_ip:
+        public_ip = args.public_ip
+        ip_source = "manual"
+    else:
+        try:
+            import urllib.request
+            public_ip = urllib.request.urlopen(
+                "https://api.ipify.org", timeout=5
+            ).read().decode().strip()
+            ip_source = "auto-detectada"
+        except Exception:
+            public_ip = "127.0.0.1"
+            ip_source = "fallback (sin internet)"
+
+    # --- Bootstrap peers ---
+    if not args.peer:
+        # Filtrar self — no conectar al propio puerto
+        for bp in BOOTSTRAP_PEERS:
+            bp_port = bp.split(":")[1]
+            if str(args.p2p_port) != bp_port:
+                args.peer = bp
+                break
+
+    # --- Verificar alcanzabilidad del peer ---
+    def check_peer(peer_str):
+        try:
+            host, port = peer_str.rsplit(":", 1)
+            s = socket.create_connection((host, int(port)), timeout=3)
+            s.close()
+            return True
+        except Exception:
+            return False
+
+    peer_status = "✓ alcanzable" if check_peer(args.peer) else "✗ no alcanzable"
+
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("  METRIPLEX NODE STARTING")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print(f"  API port   : {args.api_port}")
+    print(f"  P2P port   : {args.p2p_port}")
+    print(f"  Public IP  : {public_ip}  ({ip_source})")
+    print(f"  Modo       : {rol_nodo}")
+    print(f"  Peer       : {args.peer}  {peer_status}")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
     storage = Storage(db_filename)
     blockchain = Blockchain(storage)
@@ -70,7 +118,7 @@ async def main():
 
     p2p_node = CAFNode(
         host=P2P_HOST, port=args.p2p_port, blockchain=blockchain, mempool=mempool,
-        host_public=getattr(args, "public_ip", None) or P2P_HOST
+        host_public=public_ip
     )
 
     if args.peer:
