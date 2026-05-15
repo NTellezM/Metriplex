@@ -41,3 +41,7 @@ caf-dashboard/.env
 Thumbs.db
 *.swp
 *.swo
+*.db-shm
+*.db-wal
+network/p2p.py.backup
+network/p2p.py.bak
