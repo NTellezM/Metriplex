@@ -52,6 +52,7 @@ class CAFNode:
 
         # Iniciar descubrimiento y sincronización al levantar el nodo
         asyncio.create_task(self.announce_to_peers())
+        asyncio.create_task(self.peer_maintenance_loop())
 
         async with server:
             await server.serve_forever()
@@ -66,7 +67,7 @@ class CAFNode:
             ).encode()
             await self._broadcast(handshake)
 
-            # 2. Compartir lista de peers conocidos (full mesh discovery)
+            # 2. Compartir lista de peers (full mesh discovery)
             await self._broadcast_peer_list()
 
             # 3. FASE F1: Solicitar sincronización del historial
@@ -136,7 +137,6 @@ class CAFNode:
                     await writer.drain()
 
             elif msg_type == "PEER_LIST":
-                # Recibimos la lista de peers de otro nodo — conectar a desconocidos
                 received_peers = payload.get("peers", [])
                 my_addr = f"{self.host_public}:{self.port}"
                 new_peers = [
@@ -150,7 +150,6 @@ class CAFNode:
                     self.peers.add(p)
                     print(f"[Red] 🌐 Peer descubierto via malla: {p}")
                 if new_peers:
-                    # Anunciarnos a los nuevos peers y pedirles sus peers
                     handshake = json.dumps(
                         {"type": "HANDSHAKE", "data": f"{self.host_public}:{self.port}"}
                     ).encode()
@@ -407,7 +406,7 @@ class CAFNode:
         await self._broadcast(message)
 
     async def _broadcast_peer_list(self):
-        """Comparte lista completa de peers — construye la malla."""
+        """Comparte lista completa de peers para construir la malla."""
         if not self.peers:
             return
         peer_list_msg = json.dumps({
@@ -433,37 +432,38 @@ class CAFNode:
 
     async def peer_maintenance_loop(self):
         """Cada 30s: reconecta peers offline y refresca la malla."""
-        await asyncio.sleep(15)  # esperar arranque inicial
+        await asyncio.sleep(15)
         while True:
-            await asyncio.sleep(30)
-            # 1. Intentar rehabilitar peers baneados (pueden haber vuelto)
-            for peer in list(self.banned_peers):
-                host, port = peer.split(":")
-                try:
-                    reader, writer = await asyncio.wait_for(
-                        asyncio.open_connection(host, int(port)), timeout=3.0
-                    )
-                    writer.close()
-                    await writer.wait_closed()
-                    # Volvió — rehabilitar
-                    self.banned_peers.discard(peer)
-                    self.peer_failures[peer] = 0
-                    self.peers.add(peer)
-                    print(f"[Red] ♻️  Peer rehabilitado: {peer}")
-                    # Anunciarnos
-                    handshake = json.dumps(
-                        {"type": "HANDSHAKE", "data": f"{self.host_public}:{self.port}"}
-                    ).encode()
-                    asyncio.create_task(self._send_to_peer(peer, handshake))
-                except Exception:
-                    pass  # sigue offline — intentar en siguiente ciclo
-
-            # 2. Refrescar malla — compartir peers con todos
-            if self.peers:
-                await self._broadcast_peer_list()
-                active = len(self.peers)
-                banned = len(self.banned_peers)
-                print(f"[Red] 🔄 Mantenimiento: {active} peers activos, {banned} en espera")
+            try:
+                await asyncio.sleep(30)
+                # Rehabilitar peers baneados que hayan vuelto
+                for peer in list(self.banned_peers):
+                    host, port = peer.split(":")
+                    try:
+                        reader, writer = await asyncio.wait_for(
+                            asyncio.open_connection(host, int(port)), timeout=3.0
+                        )
+                        writer.close()
+                        await writer.wait_closed()
+                        self.banned_peers.discard(peer)
+                        self.peer_failures[peer] = 0
+                        self.peers.add(peer)
+                        print(f"[Red] ♻️  Peer rehabilitado: {peer}")
+                        handshake = json.dumps(
+                            {"type": "HANDSHAKE", "data": f"{self.host_public}:{self.port}"}
+                        ).encode()
+                        asyncio.create_task(self._send_to_peer(peer, handshake))
+                    except Exception:
+                        pass
+                # Refrescar malla
+                if self.peers:
+                    await self._broadcast_peer_list()
+                    active = len(self.peers)
+                    banned = len(self.banned_peers)
+                    print(f"[Red] 🔄 Mantenimiento: {active} peers activos, {banned} en espera")
+            except Exception as e:
+                print(f"[Red] ⚠️  Error en maintenance loop: {e}")
+                await asyncio.sleep(5)
 
     async def _broadcast(self, message: bytes):
         for peer in list(self.peers):
