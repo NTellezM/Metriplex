@@ -31,6 +31,21 @@ Metriplex:           identity = M₃(attractor(IFS))
 
 ---
 
+## Live Network — May 2026
+
+| Node | Role | Location | Status |
+|------|------|----------|--------|
+| node-0 (genesis) | Validator · Miner | Hetzner VPS · Germany | ✅ Online 24/7 |
+| NT (VPS) | Observer | Hetzner VPS · Germany | ✅ Online 24/7 |
+| NT (laptop) | Observer | Chile | ✅ Online |
+| node-2 | Observer | Chile | ✅ Online |
+
+**Milestones:**
+- May 14, 2026 — First cross-country ZK-verified TX (Chile → Germany, ~10s)
+- May 16, 2026 — First native browser TX — ZK proof generated in JavaScript, verified on-chain
+
+---
+
 ## Architecture
 
 ```
@@ -227,6 +242,7 @@ metriplex/
 | `/transaction` | POST | Submit signed transaction |
 | `/faucet` | POST | Request testnet funds (M3 tensor in body) |
 | `/mine` | POST | Force block production |
+| `/identity/{address}` | GET | Fractal identity lookup by M₃ hash |
 | `/peers` | GET | Connected P2P peers |
 
 ---
