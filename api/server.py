@@ -64,6 +64,21 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         ]
         return chain_data[::-1][skip : skip + limit]
 
+    @app.get("/identity/{address}")
+    def get_identity(address: str):
+        """Devuelve el tensor M3 completo dado un hash de address (64 o 40 chars)."""
+        import hashlib, json
+        address = address.lower().replace('0x','')
+        for block in blockchain.chain:
+            for tx in block.transactions:
+                for m3 in [tx.sender_m3, tx.receiver_m3]:
+                    if not m3:
+                        continue
+                    h = hashlib.sha256(json.dumps(m3, sort_keys=True, separators=(',',':')).encode()).hexdigest()
+                    if h.startswith(address):
+                        return {"address": "0x"+h, "public_m3": m3}
+        return {"error": "Identidad no encontrada en la chain"}
+
     @app.get("/balance/{tensor_hash}")
     def get_balance(tensor_hash: str):
         try:
