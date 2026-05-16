@@ -104,7 +104,7 @@ class Blockchain:
             "receiver_m3": tx.receiver_m3,
             "amount": tx.amount,
             "fee": tx.fee,
-            "payload": tx.payload,
+            "payload": tx.payload if tx.payload else None,
         }
         tx_hash = hashlib.sha256(
             json.dumps(payload_dict, sort_keys=True, separators=(",",":")).encode()
