@@ -142,7 +142,7 @@ class Blockchain:
                     public_m3=sender_m3,
                     tx_hash=tx_hash,
                     criterion_params=params,
-                    N_total=100,  # ZKEngine.N_PROOF
+                    N_total=400,  # ZKEngine.N_PROOF
                 )
             except Exception as e:
                 print(f"  [ZK] Excepción en modo compacto: {e}")
