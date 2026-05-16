@@ -30,8 +30,8 @@ class ZKEngine:
         private_key: dict,
         public_m3: list,
         tx_hash: str,
-        criterion_params: CriterionParams,
-        N_total: int,
+        criterion_params: CriterionParams = None,
+        N_total: int = None,
         attractor: list = None,
     ) -> dict:
         """
@@ -45,6 +45,11 @@ class ZKEngine:
             from crypto.keys import chaos_game
 
             attractor = chaos_game(matrices, vectores)
+        if criterion_params is None:
+            from core.verifier import calibrate
+            criterion_params = calibrate(attractor, matrices, vectores, len(attractor))
+        if N_total is None:
+            N_total = len(attractor)
 
         # Selección pseudoaleatoria con semilla derivada de tx_hash (Anti-Replay)
         seed = int(hashlib.sha256(tx_hash.encode()).hexdigest()[:8], 16)
@@ -112,8 +117,8 @@ class ZKEngine:
         proof: dict,
         public_m3: list,
         tx_hash: str,
-        criterion_params: CriterionParams,
-        N_total: int,
+        criterion_params: CriterionParams = None,
+        N_total: int = None,
     ) -> bool:
         """
         VERIFIER — Ejecutado por el nodo validador.

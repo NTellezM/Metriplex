@@ -254,6 +254,17 @@ def generate_private_key(
         if not kr_ok:
             continue
 
+        # Verificar c1-c8 (convergencia CAF)
+        try:
+            from core.verifier import calibrate, evaluate
+            att = chaos_game(matrices, vectores)
+            N_att = len(att)
+            params = calibrate(att, matrices, vectores, N_att)
+            result = evaluate(att, matrices, vectores, params, N_att)
+            if not result.pass_all:
+                continue
+        except Exception:
+            continue
         return {
             "A": matrices,
             "b": vectores,
