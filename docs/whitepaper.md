@@ -131,11 +131,33 @@ The Ethereum bridge uses a lock-and-mint / burn-and-release architecture:
 | Phase | Status | Description |
 |-------|--------|-------------|
 | Layer 1 core | ✅ Complete | IFS identity, ZK criterion, consensus, persistence |
-| EVM bridge | ✅ Live (Sepolia) | Relayer + ERC-20 contract, verified on Etherscan |
-| Base mainnet | 🔜 Q3 2025 | Token launch, Uniswap V3 pair |
-| Rust rewrite | 🔜 Q4 2025 | 100x performance improvement |
-| Security audit | 🔜 Pre-mainnet | ZK criterion formal verification |
-| Multi-node testnet | 🔜 2026 | Decentralized validator set |
+| EVM bridge | ✅ Live (Base mainnet) | Relayer + ERC-20 contract, Uniswap V4 |
+| Multi-node testnet | ✅ Live · May 2026 | 4 nodes across Chile and Germany, full mesh |
+| Native browser TX | ✅ Live · May 16, 2026 | ZK proof generated in JS, verified on-chain |
+| Rust rewrite | 🔜 Q3 2026 | 100x performance improvement |
+| Security audit + arXiv | 🔜 Q1 2027 | ZK criterion formal verification + paper |
+
+---
+
+## 9. Network Milestones
+
+### 9.3 First cross-country TX — May 14, 2026
+
+| Event | Value |
+|-------|-------|
+| TX hash | 70757186c9a2a788f1dfdf2f388b3bb6... |
+| ZK proof | ACCEPTED — c1–c8 verified |
+| Propagation | Chile → Germany · ~10 seconds |
+| Consensus | ✓ Identical — 4 nodes · 2 continents |
+
+### 9.4 First native browser TX — May 16, 2026
+
+| Event | Value |
+|-------|-------|
+| Proof generated | Browser (JavaScript) — metriplex-crypto.js |
+| Proof verified | Python validator — ZK ACCEPTED |
+| Bug fixed | `null` serialized as `{}` → tx_hash mismatch → resolved |
+| Significance | Full ZK pipeline: JS → network → Python — no trusted intermediary |
 
 ---
 
