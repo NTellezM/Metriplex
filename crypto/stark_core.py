@@ -35,7 +35,7 @@ class MerkleTree:
     @staticmethod
     def hash_leaf(data) -> str:
         return hashlib.sha256(
-            json.dumps(data, sort_keys=True).encode()
+            json.dumps(data, sort_keys=True, separators=(",",":")).encode()
         ).hexdigest()
 
     @staticmethod
