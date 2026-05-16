@@ -363,4 +363,4 @@ def validate_key_full(private_key: dict) -> dict:
 
 def key_fingerprint(public_m3: list) -> str:
     """Hash SHA256 del tensor M3 — identifica la cuenta en el ledger."""
-    return hashlib.sha256(json.dumps(public_m3, sort_keys=True).encode()).hexdigest()
+    return hashlib.sha256(json.dumps(public_m3, sort_keys=True, separators=(",",":")).encode()).hexdigest()

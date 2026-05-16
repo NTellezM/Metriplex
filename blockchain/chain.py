@@ -107,7 +107,7 @@ class Blockchain:
             "payload": tx.payload,
         }
         tx_hash = hashlib.sha256(
-            json.dumps(payload_dict, sort_keys=True).encode()
+            json.dumps(payload_dict, sort_keys=True, separators=(",",":")).encode()
         ).hexdigest()
 
         # 4. Verificación ZK

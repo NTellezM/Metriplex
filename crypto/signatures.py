@@ -31,7 +31,7 @@ def sign_transaction(
     criterion_params = None,
     attractor: list = None
 ) -> dict:
-    tx_str = json.dumps(tx_payload_dict, sort_keys=True).encode()
+    tx_str = json.dumps(tx_payload_dict, sort_keys=True, separators=(",",":")).encode()
     tx_hash = hashlib.sha256(tx_str).hexdigest()
 
     matrices = private_key["A"]

@@ -88,7 +88,7 @@ class ZKEngine:
         audit_point = x_final[audit_idx]
 
         m3_hash = hashlib.sha256(
-            json.dumps(public_m3, sort_keys=True).encode()
+            json.dumps(public_m3, sort_keys=True, separators=(",",":")).encode()
         ).hexdigest()
 
         # Sello Fiat-Shamir
@@ -141,7 +141,7 @@ class ZKEngine:
 
             # 2. Verificar Sello Fiat-Shamir
             m3_hash = hashlib.sha256(
-                json.dumps(public_m3, sort_keys=True).encode()
+                json.dumps(public_m3, sort_keys=True, separators=(",",":")).encode()
             ).hexdigest()
             expected_pi_payload = (
                 f"{commitment}:{m3_hash}:{tx_hash}:{packed}:{proof['audit_idx']}"
