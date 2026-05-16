@@ -67,9 +67,18 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
     @app.get("/balance/{tensor_hash}")
     def get_balance(tensor_hash: str):
         try:
-            # OPTIMIZACIÓN: Consulta instantánea a la base de datos WAL
-            # Evita el "State Replay" de recorrer toda la blockchain en memoria
-            balance = blockchain.state_db.get_balance(tensor_hash)
+            # Buscar con hash completo (64 chars) o prefijo (40 chars)
+            balance = blockchain.storage.get_balance(tensor_hash)
+            if balance == 0 and len(tensor_hash) <= 40:
+                # Buscar en DB por prefijo
+                import sqlite3
+                conn = sqlite3.connect(blockchain.storage.db_path)
+                cur = conn.cursor()
+                cur.execute("SELECT balance FROM balances WHERE tensor_hash LIKE ?", (tensor_hash + '%',))
+                row = cur.fetchone()
+                conn.close()
+                if row:
+                    balance = row[0]
 
             # Formateamos asumiendo que usas SCALE_FACTOR
             from core.arithmetic import SCALE_FACTOR
