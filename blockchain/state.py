@@ -21,7 +21,7 @@ class StateDB:
         self.vm = CAFVirtualMachine(self.storage)
 
     def _hash_tensor(self, m3_tensor: list) -> str:
-        tensor_str = json.dumps(m3_tensor, sort_keys=True).encode()
+        tensor_str = json.dumps(m3_tensor, sort_keys=True, separators=(",",":")).encode()
         return hashlib.sha256(tensor_str).hexdigest()
 
     def get_balance(self, m3_tensor: list) -> int:
