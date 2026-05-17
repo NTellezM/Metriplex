@@ -97,6 +97,7 @@ class Storage:
             (tensor_hash, new_balance),
         )
         self.conn.commit()
+        self.conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
 
     def save_block(self, block):
         # Serializar transacciones a texto para almacenamiento relacional
