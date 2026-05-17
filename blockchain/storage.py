@@ -81,6 +81,7 @@ class Storage:
         self.conn.commit()
 
     def get_balance(self, tensor_hash: str) -> int:
+        self.conn.execute("PRAGMA wal_checkpoint(FULL);")
         self.cursor.execute(
             "SELECT balance FROM balances WHERE tensor_hash = ?", (tensor_hash,)
         )
@@ -97,7 +98,7 @@ class Storage:
             (tensor_hash, new_balance),
         )
         self.conn.commit()
-        self.conn.execute("PRAGMA wal_checkpoint(PASSIVE);")
+        self.conn.execute("PRAGMA wal_checkpoint(FULL);")
 
     def save_block(self, block):
         # Serializar transacciones a texto para almacenamiento relacional
