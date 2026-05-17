@@ -54,10 +54,8 @@ CONTRACT_ADDRESS = "0x22D3f414438556d1B071cCfE52513d4d829400fd"
 RELAYER_EVM_PRIV_KEY = os.environ.get("RELAYER_EVM_KEY", "")
 if not RELAYER_EVM_PRIV_KEY:
     raise EnvironmentError(
-        "[Relayer] RELAYER_EVM_KEY no configurada.
-"
-        "Copia .env.example como .env y rellena tu clave privada EVM.
-"
+        "[Relayer] RELAYER_EVM_KEY no configurada. "
+        "Copia .env.example como .env y rellena tu clave privada EVM. "
         "Ejecuta: export RELAYER_EVM_KEY='tu_clave'"
     )
 
@@ -99,7 +97,7 @@ VAULT_MPX_ADDRESS = [
 # Proveedor Web3 (Sepolia vía Brave o cualquier RPC público)
 WEB3_PROVIDER_URL = os.environ.get(
     "WEB3_RPC",
-    "https://ethereum-sepolia.wallet.brave.com/"
+    "https://mainnet.base.org"
 )
 
 # ABI mínimo del contrato

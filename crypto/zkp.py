@@ -149,9 +149,11 @@ class ZKEngine:
             expected_pi = hashlib.sha256(expected_pi_payload.encode()).hexdigest()
 
             if pi != expected_pi:
-                print(
-                    "[ZK] Falla: PI incorrecto (Ataque de repetición o métricas forjadas)."
-                )
+                print(f"[ZK] PI FAIL got={pi[:16]} exp={expected_pi[:16]}")
+                print(f"[ZK] commitment={commitment}")
+                print(f"[ZK] m3_hash={m3_hash}")
+                print(f"[ZK] tx_hash={tx_hash}")
+                print(f"[ZK] packed={packed} audit_idx={proof['audit_idx']}")
                 return False
 
             if not packed:
