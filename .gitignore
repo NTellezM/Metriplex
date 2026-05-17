@@ -45,3 +45,10 @@ Thumbs.db
 *.db-wal
 network/p2p.py.backup
 network/p2p.py.bak
+*.db-shm
+*.db-wal
+*.db
+wallet_node0.json
+wallet_nt_vps.json
+vault_keystore.json
+.env
