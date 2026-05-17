@@ -244,7 +244,8 @@ async def monitor_eth_events(vault_priv, vault_pub, vault_params, vault_att):
                     native_recipient = event["args"]["nativeRecipient"]
                     amount_wei       = event["args"]["amount"]
                     # Convertir wei (18 decimals) a CAF scale (2^30)
-                    amount           = int(amount_wei * SCALE_FACTOR // (10**18))
+                    _scale = 1073741824  # 2^30
+                    amount           = int(amount_wei * _scale // (10**18))
                     burn_tx_hash     = w3.to_hex(event["transactionHash"])
 
                     print(f"\n[!] BridgeBurn detectado:")
