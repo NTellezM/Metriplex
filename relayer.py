@@ -315,8 +315,19 @@ def execute_native_release(
             vault_hash = hashlib.sha256(
                 json.dumps(VAULT_MPX_ADDRESS, sort_keys=True, separators=(',',':')).encode()
             ).hexdigest()
-            bal_res = requests.get(f"{wMXP_NODE_URL}/balance/{vault_hash}", timeout=5)
-            vault_balance = bal_res.json().get("balance_raw", 0)
+            # Consultar DB directamente para evitar WAL cache del nodo
+            import sqlite3 as _sqlite3
+            _db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "node_data_8000.db")
+            try:
+                _conn = _sqlite3.connect(_db_path, timeout=5.0)
+                _cur = _conn.cursor()
+                _cur.execute("SELECT balance FROM balances WHERE tensor_hash=?", (vault_hash,))
+                _row = _cur.fetchone()
+                vault_balance = _row[0] if _row else 0
+                _conn.close()
+            except Exception:
+                bal_res = requests.get(f"{wMXP_NODE_URL}/balance/{vault_hash}", timeout=5)
+                vault_balance = bal_res.json().get("balance_raw", 0)
 
             fee = 1 * SCALE_FACTOR
             if vault_balance < amount + fee:
