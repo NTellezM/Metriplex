@@ -79,18 +79,19 @@ class AutoMiner:
             if my_address == leader_address:
                 txs = self.mempool.get_transactions_for_block(limit=10)
 
-                if txs:
-                    self.last_mined_slot = current_slot
+                self.last_mined_slot = current_slot
 
-                    # Recompensa Coinbase para el minero (si tiene billetera configurada)
-                    if self.miner_m3:
-                        coinbase_tx = Transaction(
-                            sender_m3=[],
-                            receiver_m3=self.miner_m3,
-                            amount=self.BLOCK_REWARD,
-                            signature_data={"type": "COINBASE"},
-                        )
-                        txs = [coinbase_tx] + list(txs)
+                # Recompensa Coinbase para el minero (si tiene billetera configurada)
+                if self.miner_m3:
+                    coinbase_tx = Transaction(
+                        sender_m3=[],
+                        receiver_m3=self.miner_m3,
+                        amount=self.BLOCK_REWARD,
+                        signature_data={"type": "COINBASE"},
+                    )
+                    txs = [coinbase_tx] + list(txs)
+
+                if txs:
 
                     new_block = Block(
                         index=last_block.index + 1,

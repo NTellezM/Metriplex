@@ -140,7 +140,8 @@ async def main():
             try:
                 import json
                 with open(args.miner_wallet) as f:
-                    miner_m3 = json.load(f)
+                    ks = json.load(f)
+                    miner_m3 = ks.get('public_m3', ks) if isinstance(ks, dict) else ks
                 print(f"[✓] Billetera del minero cargada para recompensas automáticas.")
             except Exception as e:
                 print(f"[!] No se pudo cargar la billetera del minero: {e}")
