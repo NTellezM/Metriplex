@@ -24,7 +24,8 @@ from network.mempool import Mempool
 
 
 class AutoMiner:
-    BLOCK_REWARD = 50 * SCALE_FACTOR  # Recompensa por bloque forjado
+    BLOCK_REWARD = 50 * SCALE_FACTOR  # Recompensa inicial por bloque
+    HALVING_INTERVAL = 210_000          # Bloques entre cada halving (como Bitcoin)
 
     def __init__(
         self,

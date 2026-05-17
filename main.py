@@ -150,7 +150,7 @@ async def main():
             blockchain=blockchain,
             mempool=mempool,
             p2p_node=p2p_node,
-            block_time_seconds=10,
+            block_time_seconds=60,
             miner_m3=miner_m3,
         )
         tasks.append(miner.start())
