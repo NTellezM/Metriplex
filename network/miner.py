@@ -76,7 +76,12 @@ class AutoMiner:
             leader_index = leader_hash % len(validators)
             leader_address = validators[leader_index]
 
-            # 4. Forjado de Bloque (Solo si este nodo ganó la lotería del slot)
+            # 4a. Minar inmediatamente si hay TXs pendientes (sin esperar slot)
+            pending = self.mempool.get_transactions_for_block(limit=1)
+            if pending and current_slot != self.last_mined_slot:
+                pass  # Se maneja abajo en el slot normal
+
+            # 4b. Forjado de Bloque (Solo si este nodo ganó la lotería del slot)
             if my_address == leader_address:
                 txs = self.mempool.get_transactions_for_block(limit=10)
 
