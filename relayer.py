@@ -67,32 +67,7 @@ VAULT_KEYSTORE_PATH = os.environ.get("VAULT_KEYSTORE", "vault_keystore.json")
 VAULT_KEYSTORE_PASSWORD = os.environ.get("VAULT_PASSWORD", "")
 
 # Tensor M3 de la Bóveda (igual al almacenado en el relayer anterior)
-VAULT_MPX_ADDRESS = [
-    [
-        [8384988, -1608707, 6420335, 19642383],
-        [-1608707, -6911081, 47404468, -25925513],
-        [6420335, 47404468, 102664263, -29063834],
-        [19642383, -25925513, -29063834, -27647372],
-    ],
-    [
-        [-1608707, -6911081, 47404468, -25925513],
-        [-6911081, 6912512, 21067585, -11712753],
-        [47404468, 21067585, 117351962, -54000624],
-        [-25925513, -11712753, -54000624, 7173881],
-    ],
-    [
-        [6420335, 47404468, 102664263, -29063834],
-        [47404468, 21067585, 117351962, -54000624],
-        [102664263, 117351962, 189616606, -85093789],
-        [-29063834, -54000624, -85093789, 31109686],
-    ],
-    [
-        [19642383, -25925513, -29063834, -27647372],
-        [-25925513, -11712753, -54000624, 7173881],
-        [-29063834, -54000624, -85093789, 31109686],
-        [-27647372, 7173881, 31109685, -12974343],
-    ],
-]
+VAULT_MPX_ADDRESS = [[[-767737, -640365, 3959581, 106598], [-640364, 3512988, 3191937, 975426], [3959581, 3191937, 1345000, 4022728], [106598, 975426, 4022728, 35378]], [[-640364, 3512988, 3191937, 975426], [3512988, -3101786, 1688013, -2615231], [3191937, 1688013, 1823774, -3989328], [975426, -2615231, -3989328, -2562126]], [[3959581, 3191937, 1345000, 4022728], [3191937, 1688013, 1823774, -3989328], [1345000, 1823774, 2942833, -550010], [4022728, -3989328, -550010, -1757593]], [[106598, 975426, 4022728, 35378], [975426, -2615231, -3989328, -2562126], [4022728, -3989328, -550010, -1757593], [1847787, -3641039, 4171453, -324450]]]
 
 # Proveedor Web3 (Sepolia vía Brave o cualquier RPC público)
 WEB3_PROVIDER_URL = os.environ.get(
@@ -252,7 +227,7 @@ async def monitor_eth_events(vault_priv, vault_pub, vault_params, vault_att):
     serializado como JSON (lo que produce wallet_cli.py al exportar la llave pública).
     """
     print("[Relayer] Monitoreando evento BridgeBurn en Ethereum...")
-    last_processed_eth_block = w3.eth.block_number
+    last_processed_eth_block = w3.eth.block_number - 250  # lookback 250 blocks on start
 
     while True:
         try:
@@ -310,6 +285,9 @@ def execute_native_release(
     """
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from core.arithmetic import SCALE_FACTOR
+    from core.verifier import CriterionParams
+    if isinstance(vault_params, dict):
+        vault_params = CriterionParams(**vault_params)
     from crypto.signatures import sign_transaction
 
     try:
@@ -335,7 +313,7 @@ def execute_native_release(
             # Consulta directa usando el hash del tensor
             import hashlib
             vault_hash = hashlib.sha256(
-                json.dumps(VAULT_MPX_ADDRESS, sort_keys=True).encode()
+                json.dumps(VAULT_MPX_ADDRESS, sort_keys=True, separators=(',',':')).encode()
             ).hexdigest()
             bal_res = requests.get(f"{wMXP_NODE_URL}/balance/{vault_hash}", timeout=5)
             vault_balance = bal_res.json().get("balance_raw", 0)
