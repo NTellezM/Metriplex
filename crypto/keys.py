@@ -87,6 +87,21 @@ def _qr_rotation_fp() -> list:
     return [[int(float(Q[r][c]) * SCALE_FACTOR) for c in range(D)] for r in range(D)]
 
 
+def _qr_rotation_fp_seeded(rng) -> list:
+    """Rotación aleatoria con rng externo (para generación determinística)."""
+    import numpy as np
+    M = rng.randn(D, D)
+    Q, _ = np.linalg.qr(M)
+    if float(np.linalg.det(Q)) < 0:
+        Q[:, 0] *= -1
+    return [[int(float(Q[r][c]) * SCALE_FACTOR) for c in range(D)] for r in range(D)]
+
+def _make_contraction_seeded(scale: float, rng) -> list:
+    """Construye Aᵢ = scale · Q con rng externo."""
+    Q_fp = _qr_rotation_fp_seeded(rng)
+    scale_fp = int(scale * SCALE_FACTOR)
+    return [[fp_mul(scale_fp, Q_fp[r][c]) for c in range(D)] for r in range(D)]
+
 def _make_contraction(scale: float) -> list:
     """
     Construye Aᵢ = scale · Q donde Q es rotación aleatoria.
