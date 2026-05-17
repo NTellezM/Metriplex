@@ -77,6 +77,22 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
                     h = hashlib.sha256(json.dumps(m3, sort_keys=True, separators=(',',':')).encode()).hexdigest()
                     if h.startswith(address):
                         return {"address": "0x"+h, "public_m3": m3}
+        # Buscar en keystores conocidos (vault, etc.)
+        import os
+        known_keystores = [
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'vault_keystore.json'),
+        ]
+        for ks_path in known_keystores:
+            try:
+                ks = json.load(open(ks_path))
+                m3 = ks.get('public_m3')
+                if not m3:
+                    continue
+                h = hashlib.sha256(json.dumps(m3, sort_keys=True, separators=(',',':')).encode()).hexdigest()
+                if h.startswith(address):
+                    return {"address": "0x"+h, "public_m3": m3}
+            except Exception:
+                continue
         return {"error": "Identidad no encontrada en la chain"}
 
     @app.get("/balance/{tensor_hash}")
@@ -109,6 +125,7 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
     @app.post("/transaction")
     async def submit_transaction(tx_req: TransactionRequest):
         try:
+            print(f"[API] TX recibida sender={str(tx_req.sender_m3)[:20]} sig_keys={list(tx_req.signature_data.keys())[:5]}")
             # ACTUALIZADO: Ahora le pasamos el payload al motor interno
             tx = Transaction(
                 sender_m3=tx_req.sender_m3,
@@ -208,5 +225,177 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
             raise HTTPException(
                 status_code=500, detail="Fallo al integrar el bloque a la cadena."
             )
+
+    @app.post("/keystore/generate")
+    async def generate_keystore(req: dict):
+        """
+        Genera un keystore Metriplex determinístico desde una address ERC-20.
+        seed = sha256(evm_address) — mismo address + password = mismo keystore.
+        """
+        import hashlib, json, os, base64
+        from cryptography.fernet import Fernet
+        from crypto.keys import generate_private_key
+        from crypto.keystore import save_keystore
+        from crypto.tensors import calculate_m3_tensor
+        from crypto.keys import chaos_game
+
+        evm_address = req.get("address", "").lower().strip()
+        password = req.get("password", "")
+
+        if not evm_address.startswith("0x") or len(evm_address) != 42:
+            raise HTTPException(status_code=400, detail="Address EVM inválida")
+        if len(password) < 4:
+            raise HTTPException(status_code=400, detail="Password demasiado corta")
+
+        # Seed determinístico desde address
+        seed_bytes = hashlib.sha256(evm_address.encode()).digest()
+        seed_int = int.from_bytes(seed_bytes[:4], "little")
+
+        import numpy as np
+        rng = np.random.RandomState(seed_int % (2**31))
+
+        # Generar IFS con seed fijo — reintentar hasta pasar c1-c8
+        from crypto.keys import (
+            _make_contraction, validate_r1, validate_scale,
+            validate_kruskal, N, D, RHO_MIN, RHO_MAX, MAX_KEYGEN_ATTEMPTS,
+            KRUSKAL_BOUND, secure_float, secure_int_fp
+        )
+        from core.verifier import calibrate, evaluate
+
+        private_key = None
+        for attempt in range(MAX_KEYGEN_ATTEMPTS):
+            matrices, vectores = [], []
+            for _ in range(N):
+                scale = float(rng.uniform(RHO_MIN, RHO_MAX))
+                from crypto.keys import _make_contraction_seeded
+                matrices.append(_make_contraction_seeded(scale, rng))
+                vectores.append([int(rng.uniform(-2**30, 2**30)) for _ in range(D)])
+            r1_ok, _ = validate_r1(matrices)
+            if not r1_ok:
+                continue
+            sc_ok, rhos = validate_scale(matrices)
+            if not sc_ok:
+                continue
+            kr_ok, rank, _ = validate_kruskal(vectores, N)
+            if not kr_ok:
+                continue
+            try:
+                att = chaos_game(matrices, vectores)
+                params = calibrate(att, matrices, vectores, len(att))
+                result = evaluate(att, matrices, vectores, params, len(att))
+                if not result.pass_all:
+                    continue
+                private_key = {"A": matrices, "b": vectores}
+                criterion_params = params
+                attractor = att
+                break
+            except Exception:
+                continue
+
+        if private_key is None:
+            raise HTTPException(status_code=500, detail="No se pudo generar keystore válido")
+
+        public_m3 = calculate_m3_tensor(attractor)
+        address = "0x" + hashlib.sha256(
+            json.dumps(public_m3, sort_keys=True, separators=(",",":")).encode()
+        ).hexdigest()
+
+        # Encriptar keystore (mismo formato que keystore.py)
+        import struct
+        salt = os.urandom(16)
+        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+        from cryptography.hazmat.primitives import hashes
+        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=200000)
+        key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
+        f = Fernet(key)
+        encrypted = f.encrypt(json.dumps(private_key, separators=(",",":")).encode()).decode()
+
+        keystore = {
+            "address": address,
+            "evm_address": evm_address,
+            "salt": base64.b64encode(salt).decode(),
+            "encrypted_private_key": encrypted,
+            "public_m3": public_m3,
+            "criterion_params": criterion_params,
+            "attractor": attractor,
+        }
+
+        return {
+            "keystore": keystore,
+            "address": address,
+            "evm_address": evm_address,
+        }
+
+    @app.post("/keystore/generate")
+    async def generate_keystore(req: dict):
+        import hashlib, json, os, base64
+        import numpy as np
+        from cryptography.fernet import Fernet
+        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+        from cryptography.hazmat.primitives import hashes
+        from crypto.keys import (
+            _make_contraction_seeded, validate_r1, validate_scale,
+            validate_kruskal, N, D, RHO_MIN, RHO_MAX, MAX_KEYGEN_ATTEMPTS,
+        )
+        from crypto.tensors import calculate_m3_tensor
+        from crypto.keys import chaos_game
+        from core.verifier import calibrate, evaluate
+
+        evm_address = req.get("address", "").lower().strip()
+        password = req.get("password", "")
+        if not evm_address.startswith("0x") or len(evm_address) != 42:
+            raise HTTPException(status_code=400, detail="Address EVM invalida")
+        if len(password) < 4:
+            raise HTTPException(status_code=400, detail="Password muy corta (min 4)")
+
+        seed_int = int.from_bytes(hashlib.sha256(evm_address.encode()).digest()[:4], "little")
+        rng = np.random.RandomState(seed_int % (2**31))
+
+        private_key = criterion_params = attractor = None
+        for _ in range(MAX_KEYGEN_ATTEMPTS):
+            matrices, vectores = [], []
+            for _ in range(N):
+                scale = float(rng.uniform(RHO_MIN, RHO_MAX))
+                matrices.append(_make_contraction_seeded(scale, rng))
+                vectores.append([int(rng.uniform(-2**30, 2**30)) for _ in range(D)])
+            if not validate_r1(matrices)[0]: continue
+            if not validate_scale(matrices)[0]: continue
+            if not validate_kruskal(vectores, N)[0]: continue
+            try:
+                att = chaos_game(matrices, vectores)
+                params = calibrate(att, matrices, vectores, len(att))
+                result = evaluate(att, matrices, vectores, params, len(att))
+                if not result.pass_all: continue
+                private_key, criterion_params, attractor = {"A": matrices, "b": vectores}, params, att
+                break
+            except Exception:
+                continue
+
+        if private_key is None:
+            raise HTTPException(status_code=500, detail="No se pudo generar keystore valido")
+
+        public_m3 = calculate_m3_tensor(attractor)
+        address = "0x" + hashlib.sha256(
+            json.dumps(public_m3, sort_keys=True, separators=(",",":")).encode()
+        ).hexdigest()
+
+        salt = os.urandom(16)
+        kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=200000)
+        key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
+        encrypted = Fernet(key).encrypt(json.dumps(private_key, separators=(",",":")).encode()).decode()
+
+        return {
+            "address": address,
+            "evm_address": evm_address,
+            "keystore": {
+                "address": address,
+                "evm_address": evm_address,
+                "salt": base64.b64encode(salt).decode(),
+                "encrypted_private_key": encrypted,
+                "public_m3": public_m3,
+                "criterion_params": criterion_params,
+                "attractor": attractor,
+            }
+        }
 
     return app
