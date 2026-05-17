@@ -10,7 +10,7 @@
 
 # Metriplex Protocol — Technical Whitepaper
 
-**Version 1.0 · May 2025**  
+**Version 2.0 · May 2026**  
 *Order from chaos*
 
 ---
@@ -66,6 +66,42 @@ computed via the chaos game algorithm (2,000 iterations, 300 burn-in). The Krusk
 ### 2.3 Security Reduction
 
 The security of the signature scheme reduces to the hardness of the Inverse IFS Problem (IIFSP): given M₃, find a set {(Aᵢ, bᵢ)} that produces it. By the Blum-Luby-Rubinfeld self-reduction theorem (BLR93), average-case hardness of IIFSP implies worst-case hardness, providing a formal security foundation.
+
+### 2.4 Tensor Glyph — The Public Key Made Visible
+
+The M₃ tensor is a 4×4×4 array of 64 float64 values encoding the third-order geometry of the attractor. Unlike a 256-bit integer, M₃ has intrinsic visual structure that can be rendered as a 2D identity image.
+
+The **Tensor Glyph** is the canonical visual representation of a Metriplex identity:
+
+```
+For each pixel (px, py) in a canvas of size S:
+  gx = (px / S) × 4,  gy = (py / S) × 4          # map to grid coords
+  ix, iy = floor(gx), floor(gy)               # grid cell
+  fx, fy = gx - ix, gy - iy                   # fractional offset
+
+  # Bilinear interpolation of M₃ slices k=0,1,2
+  r = bilinear(M₃[i][j][0], fx, fy)           # k=0 slice → R channel
+  g = bilinear(M₃[i][j][1], fx, fy)           # k=1 slice → G channel
+  b = bilinear(M₃[i][j][2], fx, fy)           # k=2 slice → B channel
+
+  # Map to Metriplex color space (cyan ↔ purple ↔ teal)
+  R = r×125 + b×42
+  G = r×212 + g×174 + b×20
+  B = r×248 + (1−r)×250×g
+```
+
+**Properties of the Tensor Glyph:**
+
+- **Deterministic** — same M₃ always produces the same image
+- **Unique** — by the Kruskal-Comon theorem, no two valid IFS produce the same M₃, therefore no two Tensor Glyphs are identical
+- **Non-reversible** — the image cannot be used to reconstruct M₃ or the IFS
+- **Public** — derived entirely from the public key; reveals no information about the private IFS
+- **Continuous** — bilinear interpolation of the 4×4 tensor grid produces smooth gradients that reflect the geometric structure of the attractor
+
+The Tensor Glyph replaces the conventional QR code in the Metriplex wallet. It is implemented in the browser wallet (`app.html`) and Chrome extension, and serves as the visual avatar of each fractal identity.
+
+This is, to the authors' knowledge, the first instance of a cryptographic public key being rendered as a continuous color field derived directly from its mathematical structure — rather than as a hash-derived pattern or an arbitrary icon.
+
 
 ---
 
@@ -134,6 +170,8 @@ The Ethereum bridge uses a lock-and-mint / burn-and-release architecture:
 | EVM bridge | ✅ Live (Base mainnet) | Relayer + ERC-20 contract, Uniswap V4 |
 | Multi-node testnet | ✅ Live · May 2026 | 4 nodes across Chile and Germany, full mesh |
 | Native browser TX | ✅ Live · May 16, 2026 | ZK proof generated in JS, verified on-chain |
+| Tensor Glyph | ✅ Live · May 17, 2026 | M₃ public key rendered as continuous color field — visual fractal identity |
+| Chrome Wallet Extension | ✅ Live · May 17, 2026 | Browser extension with ZK proof, Tensor Glyph, TX history |
 | Rust rewrite | 🔜 Q3 2026 | 100x performance improvement |
 | Security audit + arXiv | 🔜 Q1 2027 | ZK criterion formal verification + paper |
 
@@ -158,6 +196,25 @@ The Ethereum bridge uses a lock-and-mint / burn-and-release architecture:
 | Proof verified | Python validator — ZK ACCEPTED |
 | Bug fixed | `null` serialized as `{}` → tx_hash mismatch → resolved |
 | Significance | Full ZK pipeline: JS → network → Python — no trusted intermediary |
+
+---
+
+### 9.5 Tensor Glyph — May 17, 2026
+
+| Event | Value |
+|-------|-------|
+| Concept | M₃ tensor projected as 2D color field via bilinear interpolation |
+| Properties | Deterministic, unique, non-reversible, continuous |
+| Implementation | Browser wallet + Chrome extension (canvas API) |
+| Significance | First public key rendered as continuous mathematical color field in blockchain |
+
+### 9.6 Chrome Wallet Extension — May 17, 2026
+
+| Event | Value |
+|-------|-------|
+| Features | Keystore unlock, ZK proof generation, send/receive, TX history, node selector |
+| Identity | Tensor Glyph as visual avatar in wallet header and receive panel |
+| API | Injects `window.metriplex` — dApp integration (MetaMask-style) |
 
 ---
 
