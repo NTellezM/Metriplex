@@ -63,7 +63,5 @@ class StateDB:
         if sender_balance < total_deduction:
             return False
 
-        self.storage.update_balance(sender_hash, sender_balance - total_deduction)
-        receiver_balance = self.storage.get_balance(receiver_hash)
-        self.storage.update_balance(receiver_hash, receiver_balance + amount)
+        self.storage.transfer(sender_hash, receiver_hash, amount, fee)
         return True

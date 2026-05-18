@@ -37,6 +37,39 @@ import hashlib
 import time
 
 import requests
+
+# ── DEDUPLICACIÓN DE EVENTOS ─────────────────────────────────────────────────
+import sqlite3 as _sqlite3
+_RELAYER_STATE_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'relayer_state.db')
+
+def _init_relayer_db():
+    conn = _sqlite3.connect(_RELAYER_STATE_DB)
+    conn.execute(
+        'CREATE TABLE IF NOT EXISTS processed_burns '
+        '(burn_tx_hash TEXT PRIMARY KEY, processed_at INTEGER)'
+    )
+    conn.commit()
+    conn.close()
+    print(f'[Relayer] Estado de dedup cargado: {_RELAYER_STATE_DB}')
+
+def _is_processed(burn_tx_hash: str) -> bool:
+    conn = _sqlite3.connect(_RELAYER_STATE_DB)
+    row = conn.execute(
+        'SELECT 1 FROM processed_burns WHERE burn_tx_hash=?', (burn_tx_hash,)
+    ).fetchone()
+    conn.close()
+    return row is not None
+
+def _mark_processed(burn_tx_hash: str):
+    import time as _time
+    conn = _sqlite3.connect(_RELAYER_STATE_DB)
+    conn.execute(
+        'INSERT OR IGNORE INTO processed_burns(burn_tx_hash, processed_at) VALUES(?,?)',
+        (burn_tx_hash, int(_time.time()))
+    )
+    conn.commit()
+    conn.close()
+# ─────────────────────────────────────────────────────────────────────────────
 from web3 import Web3
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -253,10 +286,14 @@ async def monitor_eth_events(vault_priv, vault_pub, vault_params, vault_att):
                     print(f"    Monto:        {amount} wMPX")
                     print(f"    TX Ethereum:  {burn_tx_hash}")
 
+                    if _is_processed(burn_tx_hash):
+                        print(f'[Relayer] Dedup: TX ya procesada {burn_tx_hash[:16]}...')
+                        continue
                     execute_native_release(
                         native_recipient, amount, burn_tx_hash,
                         vault_priv, vault_pub, vault_params, vault_att
                     )
+                    _mark_processed(burn_tx_hash)
 
                 last_processed_eth_block = current_block
 
@@ -410,6 +447,7 @@ async def main():
     print(f" Contrato EVM:  {CONTRACT_ADDRESS}")
     print(f" Nodo nativo:   {wMXP_NODE_URL}")
     print(f" Relayer EVM:   {relayer_account.address}")
+    _init_relayer_db()
     print("=" * 55)
 
     # Verificar conexión con el nodo local
