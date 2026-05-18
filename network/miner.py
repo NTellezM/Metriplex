@@ -64,10 +64,16 @@ class AutoMiner:
             registry = self.blockchain.validator_registry
             fvr_validators = registry.get_sorted_validators()
 
+            last_block = self.blockchain.chain[-1]
             if fvr_validators:
                 # FVR: set global determinístico desde genesis
-                last_block = self.blockchain.chain[-1]
-                seed = f"{last_block.hash}{current_slot}".encode()
+                # Usar bloque anclado al inicio del epoch (cada 10 slots)
+                EPOCH_SLOTS = 10
+                epoch_start_slot = (current_slot // EPOCH_SLOTS) * EPOCH_SLOTS
+                chain_len = len(self.blockchain.chain)
+                anchor_idx = max(0, chain_len - EPOCH_SLOTS)
+                anchor_block = self.blockchain.chain[anchor_idx]
+                seed = f"{anchor_block.hash}{current_slot}".encode()
                 leader_hash = int(hashlib.sha256(seed).hexdigest(), 16)
                 leader_index = leader_hash % len(fvr_validators)
                 leader_m3_hash = fvr_validators[leader_index]["m3_hash"]
