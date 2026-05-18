@@ -30,8 +30,7 @@ class StateDB:
 
     def mint(self, m3_tensor: list, amount: int):
         tensor_hash = self._hash_tensor(m3_tensor)
-        current_balance = self.storage.get_balance(tensor_hash)
-        self.storage.update_balance(tensor_hash, current_balance + amount)
+        self.storage.credit(tensor_hash, amount)
 
     # ACTUALIZADO: Se añade tx_id y payload a los parámetros
     def apply_transaction(
@@ -54,8 +53,7 @@ class StateDB:
 
         # 2. Procesar transacción financiera
         if not sender_m3:  # Coinbase
-            receiver_balance = self.storage.get_balance(receiver_hash)
-            self.storage.update_balance(receiver_hash, receiver_balance + amount)
+            self.storage.credit(receiver_hash, amount)
             return True
 
         sender_balance = self.storage.get_balance(sender_hash)
