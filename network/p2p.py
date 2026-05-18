@@ -116,7 +116,12 @@ class CAFNode:
             await writer.wait_closed()
             return
 
-        message = data.decode()
+        try:
+            message = data.decode("utf-8")
+        except UnicodeDecodeError:
+            print(f"[P2P] Datos binarios inválidos recibidos — ignorando")
+            writer.close()
+            return
 
         try:
             payload = json.loads(message)
