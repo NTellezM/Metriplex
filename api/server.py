@@ -17,7 +17,9 @@ from typing import Optional  # NUEVO IMPORT
 
 from blockchain.block import Transaction
 from blockchain.chain import Blockchain
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from network.mempool import Mempool
 from pydantic import BaseModel
@@ -35,6 +37,11 @@ class TransactionRequest(BaseModel):
 
 def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAPI:
     app = FastAPI(title="CAF Protocol Node API")
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        print(f"[API] 422 ERROR: {exc.errors()}")
+        return JSONResponse(status_code=422, content={"detail": exc.errors()})
 
     app.add_middleware(
         CORSMiddleware,
@@ -143,6 +150,7 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
 
     @app.post("/transaction")
     async def submit_transaction(tx_req: TransactionRequest):
+        print(f"[API] RAW fee={tx_req.fee} payload={tx_req.payload} sig_keys={list(tx_req.signature_data.keys())}")
         try:
             print(f"[API] TX recibida sender={str(tx_req.sender_m3)[:20]} sig_keys={list(tx_req.signature_data.keys())[:5]}")
             # ACTUALIZADO: Ahora le pasamos el payload al motor interno
