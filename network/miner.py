@@ -48,6 +48,7 @@ class AutoMiner:
             f"[Consenso] Motor de Elección de Líder iniciado. Identidad: {my_address}"
         )
 
+        await asyncio.sleep(10)  # Esperar P2P sync inicial
         while True:
             await asyncio.sleep(1)  # Evaluar el estado de la red cada segundo
 
