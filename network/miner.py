@@ -55,6 +55,10 @@ class AutoMiner:
             current_time = time.time()
             current_slot = int(current_time // self.block_time_seconds)
 
+            # Esperar al menos 1 peer antes de minar
+            if not self.p2p_node.peers:
+                await asyncio.sleep(1)
+                continue
             # Evitar minar múltiples veces en la misma ventana de tiempo
             if current_slot == self.last_mined_slot:
                 continue
