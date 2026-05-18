@@ -91,9 +91,17 @@ class CAFNode:
         ).encode()
         await self._broadcast(req_msg)
 
-        # Desbloquear la bandera después de un tiempo razonable
-        await asyncio.sleep(5)
+        # Mantener syncing=True hasta estar al día
+        # Verificar cada 3s si la cadena sigue creciendo
+        prev_height = self.blockchain.chain[-1].index
+        for _ in range(40):  # máx 120s
+            await asyncio.sleep(3)
+            curr_height = self.blockchain.chain[-1].index
+            if curr_height == prev_height:
+                break  # dejó de crecer — sincronización completa
+            prev_height = curr_height
         self.syncing = False
+        print(f"[Red] ✓ Sincronización completa. Altura: {self.blockchain.chain[-1].index}")
 
     async def handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
