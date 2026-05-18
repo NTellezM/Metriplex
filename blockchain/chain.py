@@ -23,12 +23,14 @@ import json
 from blockchain.block import Block, Transaction
 from blockchain.state import StateDB
 from blockchain.storage import Storage
+from blockchain.validator_registry import ValidatorRegistry
 
 
 class Blockchain:
     def __init__(self, storage: Storage):
         self.storage = storage
         self.state_db = StateDB(self.storage)
+        self.validator_registry = ValidatorRegistry()
         self.chain = []
         self.unconfirmed_transactions = []
         self.load_chain_from_disk()
@@ -62,6 +64,8 @@ class Blockchain:
             block = Block(index, transactions, prev_hash, timestamp)
             block.hash = b_hash
             self.chain.append(block)
+            for tx in transactions:
+                self.validator_registry.process_tx(tx, index)
 
     # ── Bloque génesis ────────────────────────────────────────────────────
 
@@ -181,6 +185,8 @@ class Blockchain:
                 tx.tx_id, tx.sender_m3, tx.receiver_m3, tx.amount, tx.payload, tx.fee
             )
 
+        for tx in block.transactions:
+            self.validator_registry.process_tx(tx, block.index)
         self.chain.append(block)
         self.storage.save_block(block)
         return True

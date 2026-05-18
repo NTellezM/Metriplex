@@ -59,30 +59,37 @@ class AutoMiner:
             if current_slot == self.last_mined_slot:
                 continue
 
-            # 2. Consolidar el padrón de validadores (Nodos pares + Nodo local)
-            # Se ordena alfabéticamente para garantizar que todos los nodos tengan el mismo array
-            validators = sorted(list(self.p2p_node.peers) + [my_address])
+            # 2. Validator set — FVR si hay validadores registrados,
+            #    fallback a peers+self para compatibilidad Phase 1
+            registry = self.blockchain.validator_registry
+            fvr_validators = registry.get_sorted_validators()
 
-            if not validators:
-                continue
-
-            # 3. Lotería Determinista
-            # Todos los nodos usan el mismo hash previo y el mismo slot, por lo que
-            # todos llegan matemáticamente a la misma conclusión de quién es el líder.
-            last_block = self.blockchain.chain[-1]
-            seed = f"{last_block.hash}{current_slot}".encode()
-            leader_hash = int(hashlib.sha256(seed).hexdigest(), 16)
-
-            leader_index = leader_hash % len(validators)
-            leader_address = validators[leader_index]
-
-            # 4a. Minar inmediatamente si hay TXs pendientes (sin esperar slot)
-            pending = self.mempool.get_transactions_for_block(limit=1)
-            if pending and current_slot != self.last_mined_slot:
-                pass  # Se maneja abajo en el slot normal
+            if fvr_validators:
+                # FVR: set global determinístico desde genesis
+                last_block = self.blockchain.chain[-1]
+                seed = f"{last_block.hash}{current_slot}".encode()
+                leader_hash = int(hashlib.sha256(seed).hexdigest(), 16)
+                leader_index = leader_hash % len(fvr_validators)
+                leader_m3_hash = fvr_validators[leader_index]["m3_hash"]
+                import hashlib as _hlib, json as _json
+                my_m3_hash = _hlib.sha256(
+                    _json.dumps(self.miner_m3, sort_keys=True, separators=(",",":")).encode()
+                ).hexdigest() if self.miner_m3 else None
+                is_leader = (my_m3_hash == leader_m3_hash)
+            else:
+                # Phase 1 fallback: peers + self
+                validators = sorted(list(self.p2p_node.peers) + [my_address])
+                if not validators:
+                    is_leader = False
+                else:
+                    last_block = self.blockchain.chain[-1]
+                    seed = f"{last_block.hash}{current_slot}".encode()
+                    leader_hash = int(hashlib.sha256(seed).hexdigest(), 16)
+                    leader_index = leader_hash % len(validators)
+                    is_leader = (my_address == validators[leader_index])
 
             # 4b. Forjado de Bloque (Solo si este nodo ganó la lotería del slot)
-            if my_address == leader_address:
+            if is_leader:
                 txs = self.mempool.get_transactions_for_block(limit=10)
 
                 self.last_mined_slot = current_slot

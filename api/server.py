@@ -122,6 +122,25 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         except Exception as e:
             return {"error": str(e)}
 
+
+    @app.get("/validators")
+    async def get_validators():
+        registry = blockchain.validator_registry
+        return {
+            "count": registry.size(),
+            "validators": [
+                {
+                    "m3_hash": v["m3_hash"],
+                    "endpoint": v["endpoint"],
+                    "stake_mpx": v["stake"] // 1073741824,
+                    "registered_at": v["registered_at"],
+                }
+                for v in registry.get_sorted_validators()
+            ],
+            "slashed": list(registry.slashed),
+            "mode": "FVR" if registry.size() > 0 else "Phase1-fallback",
+        }
+
     @app.post("/transaction")
     async def submit_transaction(tx_req: TransactionRequest):
         try:
