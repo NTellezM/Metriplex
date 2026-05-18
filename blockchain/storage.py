@@ -26,7 +26,7 @@ class Storage:
         # --- INYECCIÓN DE OPTIMIZACIÓN I/O (WAL) ---
         self.conn.execute("PRAGMA journal_mode = WAL;")
         self.conn.execute("PRAGMA synchronous = FULL;")
-        self.conn.execute("PRAGMA cache_size = -64000;")  # 64MB de caché en RAM
+        self.conn.execute("PRAGMA cache_size = -1000;")  # 64MB de caché en RAM
         self.conn.execute("PRAGMA temp_store = MEMORY;")
         # -------------------------------------------
 
@@ -110,8 +110,12 @@ class Storage:
 
     def transfer(self, sender_hash, receiver_hash, amount, fee=0):
         with self.conn:
-            self.conn.execute("UPDATE balances SET balance=balance-? WHERE tensor_hash=?", (amount+fee, sender_hash))
-            self.conn.execute("INSERT INTO balances(tensor_hash,balance) VALUES(?,?) ON CONFLICT(tensor_hash) DO UPDATE SET balance=balance+?", (receiver_hash, amount, amount))
+            cur = self.conn.execute("UPDATE balances SET balance=balance-? WHERE tensor_hash=?", (amount+fee, sender_hash))
+            print(f"[transfer] sender={sender_hash[:8]} debit={amount+fee} rows={cur.rowcount}")
+            cur2 = self.conn.execute("INSERT INTO balances(tensor_hash,balance) VALUES(?,?) ON CONFLICT(tensor_hash) DO UPDATE SET balance=balance+?", (receiver_hash, amount, amount))
+            print(f"[transfer] receiver={receiver_hash[:8]} credit={amount} rows={cur2.rowcount}")
+        bal = self.conn.execute("SELECT balance FROM balances WHERE tensor_hash=?", (sender_hash,)).fetchone()
+        print(f"[transfer] sender balance after: {bal[0] if bal else None}")
 
     def save_block(self, block):
         # Serializar transacciones a texto para almacenamiento relacional
