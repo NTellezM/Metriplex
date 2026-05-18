@@ -258,6 +258,17 @@ class CAFNode:
                     f"[Red] ✓ Sincronización completada. {added_count} bloques integrados."
                 )
 
+                # Si el segmento fue completo (50), hay más bloques — solicitar el siguiente
+                if added_count > 0 and len(blocks_data) == 50:
+                    local_height = self.blockchain.chain[-1].index
+                    print(f'[Red] Segmento completo — solicitando siguiente desde {local_height}...')
+                    req_msg = json.dumps({
+                        "type": "REQUEST_CHAIN_SYNC",
+                        "last_index": local_height,
+                        "requester": f"{self.host_public}:{self.port}",
+                    }).encode()
+                    await self._broadcast(req_msg)
+
             elif msg_type == "NEW_TX":
                 tx_data = payload.get("data")
                 tx = Transaction(
