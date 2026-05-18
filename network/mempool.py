@@ -17,9 +17,41 @@ from blockchain.chain import Blockchain
 
 
 class Mempool:
-    def __init__(self, blockchain: Blockchain):
+    def __init__(self, blockchain: Blockchain, persist_path: str = "mempool.json"):
         self.blockchain = blockchain
+        self.persist_path = persist_path
         self.pending_transactions: dict[str, Transaction] = {}
+        self._load()
+
+    def _load(self):
+        import os
+        if not os.path.exists(self.persist_path):
+            return
+        try:
+            import json as _json
+            data = _json.load(open(self.persist_path))
+            for tx_data in data:
+                tx = Transaction(
+                    sender_m3=tx_data["sender_m3"],
+                    receiver_m3=tx_data["receiver_m3"],
+                    amount=tx_data["amount"],
+                    fee=tx_data.get("fee", 0),
+                    signature_data=tx_data.get("signature_data", {}),
+                    payload=tx_data.get("payload", {}),
+                )
+                tx.tx_id = tx_data["tx_id"]
+                self.pending_transactions[tx.tx_id] = tx
+            print(f"[Mempool] {len(self.pending_transactions)} TXs restauradas desde disco.")
+        except Exception as e:
+            print(f"[Mempool] Error cargando mempool: {e}")
+
+    def _save(self):
+        try:
+            import json as _json
+            data = [tx.to_dict() for tx in self.pending_transactions.values()]
+            _json.dump(data, open(self.persist_path, 'w'))
+        except Exception as e:
+            print(f"[Mempool] Error guardando mempool: {e}")
 
     def add_transaction(self, tx: Transaction) -> bool:
         if tx.tx_id in self.pending_transactions:
@@ -41,6 +73,7 @@ class Mempool:
 
         if self.blockchain.validate_transaction(tx):
             self.pending_transactions[tx.tx_id] = tx
+            self._save()
             return True
 
         return False
@@ -59,3 +92,4 @@ class Mempool:
         for tx in transactions:
             if tx.tx_id in self.pending_transactions:
                 del self.pending_transactions[tx.tx_id]
+        self._save()
