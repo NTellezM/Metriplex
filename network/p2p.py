@@ -268,6 +268,9 @@ class CAFNode:
                         "requester": f"{self.host_public}:{self.port}",
                     }).encode()
                     await self._broadcast(req_msg)
+                else:
+                    # Segmento parcial — llegamos al tip, liberar syncing
+                    self.syncing = False
 
             elif msg_type == "NEW_TX":
                 tx_data = payload.get("data")
