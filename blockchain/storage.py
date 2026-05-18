@@ -25,7 +25,7 @@ class Storage:
 
         # --- INYECCIÓN DE OPTIMIZACIÓN I/O (WAL) ---
         self.conn.execute("PRAGMA journal_mode = WAL;")
-        self.conn.execute("PRAGMA synchronous = NORMAL;")
+        self.conn.execute("PRAGMA synchronous = FULL;")
         self.conn.execute("PRAGMA cache_size = -64000;")  # 64MB de caché en RAM
         self.conn.execute("PRAGMA temp_store = MEMORY;")
         # -------------------------------------------
@@ -99,6 +99,11 @@ class Storage:
         )
         self.conn.commit()
         self.conn.execute("PRAGMA wal_checkpoint(FULL);")
+
+    def transfer(self, sender_hash, receiver_hash, amount, fee=0):
+        with self.conn:
+            self.conn.execute("UPDATE balances SET balance=balance-? WHERE tensor_hash=?", (amount+fee, sender_hash))
+            self.conn.execute("INSERT INTO balances(tensor_hash,balance) VALUES(?,?) ON CONFLICT(tensor_hash) DO UPDATE SET balance=balance+?", (receiver_hash, amount, amount))
 
     def save_block(self, block):
         # Serializar transacciones a texto para almacenamiento relacional
