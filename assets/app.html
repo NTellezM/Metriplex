@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Metriplex App — Fractal Identity Transfer</title>
+<meta name="description" content="Send MPX between fractal identities on Base mainnet.">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<style>
+:root{--bg:#060606;--bg2:#0f0f0f;--bg3:#161616;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--text:#ececec;--muted:#777;--muted2:#444;--green:#1D9E75;--blue:#1a7aff;--accent:#a78bfa;--red:#dc3c3c;--mono:'Courier New',monospace;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Georgia',serif;font-size:15px;line-height:1.7;min-height:100vh;}
+nav{position:sticky;top:0;z-index:100;background:rgba(6,6,6,0.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:58px;}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+.nav-logo img{width:34px;height:34px;border-radius:50%;}
+.nav-logo-text{font-family:var(--mono);font-size:12px;letter-spacing:0.15em;color:var(--text);}
+.nav-right{display:flex;align-items:center;gap:1rem;}
+.nav-link{font-size:12px;color:var(--muted);text-decoration:none;font-family:var(--mono);transition:color 0.2s;}
+.nav-link:hover{color:var(--text);}
+.nav-tag{font-family:var(--mono);font-size:10px;color:var(--green);border:1px solid rgba(29,158,117,0.3);padding:3px 10px;border-radius:20px;}
+.wrap{position:relative;max-width:680px;margin:0 auto;padding:2.5rem 1.5rem 4rem;}
+.page-tag{display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:0.2em;color:var(--green);border:1px solid rgba(29,158,117,0.3);padding:3px 12px;border-radius:20px;margin-bottom:1.25rem;}
+h1{font-size:1.8rem;font-weight:normal;line-height:1.2;letter-spacing:-0.02em;margin-bottom:0.5rem;}
+h1 em{font-style:normal;color:var(--accent);}
+.sub{font-size:13px;color:var(--muted);margin-bottom:2rem;line-height:1.7;}
+.card{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:1.25rem;margin-bottom:1rem;}
+.clabel{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;color:var(--muted);margin-bottom:1rem;}
+.id-pair{display:grid;grid-template-columns:1fr 40px 1fr;gap:8px;align-items:center;margin-bottom:1rem;}
+.id-box{background:var(--bg3);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.id-box-label{font-family:var(--mono);font-size:10px;color:var(--muted);padding:7px 10px 3px;letter-spacing:0.08em;}
+.id-box canvas{display:block;width:100%;}
+.id-box-addr{font-family:var(--mono);font-size:10px;padding:3px 10px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);}
+.id-box-addr.active{color:var(--green);}
+.id-tech{padding:6px 10px 8px;border-top:1px solid var(--border);display:none;}
+.id-tech-row{display:flex;justify-content:space-between;padding:2px 0;}
+.id-tech-key{font-family:var(--mono);font-size:9px;color:var(--muted2);letter-spacing:0.05em;}
+.id-tech-val{font-family:var(--mono);font-size:9px;color:var(--muted);}
+.id-tech-val.g{color:var(--green);}
+.id-arrow{font-size:20px;color:var(--muted2);text-align:center;}
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1rem;}
+.metric{background:var(--bg3);border-radius:8px;padding:0.75rem;}
+.metric-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:0.06em;margin-bottom:3px;}
+.metric-val{font-size:15px;font-weight:500;}
+.metric-val.g{color:var(--green);}
+.fgroup{margin-bottom:0.875rem;}
+.flabel{font-family:var(--mono);font-size:10px;letter-spacing:0.1em;color:var(--muted);margin-bottom:5px;display:block;}
+.finput{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border2);border-radius:8px;padding:11px 14px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;transition:border-color 0.2s;}
+.finput:focus{border-color:rgba(255,255,255,0.25);}
+.finput::placeholder{color:var(--muted2);}
+.arow{display:flex;gap:6px;}
+.arow .finput{flex:1;}
+.maxbtn{background:rgba(29,158,117,0.1);border:1px solid rgba(29,158,117,0.25);border-radius:8px;padding:11px 14px;color:var(--green);font-family:var(--mono);font-size:11px;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+.maxbtn:hover{background:rgba(29,158,117,0.2);}
+.btn-connect{width:100%;background:var(--green);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;cursor:pointer;font-family:inherit;transition:all 0.2s;}
+.btn-connect:hover{background:#16875f;transform:translateY(-1px);}
+.btn-connect:disabled{background:var(--bg3);color:var(--muted);cursor:not-allowed;transform:none;}
+.btn-send{width:100%;background:linear-gradient(135deg,#1a7aff,#0055cc);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;cursor:pointer;font-family:inherit;transition:all 0.2s;}
+.btn-send:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(26,122,255,0.3);}
+.btn-send:disabled{background:var(--bg3);color:var(--muted);cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-switch{width:100%;background:rgba(255,160,50,0.08);border:1px solid rgba(255,160,50,0.25);border-radius:10px;padding:13px;font-size:14px;cursor:pointer;color:#FFA032;font-family:inherit;transition:all 0.2s;}
+.btn-switch:hover{background:rgba(255,160,50,0.16);}
+.sbox{border-radius:8px;padding:0.875rem 1rem;margin-top:0.75rem;font-size:12px;font-family:var(--mono);line-height:1.6;display:none;}
+.sbox.pending{background:rgba(26,122,255,0.07);border:1px solid rgba(26,122,255,0.18);color:#5599ff;}
+.sbox.success{background:rgba(29,158,117,0.07);border:1px solid rgba(29,158,117,0.18);color:var(--green);}
+.sbox.error{background:rgba(220,60,60,0.07);border:1px solid rgba(220,60,60,0.18);color:#ff6666;}
+.txlink{display:inline-flex;align-items:center;gap:4px;color:var(--green);text-decoration:none;font-size:11px;font-family:var(--mono);margin-top:6px;transition:opacity 0.2s;}
+.txlink:hover{opacity:0.7;}
+.transfer-canvas{display:none;width:100%;height:70px;border-radius:8px;background:#050505;border:1px solid var(--border);margin:0.75rem 0;}
+.cinfo{display:grid;gap:0;}
+.crow{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);}
+.crow:last-child{border-bottom:none;}
+.ck{font-size:12px;color:var(--muted);}
+.cv{font-family:var(--mono);font-size:12px;color:var(--text);text-align:right;}
+.hidden{display:none!important;}
+
+.tabs{display:flex;gap:6px;margin-bottom:1rem;}
+.tab{flex:1;padding:10px;font-family:var(--mono);font-size:11px;letter-spacing:0.08em;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.2s;text-align:center;}
+.tab.active{background:rgba(255,255,255,0.06);color:var(--text);border-color:rgba(255,255,255,0.2);}
+.tab.native-tab.active{background:rgba(167,139,250,0.08);color:var(--accent);border-color:rgba(167,139,250,0.3);}
+.step-label{font-family:var(--mono);font-size:9px;color:var(--muted2);letter-spacing:0.15em;margin-bottom:4px;margin-top:0.875rem;}
+.step-label:first-child{margin-top:0;}
+.unlock-status{font-family:var(--mono);font-size:11px;padding:8px 12px;border-radius:8px;margin-top:8px;display:none;}
+.unlock-status.ok{background:rgba(29,158,117,0.08);border:1px solid rgba(29,158,117,0.2);color:var(--green);}
+.unlock-status.err{background:rgba(220,60,60,0.07);border:1px solid rgba(220,60,60,0.18);color:#ff6666;}
+.btn-unlock{width:100%;background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);border-radius:10px;padding:12px;font-size:14px;cursor:pointer;color:var(--accent);font-family:inherit;transition:all 0.2s;margin-top:6px;}
+.btn-unlock:hover{background:rgba(167,139,250,0.18);}
+.btn-unlock:disabled{opacity:0.4;cursor:not-allowed;}
+.btn-native{width:100%;background:linear-gradient(135deg,#6d4fd6,#4a35b8);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;cursor:pointer;font-family:inherit;transition:all 0.2s;margin-top:4px;}
+.btn-native:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(109,79,214,0.3);}
+.btn-native:disabled{background:var(--bg3);color:var(--muted);cursor:not-allowed;transform:none;box-shadow:none;}
+.ntxlink{display:inline-flex;align-items:center;gap:4px;color:var(--accent);text-decoration:none;font-size:11px;font-family:var(--mono);margin-top:6px;}
+
+footer{border-top:1px solid var(--border);padding:1.5rem 2rem;text-align:center;font-family:var(--mono);font-size:11px;color:var(--muted2);}
+footer a{color:var(--muted);text-decoration:none;margin:0 0.75rem;}
+footer a:hover{color:var(--text);}
+</style>
+<script src="/metriplex-crypto.js"></script>
+</head>
+<body>
+<nav>
+  <a href="/" class="nav-logo">
+    <img src="/assets/logo6.png" alt="MPX">
+    <span class="nav-logo-text">METRIPLEX</span>
+  </a>
+  <div class="nav-right">
+    <span class="nav-tag">APP · BETA</span>
+    <a href="/" class="nav-link">← Site</a>
+    <a href="/whitepaper.html" class="nav-link">Whitepaper</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div style="position:absolute;top:16px;right:16px;">
+    <button id="global-connect-btn" onclick="globalConnectWallet()" style="font-family:var(--mono);font-size:10px;letter-spacing:0.06em;padding:6px 14px;border-radius:20px;border:1px solid rgba(125,212,248,0.3);background:rgba(125,212,248,0.08);color:var(--accent);cursor:pointer;transition:all 0.2s;">⚡ Connect Wallet</button>
+    <div id="global-wallet-addr" class="hidden" style="font-family:var(--mono);font-size:10px;color:var(--green);padding:6px 14px;border-radius:20px;border:1px solid rgba(74,222,128,0.2);background:rgba(74,222,128,0.06);cursor:pointer;" onclick="globalConnectWallet()">✓ <span id="global-addr-short"></span></div>
+  </div>
+  <div class="page-tag">FRACTAL IDENTITY TRANSFER</div>
+  <h1>Send MPX between<br><em>geometric identities</em></h1>
+  <p class="sub">In Metriplex, every address is a unique fractal attractor. When you send MPX, you are transferring value between two geometric shapes — not two numbers.</p>
+
+  <div class="tabs" id="mode-tabs">
+    <button class="tab active" id="tab-base" onclick="switchMode('base')">Base ERC-20</button>
+    <button class="tab native-tab" id="tab-native" onclick="switchMode('native')">Metriplex Native ★</button>
+    <button class="tab native-tab" id="tab-bridge" onclick="switchMode('bridge')">Bridge ★</button>
+  </div>
+
+  <div id="mode-native" class="hidden">
+    <div class="card" id="card-keystore">
+      <div class="clabel">NATIVE METRIPLEX TRANSFER</div>
+
+      <div class="step-label">STEP 1 — LOAD KEYSTORE</div>
+      <div class="fgroup">
+        <label class="flabel">KEYSTORE FILE (.json)</label>
+        <input class="finput" type="file" id="ks-file" accept=".json" style="padding:9px 14px;" onchange="onKsFile(this)"/>
+      </div>
+      <div class="fgroup">
+        <label class="flabel">PASSWORD</label>
+        <input class="finput" type="password" id="ks-pw" placeholder="keystore password" />
+      </div>
+      <button class="btn-unlock" id="unlock-btn" onclick="unlockKeystore()">Unlock Keystore</button>
+      <div class="unlock-status" id="unlock-status"></div>
+    </div>
+
+    <div class="card hidden" id="card-native-send">
+      <div class="clabel">SEND — METRIPLEX NATIVE</div>
+      <div class="metrics" style="margin-bottom:0.875rem;">
+        <div class="metric"><div class="metric-label">SENDER</div><div class="metric-val" style="font-size:11px;font-family:var(--mono);" id="n-sender">—</div></div>
+        <div class="metric"><div class="metric-label">BALANCE</div><div class="metric-val g" id="n-balance">—</div></div>
+      </div>
+      <div class="fgroup">
+        <label class="flabel">RECIPIENT ADDRESS (0x...)</label>
+        <input class="finput" type="text" id="n-to" placeholder="0x SHA256 of M3 tensor" oninput="onNativeRecip(this.value)"/>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:4px;" id="n-recip-status"></div>
+      </div>
+      <div class="fgroup">
+        <label class="flabel">AMOUNT (MPX)</label>
+        <div class="arow">
+          <input class="finput" type="number" id="n-amount" placeholder="0.00" min="0" step="any"/>
+          <button class="maxbtn" onclick="setNativeMax()">MAX</button>
+        </div>
+      </div>
+      <button class="btn-native" id="n-send-btn" onclick="sendNativeMPX()">Generate Proof & Send →</button>
+      <div class="sbox hidden" id="n-sbox">
+        <div id="n-sbox-text"></div>
+        <a id="n-txlink" class="ntxlink hidden" target="_blank">View on block explorer ↗</a>
+      </div>
+    </div>
+  </div>
+  <div id="mode-bridge" class="hidden">
+    <div class="card">
+      <div class="clabel">BRIDGE — ERC-20 → METRIPLEX NATIVE</div>
+
+      <!-- Sub-tabs -->
+      <div style="display:flex;gap:0;margin-bottom:1.2rem;margin-top:0.5rem;border-bottom:1px solid rgba(255,255,255,0.08);">
+        <button id="btab-identity" onclick="switchBridgeTab('identity')" style="flex:1;padding:8px 0;font-family:var(--mono);font-size:10px;letter-spacing:0.08em;background:none;border:none;border-bottom:2px solid var(--accent);color:var(--accent);cursor:pointer;">GET IDENTITY</button>
+        <button id="btab-burn" onclick="switchBridgeTab('burn')" style="flex:1;padding:8px 0;font-family:var(--mono);font-size:10px;letter-spacing:0.08em;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;">BRIDGE MPX</button>
+      </div>
+
+      <!-- TAB: Get Identity -->
+      <div id="btab-panel-identity">
+        <p style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:1rem;line-height:1.6;">Generate a Metriplex fractal keystore from your EVM address. Same address + same password = same keystore, always. Download it and use it in the <strong style="color:var(--text)">Native ★</strong> tab.</p>
+        <div class="field-group">
+          <div class="field-label">YOUR EVM ADDRESS (from MetaMask)</div>
+          <input class="finput" id="bridge-evm" type="text" placeholder="0x..."/>
+        </div>
+        <div class="field-group" style="margin-top:0.7rem;">
+          <div class="field-label">CHOOSE A PASSWORD (min 4 chars)</div>
+          <input class="finput" id="bridge-pw" type="password" placeholder="Remember this — needed to sign transactions"/>
+        </div>
+        <button class="btn-native" id="bridge-gen-btn" onclick="generateBridgeKeystore()" style="margin-top:1rem;">Generate Fractal Identity →</button>
+        <div id="bridge-status" style="margin-top:0.8rem;font-family:var(--mono);font-size:11px;"></div>
+        <div id="bridge-result" class="hidden" style="margin-top:1rem;">
+          <div style="background:rgba(125,212,248,0.05);border:1px solid rgba(125,212,248,0.15);border-radius:8px;padding:0.8rem;margin-bottom:0.8rem;">
+            <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:4px;">YOUR METRIPLEX ADDRESS</div>
+            <div id="bridge-native-addr" style="font-family:var(--mono);font-size:10px;color:var(--accent);word-break:break-all;"></div>
+          </div>
+          <textarea id="bridge-m3-json" readonly style="display:none"></textarea>
+          <button class="btn-native" id="bridge-dl-btn" onclick="downloadBridgeKeystore()" style="background:rgba(167,139,250,0.15);margin-bottom:0.8rem;">↓ Download keystore.json</button>
+          <p style="font-size:10px;color:rgba(248,113,113,0.8);font-family:var(--mono);line-height:1.5;">⚠ Store this file safely. Without it and your password you cannot access your native MPX.</p>
+        </div>
+      </div>
+
+      <!-- TAB: Bridge MPX -->
+      <div id="btab-panel-burn" class="hidden">
+        <p style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:1rem;line-height:1.6;">Burn ERC-20 MPX on Base. The relayer detects the event and releases the same amount to your Metriplex native address within ~60 seconds.</p>
+        <div style="background:rgba(167,139,250,0.05);border:1px solid rgba(167,139,250,0.15);border-radius:8px;padding:0.8rem;margin-bottom:1rem;">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:6px;letter-spacing:0.06em;">HOW IT WORKS</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--muted);line-height:2;">
+            1. Get your fractal identity (GET IDENTITY tab)<br/>
+            2. Enter amount and click Burn → Native<br/>
+            3. Confirm in MetaMask (must be on Base)<br/>
+            4. Relayer detects <span style="color:var(--accent2)">BridgeBurn</span> event ≈ 60s<br/>
+            5. MPX arrive to your native address
+          </div>
+        </div>
+        <div id="bridge-wallet-status" style="margin-bottom:0.8rem;">
+          <button class="btn-native" id="bridge-connect-btn" onclick="bridgeConnectWallet()" style="background:rgba(125,212,248,0.1);border-color:rgba(125,212,248,0.3);">⚡ Connect MetaMask</button>
+          <div id="bridge-connected-addr" class="hidden" style="font-family:var(--mono);font-size:10px;color:var(--green);padding:6px 0;">✓ Connected: <span id="bridge-conn-short"></span></div>
+        </div>
+        <div class="field-group" style="margin-bottom:0.7rem;">
+          <div class="field-label">YOUR METRIPLEX ADDRESS (0x...)</div>
+          <input class="finput" id="bridge-native-recipient" type="text" placeholder="0x... (from GET IDENTITY tab)" oninput="onBridgeRecipient(this.value)"/>
+          <div id="bridge-recip-status" style="font-family:var(--mono);font-size:9px;margin-top:3px;min-height:12px;"></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:0.6rem;">
+          <input class="finput" id="bridge-burn-amount" type="number" placeholder="Amount MPX to bridge" style="flex:1;font-size:11px;padding:7px 10px;"/>
+          <button class="btn-native" id="bridge-burn-btn" onclick="burnForNative()" style="width:auto;padding:8px 14px;font-size:11px;">Burn → Native</button>
+        </div>
+        <div id="bridge-burn-status" style="font-family:var(--mono);font-size:10px;min-height:16px;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="mode-base">
+  <div class="card" id="card-connect">
+    <div class="clabel">CONNECT WALLET</div>
+    <button class="btn-connect" id="connect-btn" onclick="connectWallet()">Connect Wallet to reveal your fractal identity</button>
+    <p style="font-size:11px;color:var(--muted);margin-top:10px;font-family:var(--mono);">Compatible with MetaMask, Coinbase Wallet, Brave Wallet.</p>
+  </div>
+
+  <div class="card hidden" id="card-network">
+    <div class="clabel">WRONG NETWORK</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:0.875rem;">Switch to Base mainnet to continue.</p>
+    <button class="btn-switch" onclick="switchToBase()">Switch to Base mainnet</button>
+  </div>
+
+  <div class="card hidden" id="card-identity">
+    <div class="clabel">FRACTAL IDENTITIES — SENDER → RECIPIENT</div>
+    <div class="id-pair">
+      <div class="id-box">
+        <div class="id-box-label">YOUR IDENTITY</div>
+        <canvas id="cv-from" width="280" height="130"></canvas>
+        <div class="id-box-addr active" id="addr-from">—</div>
+        <div class="id-tech" id="tech-from">
+          <div class="id-tech-row"><span class="id-tech-key">PRIVATE KEY</span><span class="id-tech-val">IFS · 4 contractions in ℝ⁴</span></div>
+          <div class="id-tech-row"><span class="id-tech-key">PUBLIC KEY</span><span class="id-tech-val">M₃ tensor · 4×4×4 = 512 bytes</span></div>
+          <div class="id-tech-row"><span class="id-tech-key">HAUSDORFF DIM</span><span class="id-tech-val g" id="tech-from-hdim">—</span></div>
+          <div class="id-tech-row"><span class="id-tech-key">ZK CRITERION</span><span class="id-tech-val g">c1–c8 · 7 active</span></div>
+        </div>
+      </div>
+      <div class="id-arrow">→</div>
+      <div class="id-box">
+        <div class="id-box-label">RECIPIENT IDENTITY</div>
+        <canvas id="cv-to" width="280" height="130"></canvas>
+        <div class="id-box-addr" id="addr-to">enter address below</div>
+        <div class="id-tech" id="tech-to">
+          <div class="id-tech-row"><span class="id-tech-key">PRIVATE KEY</span><span class="id-tech-val">IFS · 4 contractions in ℝ⁴</span></div>
+          <div class="id-tech-row"><span class="id-tech-key">PUBLIC KEY</span><span class="id-tech-val">M₃ tensor · 4×4×4 = 512 bytes</span></div>
+          <div class="id-tech-row"><span class="id-tech-key">HAUSDORFF DIM</span><span class="id-tech-val g" id="tech-to-hdim">—</span></div>
+          <div class="id-tech-row"><span class="id-tech-key">ZK CRITERION</span><span class="id-tech-val g">c1–c8 · 7 active</span></div>
+        </div>
+      </div>
+    </div>
+    <canvas class="transfer-canvas" id="cv-transfer" width="640" height="70"></canvas>
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">MPX BALANCE</div><div class="metric-val g" id="mpx-bal">—</div></div>
+      <div class="metric"><div class="metric-label">MPX PRICE</div><div class="metric-val" id="mpx-price">—</div></div>
+      <div class="metric"><div class="metric-label">YOUR HAUSDORFF DIM</div><div class="metric-val" id="from-hdim">—</div></div>
+      <div class="metric"><div class="metric-label">ETH FOR GAS</div><div class="metric-val" id="eth-bal">—</div></div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="card-send">
+    <div class="clabel">SEND MPX</div>
+    <div class="fgroup">
+      <label class="flabel">RECIPIENT ADDRESS</label>
+      <input class="finput" type="text" id="send-to" placeholder="0x... Base wallet address" />
+    </div>
+    <div class="fgroup">
+      <label class="flabel">AMOUNT</label>
+      <div class="arow">
+        <input class="finput" type="number" id="send-amount" placeholder="0.00" min="0" step="any" />
+        <button class="maxbtn" onclick="setMax()">MAX</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:5px;" id="usd-preview">≈ $—</div>
+    </div>
+    <button class="btn-send" id="send-btn" onclick="sendMPX()">Send MPX →</button>
+    <div class="sbox" id="sbox">
+      <div id="sbox-text"></div>
+      <a id="txlink" class="txlink hidden" target="_blank">View on BaseScan ↗</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="clabel">CONTRACT</div>
+    <div class="cinfo">
+      <div class="crow"><span class="ck">Token</span><span class="cv">MPX · Metriplex</span></div>
+      <div class="crow"><span class="ck">Network</span><span class="cv" style="color:#4488ff;">Base · chain 8453</span></div>
+      <div class="crow"><span class="ck">Supply</span><span class="cv">21,000,000 MPX</span></div>
+      <div class="crow"><span class="ck">Exchange</span><span class="cv">Uniswap V4</span></div>
+      <div class="crow" style="flex-direction:column;gap:4px;">
+        <span class="ck">Contract address</span>
+        <span style="font-family:var(--mono);font-size:11px;color:var(--green);cursor:pointer;word-break:break-all;" onclick="copyContract()">0x22D3f414438556d1B071cCfE52513d4d829400fd <span id="copy-ok"></span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+  </div><!-- end mode-base -->
+
+<footer>
+  <div style="margin-bottom:0.5rem;">
+    <a href="/">Home</a>
+    <a href="/whitepaper.html">Whitepaper</a>
+    <a href="https://basescan.org/token/0x22D3f414438556d1B071cCfE52513d4d829400fd" target="_blank">BaseScan</a>
+    <a href="https://github.com/NTellezM/Metriplex" target="_blank">GitHub</a>
+  </div>
+  <div>Metriplex App · Beta · metriplexmpx.xyz</div>
+</footer>
+
+<script>
+var MPX='0x22D3f414438556d1B071cCfE52513d4d829400fd';
+var CHAIN='0x2105';
+var RPC='https://mainnet.base.org';
+var userAddr='',mpxBal=0,mpxPrice=0;
+var transferAnimId=null;
+var PAL=['#1D9E75','#185FA5','#534AB7','#D85A30'];
+
+function $(id){return document.getElementById(id);}
+function show(id){$(id).classList.remove('hidden');}
+function hide(id){$(id).classList.add('hidden');}
+
+function hash(s){var h=5381;for(var i=0;i<s.length;i++)h=((h<<5)+h^s.charCodeAt(i))>>>0;return h;}
+function rng(seed){var s=seed>>>0;return function(){s^=s<<13;s^=s>>>17;s^=s<<5;return(s>>>0)/4294967296;};}
+function genIFS(a){
+  var r=rng(hash(a.toLowerCase())),m=[];
+  for(var i=0;i<4;i++){
+    var sr=r()*0.4+0.3,rot=r()*Math.PI*2;
+    m.push({a:sr*Math.cos(rot)*(r()>0.5?1:-1),b:sr*Math.sin(rot)*(r()>0.5?1:-1),c:-sr*Math.sin(rot)*(r()>0.5?1:-1),d:sr*Math.cos(rot)*(r()>0.5?1:-1),e:(r()-0.5)*1.2,f:(r()-0.5)*1.2});
+  }
+  return m;
+}
+function drawIFS(cvId,m){
+  var cv=$(cvId),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  ctx.fillStyle='#080808';ctx.fillRect(0,0,W,H);
+  var x=0,y=0,pts=[],cs=[];
+  for(var i=0;i<4000;i++){var idx=Math.floor(Math.random()*4),mi=m[idx];var nx=mi.a*x+mi.b*y+mi.e,ny=mi.c*x+mi.d*y+mi.f;x=nx;y=ny;if(i>30){pts.push([x,y]);cs.push(PAL[idx]);}}
+  if(!pts.length)return;
+  var xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+  var mnX=Math.min(...xs),mxX=Math.max(...xs),mnY=Math.min(...ys),mxY=Math.max(...ys);
+  var rX=mxX-mnX||1,rY=mxY-mnY||1,pad=10,sc=Math.min((W-pad*2)/rX,(H-pad*2)/rY)*0.88;
+  var oX=(W-rX*sc)/2,oY=(H-rY*sc)/2;
+  for(var i=0;i<pts.length;i++){ctx.fillStyle=cs[i]+'99';ctx.fillRect((pts[i][0]-mnX)*sc+oX,(pts[i][1]-mnY)*sc+oY,1.4,1.4);}
+}
+function drawEmpty(cvId,msg){
+  var cv=$(cvId),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  ctx.fillStyle='#080808';ctx.fillRect(0,0,W,H);
+  ctx.font='10px monospace';ctx.fillStyle='#333';ctx.textAlign='center';
+  ctx.fillText(msg||'—',W/2,H/2);ctx.textAlign='left';
+}
+function calcHdim(m){
+  var x=0,y=0,pts=[];
+  for(var i=0;i<2000;i++){var idx=Math.floor(Math.random()*4),mi=m[idx];var nx=mi.a*x+mi.b*y+mi.e,ny=mi.c*x+mi.d*y+mi.f;x=nx;y=ny;if(i>30)pts.push([x,y]);}
+  var xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+  var c1={},c2={};
+  for(var i=0;i<pts.length;i+=3){c1[Math.floor(xs[i]*8)+','+Math.floor(ys[i]*8)]=1;c2[Math.floor(xs[i]*16)+','+Math.floor(ys[i]*16)]=1;}
+  var n1=Object.keys(c1).length,n2=Object.keys(c2).length;
+  if(n1<2||n2<2)return'1.500';
+  return(Math.log(n2/n1)/Math.log(2)).toFixed(3);
+}
+
+function animateTransfer(onDone){
+  var cv=$('cv-transfer'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+  cv.style.display='block';
+  var particles=[];
+  for(var i=0;i<50;i++){
+    particles.push({x:20+Math.random()*W*0.1,y:H/2+(Math.random()-0.5)*30,vx:3+Math.random()*4,vy:(Math.random()-0.5)*1.5,size:1+Math.random()*2,color:PAL[Math.floor(Math.random()*4)],alpha:0.9});
+  }
+  var frame=0;
+  function step(){
+    ctx.fillStyle='rgba(5,5,5,0.18)';ctx.fillRect(0,0,W,H);
+    var allDone=true;
+    particles.forEach(function(p){
+      p.x+=p.vx;p.y+=p.vy*0.95;p.alpha=Math.max(0,p.alpha-0.006);
+      if(p.x<W+10)allDone=false;
+      ctx.globalAlpha=p.alpha;
+      ctx.fillStyle=p.color;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();
+    });
+    ctx.globalAlpha=1;
+    ctx.font='9px monospace';
+    ctx.fillStyle='rgba(29,158,117,0.5)';ctx.fillText('FROM',8,12);
+    ctx.fillStyle='rgba(26,122,255,0.5)';ctx.fillText('TO',W-22,12);
+    frame++;
+    if(frame<100&&!allDone){transferAnimId=requestAnimationFrame(step);}
+    else if(onDone){onDone();}
+  }
+  if(transferAnimId)cancelAnimationFrame(transferAnimId);
+  step();
+}
+
+async function rpcCall(method,params){
+  var res=await fetch(RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',method,params,id:1})});
+  return(await res.json()).result;
+}
+async function getMPXBal(a){
+  try{var pad=a.replace('0x','').toLowerCase().padStart(64,'0');var h=await rpcCall('eth_call',[{to:MPX,data:'0x70a08231'+pad},'latest']);if(h&&h!=='0x'){var raw=BigInt(h);return Number(raw/BigInt('1000000000000000000'))+(Number(raw%BigInt('1000000000000000000'))/1e18);}return 0;}catch(e){return 0;}
+}
+async function getETHBal(a){try{return parseInt(await rpcCall('eth_getBalance',[a,'latest']),16)/1e18;}catch(e){return 0;}}
+async function getPrice(){try{var r=await fetch('https://api.dexscreener.com/latest/dex/tokens/'+MPX);var d=await r.json();if(d.pairs&&d.pairs[0])return parseFloat(d.pairs[0].priceUsd)||0;}catch(e){}return 0;}
+
+async function connectWallet(){
+  if(!window.ethereum){showStatus('error','No wallet detected. Install MetaMask or Coinbase Wallet.');return;}
+  try{
+    var accounts=await window.ethereum.request({method:'eth_requestAccounts'});
+    userAddr=accounts[0];
+    var chainId=await window.ethereum.request({method:'eth_chainId'});
+    if(chainId!==CHAIN){hide('card-connect');show('card-network');return;}
+    await onConnected();
+  }catch(e){showStatus('error',e.message||'Connection rejected.');}
+}
+
+async function switchToBase(){
+  try{await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:CHAIN}]});hide('card-network');await onConnected();}
+  catch(e){if(e.code===4902){try{await window.ethereum.request({method:'wallet_addEthereumChain',params:[{chainId:CHAIN,chainName:'Base',nativeCurrency:{name:'Ethereum',symbol:'ETH',decimals:18},rpcUrls:['https://mainnet.base.org'],blockExplorerUrls:['https://basescan.org']}]});hide('card-network');await onConnected();}catch(e2){showStatus('error','Could not add Base: '+e2.message);}}}
+}
+
+async function onConnected(){
+  hide('card-connect');show('card-identity');show('card-send');
+  var fromMaps=genIFS(userAddr);
+  drawIFS('cv-from',fromMaps);
+  $('addr-from').textContent=userAddr.slice(0,8)+'...'+userAddr.slice(-6);
+  var fhdim=calcHdim(fromMaps);
+  $('from-hdim').textContent=fhdim;
+  $('tech-from-hdim').textContent=fhdim;
+  $('tech-from').style.display='block';
+  drawEmpty('cv-to','enter address below');
+  var[bal,eth,price]=await Promise.all([getMPXBal(userAddr),getETHBal(userAddr),getPrice()]);
+  mpxBal=bal;mpxPrice=price;
+  $('mpx-bal').textContent=mpxBal.toLocaleString(undefined,{maximumFractionDigits:2})+' MPX';
+  $('eth-bal').textContent=eth.toFixed(4)+' ETH';
+  $('mpx-price').textContent=price>0?'$'+price.toFixed(6):'—';
+  window.ethereum.on('accountsChanged',function(a){if(a.length===0){userAddr=null;location.reload();}else if(userAddr){userAddr=a[0];onConnected();}});
+  window.ethereum.on('chainChanged',function(){location.reload();});
+}
+
+var recipTimer=null;
+$('send-to').addEventListener('input',function(){
+  clearTimeout(recipTimer);
+  var val=this.value.trim();
+  if(val.match(/^0x[0-9a-fA-F]{40}$/)){
+    recipTimer=setTimeout(function(){
+      drawIFS('cv-to',genIFS(val));
+      $('addr-to').textContent=val.slice(0,8)+'...'+val.slice(-6);
+      $('addr-to').className='id-box-addr active';
+      var thdim=calcHdim(genIFS(val));
+      $('tech-to-hdim').textContent=thdim;
+      $('tech-to').style.display='block';
+    },350);
+  } else {
+    drawEmpty('cv-to','enter address below');
+    $('addr-to').textContent='enter address below';
+    $('addr-to').className='id-box-addr';
+  }
+});
+
+$('send-amount').addEventListener('input',function(){
+  var amt=parseFloat(this.value)||0;
+  $('usd-preview').textContent=(mpxPrice>0&&amt>0)?'≈ $'+(amt*mpxPrice).toFixed(4):'≈ $—';
+});
+
+function setMax(){$('send-amount').value=mpxBal>0?mpxBal.toFixed(6):'0';$('send-amount').dispatchEvent(new Event('input'));}
+
+async function sendMPX(){
+  var to=$('send-to').value.trim();
+  var amount=parseFloat($('send-amount').value);
+  if(!to.match(/^0x[0-9a-fA-F]{40}$/)){showStatus('error','Invalid recipient address.');return;}
+  if(!amount||amount<=0){showStatus('error','Enter a valid amount.');return;}
+  if(amount>mpxBal){showStatus('error','Insufficient MPX balance.');return;}
+  try{
+    $('send-btn').disabled=true;
+    showStatus('pending','Waiting for wallet confirmation...');
+    var toHex=to.replace('0x','').toLowerCase().padStart(64,'0');
+    var amtWei=BigInt(Math.floor(amount*1e9))*BigInt(1e9);
+    var data='0xa9059cbb'+toHex+amtWei.toString(16).padStart(64,'0');
+    var txHash=await window.ethereum.request({method:'eth_sendTransaction',params:[{from:userAddr,to:MPX,data:data,chainId:CHAIN}]});
+    showStatus('pending','Transaction submitted — transferring between fractal identities...');
+    animateTransfer(async function(){
+      $('txlink').href='https://basescan.org/tx/'+txHash;
+      $('txlink').textContent=txHash.slice(0,20)+'... ↗';
+      show('txlink');
+      var confirmed=false;
+      for(var i=0;i<30;i++){
+        await new Promise(r=>setTimeout(r,2000));
+        var receipt=await rpcCall('eth_getTransactionReceipt',[txHash]);
+        if(receipt){confirmed=true;break;}
+      }
+      if(confirmed){
+        showStatus('success','✓ Transfer complete — '+amount.toLocaleString()+' MPX sent between fractal identities.');
+        mpxBal=await getMPXBal(userAddr);
+        $('mpx-bal').textContent=mpxBal.toLocaleString(undefined,{maximumFractionDigits:2})+' MPX';
+        $('send-amount').value='';
+      } else {
+        showStatus('pending','Transaction pending — check BaseScan.');
+      }
+    });
+  }catch(e){
+    if(e.code===4001)showStatus('error','Transaction rejected by user.');
+    else showStatus('error',e.message||'Transaction failed.');
+    $('cv-transfer').style.display='none';
+  }finally{$('send-btn').disabled=false;}
+}
+
+function showStatus(type,text){var box=$('sbox');box.className='sbox '+type;box.style.display='block';$('sbox-text').textContent=text;}
+function copyContract(){navigator.clipboard.writeText(MPX).then(function(){$('copy-ok').textContent='✓';setTimeout(function(){$('copy-ok').textContent='';},2000);});}
+
+// Auto-connect removed — user must click Connect Wallet explicitly
+
+// ── Native Metriplex mode ─────────────────────────────────────────────────────
+var nativeWallet = null; // {private_key, public_m3, criterion_params, attractor}
+var nativeBalance = 0;
+var nativeReceiverM3 = null;
+var NODE = 'https://metriplexmpx.xyz/node';
+
+function switchMode(mode) {
+  document.getElementById('mode-base').classList.add('hidden');
+  document.getElementById('mode-native').classList.add('hidden');
+  document.getElementById('mode-bridge').classList.add('hidden');
+  document.getElementById('tab-base').classList.remove('active');
+  document.getElementById('tab-native').classList.remove('active');
+  document.getElementById('tab-bridge').classList.remove('active');
+  if (mode === 'base') {
+    document.getElementById('mode-base').classList.remove('hidden');
+    document.getElementById('tab-base').classList.add('active');
+  } else if (mode === 'native') {
+    document.getElementById('mode-native').classList.remove('hidden');
+    document.getElementById('tab-native').classList.add('active');
+  } else {
+    document.getElementById('mode-bridge').classList.remove('hidden');
+    document.getElementById('tab-bridge').classList.add('active');
+  }
+}
+
+let bridgeKeystore = null;
+
+async function globalConnectWallet() {
+  if (!window.ethereum) {
+    alert('Install MetaMask to connect');
+    return;
+  }
+  try {
+    var accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
+    userAddr = accounts[0];
+    try { await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x2105'}]}); } catch(e) {}
+    document.getElementById('global-connect-btn').classList.add('hidden');
+    document.getElementById('global-wallet-addr').classList.remove('hidden');
+    document.getElementById('global-addr-short').textContent = userAddr.slice(0,8)+'...'+userAddr.slice(-6);
+    // Actualizar bridge tab tambien
+    document.getElementById('bridge-connect-btn').classList.add('hidden');
+    document.getElementById('bridge-connected-addr').classList.remove('hidden');
+    document.getElementById('bridge-conn-short').textContent = userAddr.slice(0,8)+'...'+userAddr.slice(-6);
+    // Actualizar UI ERC-20 si ya estaba en esa pestaña
+    if (document.getElementById("mode-base") && !document.getElementById("mode-base").classList.contains("hidden")) { onConnected(); }
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+async function onBridgeRecipient(val) {
+  var st = document.getElementById('bridge-recip-status');
+  val = val.trim().toLowerCase().replace('0x','');
+  if (val.length < 8) { st.textContent = ''; return; }
+  st.textContent = 'Looking up...';
+  try {
+    var res = await fetch('/node/identity/' + val);
+    var data = await res.json();
+    if (data.public_m3) {
+      window._bridgeM3Json = JSON.stringify(data.public_m3);
+      st.style.color = 'var(--green)';
+      st.textContent = '✓ Identity found';
+    } else {
+      window._bridgeM3Json = null;
+      st.style.color = '#ff6666';
+      st.textContent = '✗ Identity not found — generate keystore first';
+    }
+  } catch(e) {
+    st.style.color = '#ff6666';
+    st.textContent = '✗ Node unreachable';
+  }
+}
+
+async function bridgeConnectWallet() {
+  if (!window.ethereum) {
+    document.getElementById('bridge-burn-status').textContent = '✗ Install MetaMask to use this feature';
+    return;
+  }
+  try {
+    var accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
+    userAddr = accounts[0];
+    // Switch to Base
+    try { await window.ethereum.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x2105'}]}); } catch(e) {}
+    document.getElementById('bridge-connect-btn').classList.add('hidden');
+    document.getElementById('bridge-connected-addr').classList.remove('hidden');
+    document.getElementById('bridge-conn-short').textContent = userAddr.slice(0,8)+'...'+userAddr.slice(-6);
+  } catch(e) {
+    document.getElementById('bridge-burn-status').textContent = '✗ ' + e.message;
+  }
+}
+
+function switchBridgeTab(tab) {
+  document.getElementById('btab-panel-identity').classList.toggle('hidden', tab !== 'identity');
+  document.getElementById('btab-panel-burn').classList.toggle('hidden', tab !== 'burn');
+  document.getElementById('btab-identity').style.borderBottomColor = tab === 'identity' ? 'var(--accent)' : 'transparent';
+  document.getElementById('btab-identity').style.color = tab === 'identity' ? 'var(--accent)' : 'var(--muted)';
+  document.getElementById('btab-burn').style.borderBottomColor = tab === 'burn' ? 'var(--accent)' : 'transparent';
+  document.getElementById('btab-burn').style.color = tab === 'burn' ? 'var(--accent)' : 'var(--muted)';
+  // Si cambia a burn, verificar si ya está conectado
+  if (tab === 'burn' && userAddr) {
+    document.getElementById('bridge-connect-btn').classList.add('hidden');
+    document.getElementById('bridge-connected-addr').classList.remove('hidden');
+    document.getElementById('bridge-conn-short').textContent = userAddr.slice(0,8)+'...'+userAddr.slice(-6);
+  }
+}
+
+function wzGoTo(step) {
+  [1,2,3,4].forEach(s => {
+    document.getElementById('wz-step-'+s).classList.add('hidden');
+    var ind = document.getElementById('wz-ind-'+s);
+    ind.style.borderBottomColor = 'rgba(255,255,255,0.1)';
+    ind.style.color = 'var(--muted)';
+  });
+  document.getElementById('wz-step-'+step).classList.remove('hidden');
+  var ind = document.getElementById('wz-ind-'+step);
+  ind.style.borderBottomColor = 'var(--accent)';
+  ind.style.color = 'var(--accent)';
+
+  if (step === 4) {
+    // Show final address and check balance
+    var addr = document.getElementById('bridge-native-addr').textContent;
+    document.getElementById('wz-final-addr').textContent = addr;
+    if (addr) {
+      var hash8 = addr.replace('0x','').slice(0,8);
+      fetch('/node/balance/' + hash8)
+        .then(r => r.json())
+        .then(d => {
+          var mpx = (d.balance_raw / 1073741824).toFixed(3);
+          document.getElementById('wz-final-balance').textContent = mpx + ' MPX';
+        })
+        .catch(() => {
+          document.getElementById('wz-final-balance').textContent = 'Could not reach node';
+        });
+    }
+  }
+}
+
+function onBridgeAddr(val) {
+  // bridge-result removed in wizard redesign
+  document.getElementById('bridge-status').textContent = '';
+}
+
+async function generateBridgeKeystore() {
+  const addr = document.getElementById('bridge-evm').value.trim();
+  const pw = document.getElementById('bridge-pw').value;
+  const status = document.getElementById('bridge-status');
+  if (!addr.startsWith('0x') || addr.length !== 42) {
+    status.style.color = 'var(--red)'; status.textContent = 'Invalid EVM address.'; return;
+  }
+  if (pw.length < 4) {
+    status.style.color = 'var(--red)'; status.textContent = 'Password too short (min 4).'; return;
+  }
+  status.style.color = 'var(--muted)';
+  status.textContent = 'Generating keystore... (this may take 10-30 seconds)';
+  document.getElementById('bridge-gen-btn').disabled = true;
+  try {
+    const res = await fetch('/node/keystore/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({address: addr, password: pw})
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Server error');
+    bridgeKeystore = data.keystore;
+    document.getElementById('bridge-native-addr').textContent = data.address;
+    document.getElementById('bridge-m3-json').value = JSON.stringify(data.keystore.public_m3);
+    window._bridgeM3Json = JSON.stringify(data.keystore.public_m3);
+    document.getElementById('bridge-result').classList.remove('hidden');
+    status.style.color = 'var(--green)';
+    status.textContent = 'Keystore generated successfully.';
+  } catch(e) {
+    status.style.color = 'var(--red)';
+    status.textContent = 'Error: ' + e.message;
+  } finally {
+    document.getElementById('bridge-gen-btn').disabled = false;
+  }
+}
+
+async function burnForNative() {
+  // Conectar MetaMask si no está conectado
+  if (window.ethereum && !userAddr) {
+    try {
+      var accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
+      userAddr = accounts[0];
+    } catch(e) {
+      document.getElementById('bridge-burn-status').textContent = '✗ Please connect MetaMask first';
+      return;
+    }
+  }
+  if (!window.ethereum) { 
+    document.getElementById('bridge-burn-status').textContent = '✗ Connect MetaMask first (use Base ERC-20 tab)';
+    return; 
+  }
+  var amount = parseFloat(document.getElementById('bridge-burn-amount').value);
+  if (!amount || amount <= 0) {
+    document.getElementById('bridge-burn-status').textContent = '✗ Enter a valid amount';
+    return;
+  }
+  var m3json = window._bridgeM3Json || document.getElementById('bridge-m3-json').value;
+  // m3json puede venir del wizard o estar vacío — en ese caso el relayer lo resuelve por address
+  if (!m3json && !window._bridgeM3Json) {
+    // No bloquear — el usuario puede tener keystore previo
+    // Mostrar advertencia pero continuar
+    document.getElementById('bridge-burn-status').textContent = 'Note: Generate your keystore first to link EVM → Native address';
+  }
+
+  try {
+    // Ensure MetaMask is connected and on Base
+    var accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
+    var from = accounts[0];
+    var chainId = await window.ethereum.request({method: 'eth_chainId'});
+    if (chainId !== '0x2105') {
+      try { 
+        await window.ethereum.request({method:'wallet_switchEthereumChain', params:[{chainId:'0x2105'}]});
+      } catch(e) { 
+        document.getElementById('bridge-burn-status').textContent = '✗ Switch to Base network first';
+        return; 
+      }
+    }
+
+    document.getElementById('bridge-burn-status').textContent = 'Waiting for wallet confirmation...';
+    document.getElementById('bridge-burn-btn').disabled = true;
+
+    // ABI encode burnForNative(uint256 amount, string nativeRecipient)
+    // Function selector: keccak256("burnForNative(uint256,string)")[:4] = 0x3d555c4d
+    var selector = '3d555c4d';
+
+    // amount in wei (18 decimals)
+    var amtWei = BigInt(Math.floor(amount * 1e9)) * BigInt(1e9);
+    var amtHex = amtWei.toString(16).padStart(64, '0');
+
+    // string offset = 0x40 (64 bytes — after amount + offset)
+    var strOffset = '0000000000000000000000000000000000000000000000000000000000000040';
+
+    // encode string: length + data padded to 32 bytes
+    var strBytes = new TextEncoder().encode(m3json);
+    var strLen = strBytes.length.toString(16).padStart(64, '0');
+    var strHex = Array.from(strBytes).map(b => b.toString(16).padStart(2,'0')).join('');
+    // pad to multiple of 32 bytes
+    var padded = strHex.padEnd(Math.ceil(strHex.length / 128) * 128, '0');
+
+    var data = '0x' + selector + amtHex + strOffset + strLen + padded;
+
+    console.log('[BURN] data:', data.slice(0,40), '...');
+    console.log('[BURN] from:', from);
+    console.log('[BURN] amount:', amount);
+    console.log('[BURN] m3json length:', m3json ? m3json.length : 0);
+    var txHash = await window.ethereum.request({
+      method: 'eth_sendTransaction',
+      params: [{ from, to: '0x22D3f414438556d1B071cCfE52513d4d829400fd', data, chainId: '0x2105', gas: '0x' + (300000).toString(16) }]
+    });
+
+    document.getElementById('bridge-burn-status').innerHTML = 
+      '✓ TX submitted: <a href="https://basescan.org/tx/' + txHash + '" target="_blank" style="color:var(--accent)">' + txHash.slice(0,16) + '... ↗</a><br><span style="color:var(--muted)">Relayer will release MPX to your native address within ~60s</span>';
+
+  } catch(e) {
+    document.getElementById('bridge-burn-status').textContent = '✗ Error: ' + e.message;
+  } finally {
+    document.getElementById('bridge-burn-btn').disabled = false;
+  }
+}
+
+async function sha256hex4(str) {
+  // Returns first 4 bytes (8 hex chars) of SHA256 — function selector
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).slice(0,4).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function downloadBridgeKeystore() {
+  if (!bridgeKeystore) return;
+  const blob = new Blob([JSON.stringify(bridgeKeystore, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'metriplex_keystore_' + bridgeKeystore.evm_address.slice(2,8) + '.json';
+  a.click();
+}
+
+function onKsFile(input) {
+  document.getElementById('ks-pw').value = '';
+  document.getElementById('unlock-status').style.display = 'none';
+}
+
+async function unlockKeystore() {
+  var fileInput = document.getElementById('ks-file');
+  var pw = document.getElementById('ks-pw').value;
+  var btn = document.getElementById('unlock-btn');
+  var status = document.getElementById('unlock-status');
+
+  if (!fileInput.files.length) { showUnlockStatus('err', 'Select a keystore file.'); return; }
+  if (!pw) { showUnlockStatus('err', 'Enter password.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Unlocking...';
+  try {
+    var text = await fileInput.files[0].text();
+    nativeWallet = await MetriplexCrypto.loadKeystore(text, pw);
+    var addr = await MetriplexCrypto.m3_to_address(nativeWallet.public_m3);
+    nativeWallet.address = addr;
+
+    // Fetch balance from node
+    var addrShort = addr.replace('0x','').slice(0,40);
+    var res = await fetch(NODE + '/balance/' + addrShort);
+    var data = await res.json();
+    nativeBalance = data.balance_caf || 0;
+
+    showUnlockStatus('ok', '✓ Unlocked: ' + addr.slice(0,10) + '...' + addr.slice(-6));
+    document.getElementById('n-sender').textContent = addr.slice(0,10)+'...'+addr.slice(-6);
+    document.getElementById('n-balance').textContent = nativeBalance.toLocaleString(undefined,{maximumFractionDigits:4}) + ' MPX';
+    document.getElementById('card-native-send').classList.remove('hidden');
+  } catch(e) {
+    showUnlockStatus('err', e.message || 'Failed to unlock');
+    nativeWallet = null;
+  }
+  btn.disabled = false;
+  btn.textContent = 'Unlock Keystore';
+}
+
+function showUnlockStatus(type, msg) {
+  var el = document.getElementById('unlock-status');
+  el.className = 'unlock-status ' + type;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+var recipLookupTimer = null;
+async function onNativeRecip(val) {
+  clearTimeout(recipLookupTimer);
+  nativeReceiverM3 = null;
+  var st = document.getElementById('n-recip-status');
+  val = val.trim();
+
+  // Opción B: pegar M3 completo como JSON
+  if (val.startsWith('[')) {
+    try {
+      var m3 = JSON.parse(val);
+      if (Array.isArray(m3) && m3.length === 4) {
+        nativeReceiverM3 = m3;
+        var addr = await MetriplexCrypto.m3_to_address(m3);
+        st.style.color = 'var(--green)';
+        st.textContent = '✓ M3 directo: ' + addr.slice(0,12) + '...';
+        drawIFS('cv-to', genIFS(addr));
+        document.getElementById('addr-to').textContent = addr.slice(0,10)+'...'+addr.slice(-6);
+        return;
+      }
+    } catch(e) {}
+    st.style.color = '#ff6666';
+    st.textContent = '✗ JSON inválido — debe ser tensor M3 4x4x4';
+    return;
+  }
+
+  val = val.toLowerCase().replace('0x','');
+  if (val.length < 8) { st.textContent = ''; return; }
+  st.textContent = 'Looking up identity...';
+  recipLookupTimer = setTimeout(async function() {
+    try {
+      var res = await fetch(NODE + '/identity/' + val);
+      var data = await res.json();
+      if (data.public_m3) {
+        nativeReceiverM3 = data.public_m3;
+        st.style.color = 'var(--green)';
+        st.textContent = '✓ Identity found: ' + data.address.slice(0,12) + '...';
+        drawIFS('cv-to', genIFS(data.address));
+        document.getElementById('addr-to').textContent = data.address.slice(0,10)+'...'+data.address.slice(-6);
+      } else {
+        var cleanVal = val.replace('0x','');
+        if (cleanVal.length === 64) {
+          nativeReceiverM3 = null;
+          st.style.color = '#ff6666';
+          st.textContent = '✗ Identity not in chain — paste M3 JSON directly to send anyway';
+        } else {
+          nativeReceiverM3 = null;
+          st.style.color = '#ff6666';
+          st.textContent = '✗ Identity not found in chain';
+        }
+      }
+    } catch(e) {
+      st.style.color = '#ff6666';
+      st.textContent = '✗ Lookup failed: ' + e.message;
+    }
+  }, 500);
+}
+
+function setNativeMax() {
+  document.getElementById('n-amount').value = nativeBalance > 0 ? nativeBalance.toFixed(6) : '0';
+}
+
+async function sendNativeMPX() {
+  if (!nativeWallet) { showNativeStatus('error', 'Unlock keystore first.'); return; }
+  if (!nativeReceiverM3) { showNativeStatus('error', 'Recipient identity not found.'); return; }
+  var amount = parseFloat(document.getElementById('n-amount').value);
+  if (!amount || amount <= 0) { showNativeStatus('error', 'Enter a valid amount.'); return; }
+  if (amount > nativeBalance) { showNativeStatus('error', 'Insufficient balance.'); return; }
+
+  var btn = document.getElementById('n-send-btn');
+  btn.disabled = true;
+  showNativeStatus('pending', 'Generating ZK proof... (this may take 10-20s)');
+  try {
+    var tx = await MetriplexCrypto.buildSignedTx(
+      nativeWallet.private_key,
+      nativeWallet.public_m3,
+      nativeReceiverM3,
+      amount,
+      nativeWallet.criterion_params,
+      nativeWallet.attractor
+    );
+    showNativeStatus('pending', 'Proof generated. Submitting to network...');
+    console.log('TX tx_hash used for proof:', (await MetriplexCrypto.sha256hex(MetriplexCrypto.sortedJSON({amount:tx.amount,fee:0,payload:null,receiver_m3:nativeReceiverM3,sender_m3:nativeWallet.public_m3}))));
+    console.log('PI:', tx.signature_data.pi.slice(0,16));
+    var res = await fetch(NODE + '/transaction', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(tx)
+    });
+    var data = await res.json();
+    if (data.tx_id) {
+      showNativeStatus('success', '✓ TX accepted: ' + data.tx_id.slice(0,20) + '...');
+      var link = document.getElementById('n-txlink');
+      link.href = 'https://metriplexmpx.xyz/nodes.html#' + data.tx_id;
+      link.textContent = data.tx_id.slice(0,20) + '... ↗';
+      link.classList.remove('hidden');
+      nativeBalance -= amount;
+      document.getElementById('n-balance').textContent = nativeBalance.toLocaleString(undefined,{maximumFractionDigits:4}) + ' MPX';
+      document.getElementById('n-amount').value = '';
+    } else {
+      showNativeStatus('error', 'Rejected: ' + (data.detail || JSON.stringify(data)));
+    }
+  } catch(e) {
+    showNativeStatus('error', e.message || 'Failed');
+  }
+  btn.disabled = false;
+}
+
+function showNativeStatus(type, text) {
+  var box = document.getElementById('n-sbox');
+  box.className = 'sbox ' + type;
+  box.style.display = 'block';
+  box.classList.remove('hidden');
+  document.getElementById('n-sbox-text').textContent = text;
+}
+
+</script>
+</body>
+</html>
