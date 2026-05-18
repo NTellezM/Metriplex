@@ -100,6 +100,14 @@ class Storage:
         self.conn.commit()
         self.conn.execute("PRAGMA wal_checkpoint(FULL);")
 
+    def credit(self, tensor_hash: str, amount: int):
+        with self.conn:
+            self.conn.execute(
+                "INSERT INTO balances(tensor_hash,balance) VALUES(?,?) "
+                "ON CONFLICT(tensor_hash) DO UPDATE SET balance=balance+?",
+                (tensor_hash, amount, amount)
+            )
+
     def transfer(self, sender_hash, receiver_hash, amount, fee=0):
         with self.conn:
             self.conn.execute("UPDATE balances SET balance=balance-? WHERE tensor_hash=?", (amount+fee, sender_hash))
