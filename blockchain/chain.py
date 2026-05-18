@@ -224,8 +224,22 @@ class Blockchain:
         if len(new_blocks_list) <= len(self.chain):
             return False  # La cadena local es igual o superior. Ignorar.
 
+        # Límite de profundidad de reorganización
+        MAX_REORG_DEPTH = 20
+        diverge_at = 0
+        for i in range(min(len(self.chain), len(new_blocks_list))):
+            if self.chain[i].hash != new_blocks_list[i].hash:
+                diverge_at = i
+                break
+        else:
+            diverge_at = min(len(self.chain), len(new_blocks_list))
+        reorg_depth = len(self.chain) - diverge_at
+        if reorg_depth > MAX_REORG_DEPTH:
+            print(f"[Consenso] ⛔ Reorg rechazado: profundidad {reorg_depth} > MAX {MAX_REORG_DEPTH}")
+            return False
+
         print(
-            f"\n[Consenso] ⚖️ Evaluando bifurcación: Local ({len(self.chain)}) vs Red ({len(new_blocks_list)})"
+            f"\n[Consenso] ⚖️ Evaluando bifurcación: Local ({len(self.chain)}) vs Red ({len(new_blocks_list)}) reorg_depth={reorg_depth}"
         )
 
         # 1. Validación Estructural de la nueva rama

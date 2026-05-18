@@ -150,7 +150,6 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
 
     @app.post("/transaction")
     async def submit_transaction(tx_req: TransactionRequest):
-        print(f"[API] RAW fee={tx_req.fee} payload={tx_req.payload} sig_keys={list(tx_req.signature_data.keys())}")
         try:
             print(f"[API] TX recibida sender={str(tx_req.sender_m3)[:20]} sig_keys={list(tx_req.signature_data.keys())[:5]}")
             # ACTUALIZADO: Ahora le pasamos el payload al motor interno
