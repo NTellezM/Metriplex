@@ -221,8 +221,16 @@ class Blockchain:
         Regla de Cadena Más Larga (Longest Chain Rule).
         Evalúa y reemplaza el historial completo si hay un fork válido y más pesado.
         """
-        if len(new_blocks_list) <= len(self.chain):
-            return False  # La cadena local es igual o superior. Ignorar.
+        if len(new_blocks_list) < len(self.chain):
+            return False  # La cadena local es superior. Ignorar.
+
+        # Empate: la cadena con hash del último bloque lexicográficamente menor gana
+        if len(new_blocks_list) == len(self.chain):
+            local_last = self.chain[-1].hash
+            remote_last = new_blocks_list[-1].hash
+            if local_last <= remote_last:
+                return False  # Local gana o empata — no reemplazar
+            # Remote gana el desempate — continuar con el reemplazo
 
         # Límite de profundidad de reorganización
         MAX_REORG_DEPTH = 20
