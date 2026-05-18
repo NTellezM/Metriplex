@@ -125,7 +125,26 @@ class Blockchain:
         print("  -> ACEPTADA: Prueba ZK verificada.")
         return True
 
+    def validate_zk_only(self, tx) -> bool:
+        """Valida solo ZK proof sin verificar saldo. Usado en replace_chain."""
+        if not tx.sender_m3:
+            return True
+        if tx.signature_data.get("type") == "COINBASE":
+            return True
+        payload_dict = {
+            "sender_m3": tx.sender_m3,
+            "receiver_m3": tx.receiver_m3,
+            "amount": tx.amount,
+            "fee": tx.fee,
+            "payload": tx.payload if tx.payload else None,
+        }
+        tx_hash = hashlib.sha256(
+            json.dumps(payload_dict, sort_keys=True, separators=(",",":")).encode()
+        ).hexdigest()
+        return self._verify_signature(tx.signature_data, tx.sender_m3, tx_hash)
+
     def _verify_signature(
+
         self,
         sig: dict,
         sender_m3: list,
@@ -223,6 +242,15 @@ class Blockchain:
                     f"  -> [Rechazo] Hash criptográfico inválido en bloque {curr.index}."
                 )
                 return False
+
+        # Validación ZK de todas las TXs antes del rollback
+        print("[Consenso] 🔍 Validando ZK de cadena propuesta...")
+        for block in new_blocks_list[1:]:
+            for tx in block.transactions:
+                if not self.validate_zk_only(tx):
+                    print(f"  -> [Rechazo] TX {tx.tx_id[:8]} falló ZK en bloque {block.index}.")
+                    return False
+        print("[Consenso] ✓ ZK válido en toda la cadena.")
 
         print(
             "[Consenso] 🔄 Bifurcación ganadora. Iniciando Rollback de estado global..."
