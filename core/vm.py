@@ -71,7 +71,8 @@ class CAFVirtualMachine:
                     print(f"[VM] Estado actualizado en {contract_address}")
                     return True
 
-            return False
+            # Payload sin op_code reconocido — datos de auditoría, no contrato
+            return True
             
         except Exception as e:
             print(f"[VM] Excepción crítica durante ejecución: {e}")
