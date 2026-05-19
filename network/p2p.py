@@ -31,7 +31,7 @@ class CAFNode:
         self.mempool = mempool
         self.peers = set()
         self.syncing = False
-        self.sync_target = 0  # altura objetivo de sincronización
+        self.sync_target = 0
         # --- NUEVO: Control de resiliencia P2P ---
         self.banned_peers = set()
         self.peer_failures = {}
@@ -80,15 +80,13 @@ class CAFNode:
             return
 
         local_height = self.blockchain.chain[-1].index
-        # Pedir desde 5 bloques atrás para cubrir forks recientes
-        sync_from = max(0, local_height - 5)
-        print(f"[Red] Solicitando sincronización desde el bloque {sync_from}...")
+        print(f"[Red] Solicitando sincronización desde el bloque {local_height}...")
         self.syncing = True
 
         req_msg = json.dumps(
             {
                 "type": "REQUEST_CHAIN_SYNC",
-                "last_index": sync_from,
+                "last_index": local_height,
                 "requester": f"{self.host_public}:{self.port}",
             }
         ).encode()
@@ -104,7 +102,6 @@ class CAFNode:
                 break  # dejó de crecer — sincronización completa
             prev_height = curr_height
         self.syncing = False
-        self.sync_target = 0  # altura objetivo de sincronización
         print(f"[Red] ✓ Sincronización completa. Altura: {self.blockchain.chain[-1].index}")
 
     async def handle_client(
@@ -195,8 +192,9 @@ class CAFNode:
                         for b in blocks_to_send
                     ]
 
+                    peer_height = len(self.blockchain.chain) - 1
                     resp_msg = json.dumps(
-                        {"type": "CHAIN_SEGMENT", "blocks": blocks_data}
+                        {"type": "CHAIN_SEGMENT", "blocks": blocks_data, "peer_height": peer_height}
                     ).encode()
 
                     # Conectar directamente al solicitante para no saturar la red (Gossip)
@@ -265,8 +263,8 @@ class CAFNode:
                     f"[Red] ✓ Sincronización completada. {added_count} bloques integrados."
                 )
 
+                # Si el segmento fue completo (50), hay más bloques — solicitar el siguiente
                 local_height = self.blockchain.chain[-1].index
-                # Continuar sincronizando si no hemos alcanzado el target
                 if self.sync_target > 0 and local_height < self.sync_target - 2:
                     print(f'[Red] Segmento completo — solicitando siguiente desde {local_height}... (target={self.sync_target})')
                     req_msg = json.dumps({
@@ -276,11 +274,9 @@ class CAFNode:
                     }).encode()
                     await self._broadcast(req_msg)
                 else:
-                    # Alcanzamos el target
                     self.sync_target = 0
                     self.syncing = False
                     print(f'[Red] ✓ Sincronización completa. Altura: {local_height}')
-        self.sync_target = 0  # altura objetivo de sincronización
 
             elif msg_type == "NEW_TX":
                 tx_data = payload.get("data")
@@ -393,7 +389,6 @@ class CAFNode:
                             sender_m3=tx_data["sender_m3"],
                             receiver_m3=tx_data["receiver_m3"],
                             amount=tx_data["amount"],
-                            fee=tx_data.get("fee", 0),
                             signature_data=tx_data.get("signature_data", {}),
                             payload=tx_data.get("payload", {}),
                         )
