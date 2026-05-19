@@ -332,6 +332,7 @@ class CAFNode:
                         print(
                             f"[Red] ❌ Brecha de índice detectada ({new_block.index}). Solicitando sincronización..."
                         )
+                        await asyncio.sleep(2)  # esperar segmentos en tránsito
                         await self.request_sync()
                     else:
                         print(
