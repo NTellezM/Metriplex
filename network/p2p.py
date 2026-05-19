@@ -409,6 +409,20 @@ class CAFNode:
                     for b in new_chain:
                         self.mempool.remove_mined_transactions(b.transactions)
 
+            elif msg_type == "STATUS_REQUEST":
+                import time
+                last_block = self.blockchain.chain[-1]
+                status = {
+                    "type": "STATUS_RESPONSE",
+                    "height": last_block.index,
+                    "latest_hash": last_block.hash,
+                    "latest_ts": last_block.timestamp,
+                    "peers": list(self.peers),
+                    "syncing": self.syncing,
+                    "now": time.time()
+                }
+                writer.write(json.dumps(status).encode())
+                await writer.drain()
         except json.JSONDecodeError:
             pass
         except Exception as e:
