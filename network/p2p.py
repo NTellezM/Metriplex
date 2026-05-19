@@ -79,13 +79,15 @@ class CAFNode:
             return
 
         local_height = self.blockchain.chain[-1].index
-        print(f"[Red] Solicitando sincronización desde el bloque {local_height}...")
+        # Pedir desde 5 bloques atrás para cubrir forks recientes
+        sync_from = max(0, local_height - 5)
+        print(f"[Red] Solicitando sincronización desde el bloque {sync_from}...")
         self.syncing = True
 
         req_msg = json.dumps(
             {
                 "type": "REQUEST_CHAIN_SYNC",
-                "last_index": local_height,
+                "last_index": sync_from,
                 "requester": f"{self.host_public}:{self.port}",
             }
         ).encode()
