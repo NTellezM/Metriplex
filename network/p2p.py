@@ -385,6 +385,7 @@ class CAFNode:
                             sender_m3=tx_data["sender_m3"],
                             receiver_m3=tx_data["receiver_m3"],
                             amount=tx_data["amount"],
+                            fee=tx_data.get("fee", 0),
                             signature_data=tx_data.get("signature_data", {}),
                             payload=tx_data.get("payload", {}),
                         )
