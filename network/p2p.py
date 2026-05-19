@@ -423,6 +423,7 @@ class CAFNode:
                 }
                 writer.write(json.dumps(status).encode())
                 await writer.drain()
+                return
         except json.JSONDecodeError:
             pass
         except Exception as e:
