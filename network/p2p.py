@@ -211,7 +211,7 @@ class CAFNode:
                         print(f"[Red] Error enviando segmento a {requester_addr}: {e}")
 
             elif msg_type == "CHAIN_SEGMENT":
-                print(f"[Debug] Procesando CHAIN_SEGMENT")
+
                 # Recibimos una carga de bloques para ponernos al día
                 blocks_data = payload.get("blocks", [])
                 if not blocks_data:
