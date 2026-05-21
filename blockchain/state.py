@@ -47,9 +47,29 @@ class StateDB:
 
         # 1. Ejecutar Lógica de Contrato Inteligente (si existe payload)
         if payload:
+            op = payload.get("op")
+
+            # VALIDATOR_EXIT — devolver stake al sender desde el vault
+            if op == "VALIDATOR_EXIT":
+                from blockchain.validator_registry import VALIDATOR_STAKE_REQUIRED
+                vault_hash = receiver_hash
+                vault_balance = self.storage.get_balance(vault_hash)
+                if vault_balance >= VALIDATOR_STAKE_REQUIRED:
+                    self.storage.transfer(vault_hash, sender_hash, VALIDATOR_STAKE_REQUIRED, 0)
+                    print(f"[State] VALIDATOR_EXIT: {VALIDATOR_STAKE_REQUIRED // 1073741824} MPX devueltos a {sender_hash[:8]}")
+                else:
+                    print(f"[State] VALIDATOR_EXIT: vault sin fondos suficientes ({vault_balance})")
+                return True
+
+            # VALIDATOR_SLASH — stake quemado
+            if op == "VALIDATOR_SLASH":
+                print(f"[State] VALIDATOR_SLASH: stake de {payload.get('target_m3_hash','?')[:8]} quemado.")
+                return True
+
             vm_success = self.vm.execute(tx_id, sender_hash, payload)
             if not vm_success:
-                return False  # Si el contrato falla, la transacción se revierte por completo
+                return False
+
 
         # 2. Procesar transacción financiera
         if not sender_m3:  # Coinbase
