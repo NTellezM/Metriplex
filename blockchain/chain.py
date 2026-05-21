@@ -119,6 +119,14 @@ class Blockchain:
         is_valid = self._verify_signature(sig, tx.sender_m3, tx_hash)
 
         if not is_valid:
+            # Reintentar con payload:{} para compatibilidad con bloques antiguos
+            payload_dict["payload"] = {}
+            tx_hash2 = hashlib.sha256(
+                json.dumps(payload_dict, sort_keys=True, separators=(",",":")).encode()
+            ).hexdigest()
+            is_valid = self._verify_signature(sig, tx.sender_m3, tx_hash2)
+
+        if not is_valid:
             print("  -> RECHAZADA: Falla en la prueba ZK-STARK.")
             return False
 
