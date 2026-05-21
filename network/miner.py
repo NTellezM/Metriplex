@@ -57,9 +57,17 @@ class AutoMiner:
             current_slot = int(current_time // self.block_time_seconds)
 
             # Esperar sincronización completa antes de minar
+            # Sin peers: solo bloquear si no somos validador FVR registrado
             if not self.p2p_node.peers:
-                await asyncio.sleep(1)
-                continue
+                registry = self.blockchain.validator_registry
+                import hashlib as _hlib2, json as _json2
+                my_hash = _hlib2.sha256(
+                    _json2.dumps(self.miner_m3, sort_keys=True, separators=(",",":")).encode()
+                ).hexdigest() if self.miner_m3 else None
+                if not my_hash or not registry.validators.get(my_hash):
+                    await asyncio.sleep(1)
+                    continue
+                # Es validador FVR — puede minar solo
             if self.p2p_node.sync_target > 0:
                 local_h = len(self.blockchain.chain) - 1
                 if local_h < self.p2p_node.sync_target - 2:
