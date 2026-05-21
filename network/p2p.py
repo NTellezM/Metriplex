@@ -13,6 +13,8 @@ Implementa descubrimiento de pares, sincronización histórica (Block Sync) y pr
 """
 
 import asyncio
+import hashlib
+import time
 import json
 
 import requests
@@ -23,19 +25,26 @@ from network.mempool import Mempool
 
 
 class CAFNode:
-    def __init__(self, host: str, port: int, blockchain: Blockchain, mempool: Mempool, host_public: str = None):
+    def __init__(self, host: str, port: int, blockchain: Blockchain, mempool: Mempool, host_public: str = None, geo_identity: dict = None):
         self.host = host
         self.port = port
         self.host_public = host_public or host
         self.blockchain = blockchain
         self.mempool = mempool
         self.peers = set()
+        self.authenticated_peers: dict = {}  # peer → {m3_hash, m3, authenticated_at}
+        self.observer_peers: set = set()
         self.syncing = False
         self.sync_target = 0
-        # --- NUEVO: Control de resiliencia P2P ---
+        # --- Control de resiliencia P2P ---
         self.banned_peers = set()
         self.peer_failures = {}
         self.max_failures = 3
+        # --- Identidad geométrica ---
+        self.geo_identity = geo_identity
+        self.geo_proof = None       # ZK proof precomputado
+        self.geo_nonce = None       # nonce del proof
+        self.geo_proof_expiry = 0   # timestamp de expiración
 
     def penalize_peer(self, peer: str):
         """Aísla nodos caídos o que envían respuestas inválidas."""
@@ -46,12 +55,78 @@ class CAFNode:
                 self.peers.remove(peer)
             self.banned_peers.add(peer)
 
+
+    async def _compute_geo_proof(self):
+        """Precomputa el ZK proof para GEO_HANDSHAKE. Válido 1 hora."""
+        if not self.geo_identity or not self.geo_identity.get("private_key"):
+            return
+        try:
+            from crypto.zkp import ZKEngine
+            from core.verifier import CriterionParams
+            nonce = hashlib.sha256(
+                f"{self.host_public}:{self.port}:{int(time.time()//3600)}".encode()
+            ).hexdigest()
+            priv = self.geo_identity["private_key"]
+            pub  = self.geo_identity["public_m3"]
+            att  = self.geo_identity["attractor"]
+            params = self.geo_identity["criterion_params"]
+            if isinstance(params, dict):
+                params = CriterionParams(**params)
+            proof = ZKEngine.generate_proof(priv, pub, nonce, params, att)
+            self.geo_proof = proof
+            self.geo_nonce = nonce
+            self.geo_proof_expiry = time.time() + 3600
+            print(f"[GEO] Proof precomputado. Válido 1h.")
+        except Exception as e:
+            print(f"[GEO] Error computando proof: {e}")
+
+    def _build_geo_handshake(self) -> bytes:
+        """Construye el mensaje GEO_HANDSHAKE o HANDSHAKE simple."""
+        endpoint = f"{self.host_public}:{self.port}"
+        if self.geo_proof and time.time() < self.geo_proof_expiry:
+            import json as _j
+            m3_hash = hashlib.sha256(
+                _j.dumps(self.geo_identity["public_m3"], sort_keys=True, separators=(",",":")).encode()
+            ).hexdigest()
+            return json.dumps({
+                "type": "GEO_HANDSHAKE",
+                "endpoint": endpoint,
+                "m3": self.geo_identity["public_m3"],
+                "m3_hash": m3_hash,
+                "zk_proof": self.geo_proof,
+                "nonce": self.geo_nonce,
+            }).encode()
+        return json.dumps({"type": "HANDSHAKE", "data": endpoint}).encode()
+
+    def _verify_geo_handshake(self, payload: dict) -> bool:
+        """Verifica un GEO_HANDSHAKE entrante."""
+        try:
+            from crypto.zkp import ZKEngine
+            from core.verifier import CriterionParams
+            m3 = payload.get("m3")
+            nonce = payload.get("nonce")
+            proof = payload.get("zk_proof")
+            if not m3 or not nonce or not proof:
+                return False
+            # Nonce reciente (< 2 horas)
+            # El nonce es sha256(endpoint:hora) — no podemos verificar timestamp directamente
+            # pero el ZK proof lo vincula al nonce
+            params_raw = proof.get("criterion_params")
+            if not params_raw:
+                return False
+            params = CriterionParams(**params_raw) if isinstance(params_raw, dict) else params_raw
+            return ZKEngine.verify_proof(proof, m3, nonce, params)
+        except Exception as e:
+            print(f"[GEO] Error verificando proof: {e}")
+            return False
+
     async def start_server(self):
         server = await asyncio.start_server(self.handle_client, self.host, self.port)
         addr = server.sockets[0].getsockname()
         print(f"[Red] Nodo P2P escuchando en {addr[0]}:{addr[1]}")
 
         # Iniciar descubrimiento y sincronización al levantar el nodo
+        asyncio.create_task(self._compute_geo_proof())
         asyncio.create_task(self.announce_to_peers())
         asyncio.create_task(self.peer_maintenance_loop())
 
@@ -62,10 +137,8 @@ class CAFNode:
         """Envía un handshake inicial a los pares y solicita sincronización."""
         await asyncio.sleep(1)
         if self.peers:
-            # 1. Informar existencia
-            handshake = json.dumps(
-                {"type": "HANDSHAKE", "data": f"{self.host_public}:{self.port}"}
-            ).encode()
+            # 1. Informar existencia (GEO_HANDSHAKE si tenemos identidad)
+            handshake = self._build_geo_handshake()
             await self._broadcast(handshake)
 
             # 2. Compartir lista de peers (full mesh discovery)
@@ -136,17 +209,38 @@ class CAFNode:
             payload = json.loads(message)
             msg_type = payload.get("type")
 
-            if msg_type == "HANDSHAKE":
+            if msg_type == "GEO_HANDSHAKE":
+                new_peer = payload.get("endpoint")
+                if new_peer and str(self.port) not in new_peer:
+                    if self._verify_geo_handshake(payload):
+                        m3_hash = payload.get("m3_hash")
+                        self.authenticated_peers[new_peer] = {
+                            "m3_hash": m3_hash,
+                            "m3": payload.get("m3"),
+                            "authenticated_at": time.time(),
+                        }
+                        if new_peer not in self.peers:
+                            self.peers.add(new_peer)
+                        is_validator = self.blockchain.validator_registry.validators.get(m3_hash)
+                        role = "validador" if is_validator else "nodo autenticado"
+                        print(f"[GEO] Peer autenticado ({role}): {new_peer}")
+                    else:
+                        if new_peer not in self.peers:
+                            self.peers.add(new_peer)
+                            self.observer_peers.add(new_peer)
+                            print(f"[Red] Observer enlazado: {new_peer}")
+                    response = self._build_geo_handshake()
+                    writer.write(response)
+                    await writer.drain()
+
+            elif msg_type == "HANDSHAKE":
                 new_peer = payload.get("data")
-                if str(self.port) not in new_peer:
+                if new_peer and str(self.port) not in new_peer:
                     if new_peer not in self.peers:
                         self.peers.add(new_peer)
-                        print(f"[Red] 🤝 Peer enlazado: {new_peer}")
-
-                    # Devolver saludo
-                    response = json.dumps(
-                        {"type": "HANDSHAKE", "data": f"{self.host_public}:{self.port}"}
-                    ).encode()
+                        self.observer_peers.add(new_peer)
+                        print(f"[Red] Peer enlazado (observer): {new_peer}")
+                    response = self._build_geo_handshake()
                     writer.write(response)
                     await writer.drain()
 
@@ -164,9 +258,7 @@ class CAFNode:
                     self.peers.add(p)
                     print(f"[Red] 🌐 Peer descubierto via malla: {p}")
                 if new_peers:
-                    handshake = json.dumps(
-                        {"type": "HANDSHAKE", "data": f"{self.host_public}:{self.port}"}
-                    ).encode()
+                    handshake = self._build_geo_handshake()
                     for p in new_peers:
                         asyncio.create_task(self._send_to_peer(p, handshake))
                     await self._broadcast_peer_list()
@@ -498,9 +590,7 @@ class CAFNode:
                         self.peer_failures[peer] = 0
                         self.peers.add(peer)
                         print(f"[Red] ♻️  Peer rehabilitado: {peer}")
-                        handshake = json.dumps(
-                            {"type": "HANDSHAKE", "data": f"{self.host_public}:{self.port}"}
-                        ).encode()
+                        handshake = self._build_geo_handshake()
                         asyncio.create_task(self._send_to_peer(peer, handshake))
                     except Exception:
                         pass

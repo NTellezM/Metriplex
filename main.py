@@ -116,9 +116,40 @@ async def main():
     mempool = Mempool(blockchain)
     print("[✓] Mempool inicializado.")
 
+    # --- Cargar geo_identity para GEO_HANDSHAKE ---
+    geo_identity = None
+    if args.miner_wallet:
+        try:
+            import json as _json
+            from crypto.keystore import load_keystore
+            import os
+            _ks_raw = _json.load(open(args.miner_wallet))
+            if 'encrypted_private_key' in _ks_raw:
+                _pwd = os.environ.get("MINER_PASSWORD", "")
+                if not _pwd:
+                    import getpass
+                    _pwd = getpass.getpass("[GEO] Password del keystore: ")
+                _priv, _pub, _params, _att = load_keystore(_pwd, args.miner_wallet)
+                geo_identity = {
+                    "private_key": _priv,
+                    "public_m3": _pub,
+                    "criterion_params": _params,
+                    "attractor": _att,
+                }
+            else:
+                # Keystore sin cifrar — sin criterion_params
+                geo_identity = {
+                    "public_m3": _ks_raw.get("public_m3"),
+                    "criterion_params": None,
+                    "attractor": None,
+                    "private_key": None,
+                }
+        except Exception as _e:
+            print(f"[GEO] No se pudo cargar geo_identity: {_e}")
+
     p2p_node = CAFNode(
         host=P2P_HOST, port=args.p2p_port, blockchain=blockchain, mempool=mempool,
-        host_public=public_ip
+        host_public=public_ip, geo_identity=geo_identity
     )
 
     if args.peer:
