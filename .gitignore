@@ -52,3 +52,7 @@ wallet_node0.json
 wallet_nt_vps.json
 vault_keystore.json
 .env
+keystore_nt_vps.json
+mempool.json
+*.bak
+*.bak2
