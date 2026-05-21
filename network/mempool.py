@@ -3,24 +3,21 @@
 # Metriplex Protocol
 # Copyright (c) 2025-2026 NTellezM (Nelson Tellez)
 #
-# Permission is hereby granted, free of charge, to any person obtaining
-# a copy of this software to use, copy, modify, and distribute this
-# software under the terms of the MIT License.
-#
 """
 Módulo de gestión de transacciones pendientes (Mempool) para el protocolo CAF.
 Almacena transacciones validadas criptográficamente a la espera de ser minadas/validadas.
 """
-
+import time
 from blockchain.block import Transaction
 from blockchain.chain import Blockchain
-
 
 class Mempool:
     def __init__(self, blockchain: Blockchain, persist_path: str = "mempool.json"):
         self.blockchain = blockchain
         self.persist_path = persist_path
         self.pending_transactions: dict[str, Transaction] = {}
+        self._timestamps: dict[str, float] = {}
+        self.ttl_seconds: int = 3600  # 1 hora
         self._load()
 
     def _load(self):
@@ -41,6 +38,7 @@ class Mempool:
                 )
                 tx.tx_id = tx_data["tx_id"]
                 self.pending_transactions[tx.tx_id] = tx
+                self._timestamps[tx.tx_id] = tx_data.get("timestamp", time.time())
             print(f"[Mempool] {len(self.pending_transactions)} TXs restauradas desde disco.")
         except Exception as e:
             print(f"[Mempool] Error cargando mempool: {e}")
@@ -48,16 +46,31 @@ class Mempool:
     def _save(self):
         try:
             import json as _json
-            data = [tx.to_dict() for tx in self.pending_transactions.values()]
+            data = []
+            for tx in self.pending_transactions.values():
+                d = tx.to_dict()
+                d["timestamp"] = self._timestamps.get(tx.tx_id, time.time())
+                data.append(d)
             _json.dump(data, open(self.persist_path, 'w'))
         except Exception as e:
             print(f"[Mempool] Error guardando mempool: {e}")
 
+    def cleanup_expired(self):
+        now = time.time()
+        expired = [
+            tx_id for tx_id, ts in self._timestamps.items()
+            if now - ts > self.ttl_seconds
+        ]
+        for tx_id in expired:
+            del self.pending_transactions[tx_id]
+            del self._timestamps[tx_id]
+        if expired:
+            print(f"[Mempool] {len(expired)} TXs expiradas eliminadas.")
+            self._save()
+
     def add_transaction(self, tx: Transaction) -> bool:
         if tx.tx_id in self.pending_transactions:
             return False
-
-        # NUEVO: Mecanismo Anti-Spam (Máximo 5 transacciones pendientes por cuenta)
         if tx.sender_m3:
             sender_str = str(tx.sender_m3)
             active_txs = sum(
@@ -66,30 +79,27 @@ class Mempool:
                 if str(t.sender_m3) == sender_str
             )
             if active_txs >= 5:
-                print(
-                    f"[Mempool] Rechazo Anti-Spam: El remitente excedió el límite de TXs pendientes."
-                )
+                print(f"[Mempool] Rechazo Anti-Spam: El remitente excedió el límite de TXs pendientes.")
                 return False
-
         if self.blockchain.validate_transaction(tx):
             self.pending_transactions[tx.tx_id] = tx
+            self._timestamps[tx.tx_id] = time.time()
             self._save()
             return True
-
         return False
 
     def get_transactions_for_block(self, limit: int = 100) -> list[Transaction]:
         """Extrae un lote de transacciones, ordenadas por comisión (fee) de mayor a menor."""
+        self.cleanup_expired()
         tx_list = sorted(
             self.pending_transactions.values(), key=lambda tx: tx.fee, reverse=True
         )
         return tx_list[:limit]
 
     def remove_mined_transactions(self, transactions: list[Transaction]):
-        """
-        Limpia el mempool de transacciones que ya fueron incluidas en un bloque válido.
-        """
+        """Limpia el mempool de transacciones ya incluidas en un bloque válido."""
         for tx in transactions:
             if tx.tx_id in self.pending_transactions:
                 del self.pending_transactions[tx.tx_id]
+                self._timestamps.pop(tx.tx_id, None)
         self._save()
