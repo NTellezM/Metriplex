@@ -56,3 +56,4 @@ keystore_nt_vps.json
 mempool.json
 *.bak
 *.bak2
+keystore_node0.json
