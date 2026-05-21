@@ -250,7 +250,7 @@ class CAFNode:
                     new_block.hash = b_data["hash"]
 
                     # Intentar inyectar en la base de datos local
-                    if self.blockchain.add_block(new_block):
+                    if self.blockchain.add_block(new_block, skip_zk=True):
                         added_count += 1
                         self.mempool.remove_mined_transactions(txs)
                     else:

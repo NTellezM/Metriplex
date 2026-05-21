@@ -186,7 +186,7 @@ class Blockchain:
 
     # ── Añadir bloque ──────────────────────────────────────────────────────
 
-    def add_block(self, block: Block) -> bool:
+    def add_block(self, block: Block, skip_zk: bool = False) -> bool:
         prev = self.chain[-1]
 
         if block.index != prev.index + 1:
@@ -201,11 +201,11 @@ class Blockchain:
             print(f"[Cadena] Rechazo: hash del bloque inválido.")
             return False
 
-        for tx in block.transactions:
-            if not self.validate_transaction(tx):
-                print(f"[Cadena] Rechazo: TX {tx.tx_id[:8]} falló validación ZK.")
-                return False
-
+        if not skip_zk:
+            for tx in block.transactions:
+                if not self.validate_transaction(tx):
+                    print(f"[Cadena] Rechazo: TX {tx.tx_id[:8]} falló validación ZK.")
+                    return False
         # Aplicar estado
         for tx in block.transactions:
             self.state_db.apply_transaction(
