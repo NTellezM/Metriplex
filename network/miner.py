@@ -48,10 +48,10 @@ class AutoMiner:
             f"[Consenso] Motor de Elección de Líder iniciado. Identidad: {my_address}"
         )
 
-        # Esperar sync inicial — hasta que tengamos más de 1 bloque o 60s
+        # Esperar sync inicial — hasta estar al día con peers o 60s
         for _ in range(60):
             await asyncio.sleep(1)
-            if len(self.blockchain.chain) > 1:
+            if getattr(self.p2p_node, 'sync_target', 0) == 0 and len(self.blockchain.chain) > 1:
                 break
         if len(self.blockchain.chain) <= 1:
             print("[Consenso] Sin sync tras 60s — iniciando como nodo standalone.")
