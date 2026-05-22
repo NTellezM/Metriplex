@@ -421,11 +421,16 @@ class CAFNode:
                 else:
                     # FASE F2: Lógica de Detección de Bifurcaciones
                     if new_block.index > self.blockchain.chain[-1].index + 1:
-                        print(
-                            f"[Red] ❌ Brecha de índice detectada ({new_block.index}). Solicitando sincronización..."
-                        )
-                        await asyncio.sleep(2)  # esperar segmentos en tránsito
-                        await self.request_sync()
+                        # Esperar más tiempo antes de sync — puede ser condición de carrera
+                        await asyncio.sleep(5)
+                        # Verificar si ya se resolvió solo
+                        current = self.blockchain.chain[-1].index
+                        if new_block.index > current + 1:
+                            print(
+                                f"[Red] ❌ Brecha de índice detectada ({new_block.index}). Solicitando sincronización..."
+                            )
+                            await self.request_sync()
+                        # Si ya se resolvió, no hacer nada
                     else:
                         print(
                             f"[Red] ⚠️ Conflicto de bifurcación detectado en el bloque {new_block.index}."
