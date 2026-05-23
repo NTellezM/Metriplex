@@ -48,13 +48,42 @@ class AutoMiner:
             f"[Consenso] Motor de Elección de Líder iniciado. Identidad: {my_address}"
         )
 
-        # Esperar sync inicial — hasta estar al día con peers o 60s
-        for _ in range(60):
+        # Esperar conexión a peers antes de cualquier cosa
+        for _ in range(30):
             await asyncio.sleep(1)
-            if getattr(self.p2p_node, 'sync_target', 0) == 0 and len(self.blockchain.chain) > 1:
+            if self.p2p_node.peers:
                 break
-        if len(self.blockchain.chain) <= 1:
-            print("[Consenso] Sin sync tras 60s — iniciando como nodo standalone.")
+
+        # Verificar que nuestro último bloque coincide con el de los peers
+        if self.p2p_node.peers:
+            import json as _json, asyncio as _asyncio
+            local_hash = self.blockchain.chain[-1].hash
+            local_idx  = self.blockchain.chain[-1].index
+            for peer in list(self.p2p_node.peers)[:2]:
+                try:
+                    import requests as _req
+                    host, port = peer.rsplit(":", 1)
+                    r = _req.get(f"http://{host}:{int(port)-57432}/info", timeout=3)
+                    peer_info = r.json()
+                    peer_hash = peer_info.get("latest_block_hash", "")
+                    peer_len  = peer_info.get("chain_length", 0)
+                    if peer_len > local_idx and peer_hash != local_hash:
+                        print(f"[Consenso] Chain local diverge de {peer} — resincronizando DB...")
+                        # Borrar último bloque conflictivo
+                        self.blockchain.storage.conn.execute(
+                            "DELETE FROM blocks WHERE block_index = ?", (local_idx,)
+                        )
+                        self.blockchain.storage.conn.commit()
+                        self.blockchain.chain.pop()
+                        await self.p2p_node.request_sync()
+                        # Esperar sync
+                        for _ in range(120):
+                            await asyncio.sleep(1)
+                            if getattr(self.p2p_node, 'sync_target', 0) == 0:
+                                break
+                        break
+                except Exception:
+                    pass
         while True:
             await asyncio.sleep(1)  # Evaluar el estado de la red cada segundo
 
