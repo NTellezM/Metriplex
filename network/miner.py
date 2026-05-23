@@ -84,6 +84,13 @@ class AutoMiner:
                         break
                 except Exception:
                     pass
+        # Espera final — no minar hasta sync completo
+        for _ in range(120):
+            await asyncio.sleep(1)
+            syncing = getattr(self.p2p_node, "sync_target", 0) > 0
+            if not syncing and len(self.blockchain.chain) > 1:
+                break
+        print(f"[Consenso] Sync completado. Altura: {len(self.blockchain.chain)-1}. Iniciando minero.")
         while True:
             await asyncio.sleep(1)  # Evaluar el estado de la red cada segundo
 
