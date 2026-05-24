@@ -232,7 +232,7 @@ class Blockchain:
             # Remote gana el desempate — continuar con el reemplazo
 
         # Límite de profundidad de reorganización
-        MAX_REORG_DEPTH = 20
+        MAX_REORG_DEPTH = 200
         diverge_at = 0
         for i in range(min(len(self.chain), len(new_blocks_list))):
             if self.chain[i].hash != new_blocks_list[i].hash:
