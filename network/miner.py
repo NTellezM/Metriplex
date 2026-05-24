@@ -127,12 +127,18 @@ class AutoMiner:
             last_block = self.blockchain.chain[-1]
             if fvr_validators:
                 # FVR: set global determinístico desde genesis
-                # Usar bloque anclado al inicio del epoch (cada 10 slots)
+                # Anchor = bloque cuyo index == inicio del epoch actual
+                # Todos los nodos con la misma chain calculan el mismo anchor
                 EPOCH_SLOTS = 10
                 epoch_start_slot = (current_slot // EPOCH_SLOTS) * EPOCH_SLOTS
                 chain_len = len(self.blockchain.chain)
-                anchor_idx = max(0, chain_len - EPOCH_SLOTS)
-                anchor_block = self.blockchain.chain[anchor_idx]
+                # Buscar bloque con index <= epoch_start_slot
+                # Si no existe, usar bloque genesis
+                anchor_block = self.blockchain.chain[0]
+                for blk in reversed(self.blockchain.chain):
+                    if blk.index <= epoch_start_slot:
+                        anchor_block = blk
+                        break
                 seed = f"{anchor_block.hash}{current_slot}".encode()
                 leader_hash = int(hashlib.sha256(seed).hexdigest(), 16)
                 leader_index = leader_hash % len(fvr_validators)
