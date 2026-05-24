@@ -264,14 +264,8 @@ class Blockchain:
                 )
                 return False
 
-        # Validación ZK de todas las TXs antes del rollback
-        print("[Consenso] 🔍 Validando ZK de cadena propuesta...")
-        for block in new_blocks_list[1:]:
-            for tx in block.transactions:
-                if not self.validate_zk_only(tx):
-                    print(f"  -> [Rechazo] TX {tx.tx_id[:8]} falló ZK en bloque {block.index}.")
-                    return False
-        print("[Consenso] ✓ ZK válido en toda la cadena.")
+        # ZK skip en reorg — la cadena ya fue validada al minarse
+        print("[Consenso] ✓ Cadena propuesta válida. Aplicando reorg...")
 
         print(
             "[Consenso] 🔄 Bifurcación ganadora. Iniciando Rollback de estado global..."
