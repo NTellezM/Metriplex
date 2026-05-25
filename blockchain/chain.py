@@ -207,6 +207,16 @@ class Blockchain:
             self.validator_registry.process_tx(tx, block.index)
         self.chain.append(block)
         self.storage.save_block(block)
+        # Snapshot cada 1000 bloques
+        if block.index > 0 and block.index % 1000 == 0:
+            fvr_state = {
+                "validators": {
+                    k: {kk: vv for kk, vv in v.items() if kk != "m3"}
+                    for k, v in self.validator_registry.validators.items()
+                },
+                "slashed": list(self.validator_registry.slashed),
+            }
+            self.storage.save_snapshot(block.index, block.hash, fvr_state)
         return True
 
     def add_new_transaction(self, tx: Transaction) -> bool:
@@ -270,26 +280,32 @@ class Blockchain:
         print(
             "[Consenso] 🔄 Bifurcación ganadora. Iniciando Rollback de estado global..."
         )
-
-        # 2. Reset de Estado Inmutable en Disco
-        self.storage.clear_all()
-        self.chain = []
-
-        # Reiniciar la capa de estado en memoria (Máquina Virtual y Saldos)
+        # 2. Reset de Estado — usar snapshot si existe
         from blockchain.state import StateDB
-
-        self.state_db = StateDB(self.storage)
-
-        # 3. Re-aplicación del Libro Mayor (State Replay)
-        for block in new_blocks_list:
+        snapshot = self.storage.get_latest_snapshot()
+        if snapshot and snapshot["block_index"] < len(new_blocks_list):
+            snap_idx = snapshot["block_index"]
+            print(f"[Consenso] Usando snapshot en bloque {snap_idx}")
+            self.storage.clear_all()
+            self.chain = []
+            self.state_db = StateDB(self.storage)
+            self.storage.restore_snapshot(snapshot)
+            for block in new_blocks_list[:snap_idx + 1]:
+                self.chain.append(block)
+                self.storage.save_block(block)
+            replay_blocks = new_blocks_list[snap_idx + 1:]
+        else:
+            print("[Consenso] Sin snapshot — replay completo desde genesis")
+            self.storage.clear_all()
+            self.chain = []
+            self.state_db = StateDB(self.storage)
+            replay_blocks = new_blocks_list
+        # 3. Re-aplicación desde el punto de inicio
+        for block in replay_blocks:
             for tx in block.transactions:
                 self.state_db.apply_transaction(
-                    tx.tx_id,
-                    tx.sender_m3,
-                    tx.receiver_m3,
-                    tx.amount,
-                    tx.payload,
-                    tx.fee,
+                    tx.tx_id, tx.sender_m3, tx.receiver_m3,
+                    tx.amount, tx.payload, tx.fee,
                 )
             self.chain.append(block)
             self.storage.save_block(block)

@@ -156,3 +156,60 @@ class Storage:
         return self._conn().execute(
             "SELECT tensor_hash, balance FROM balances ORDER BY balance DESC"
         ).fetchall()
+
+    # ── Snapshots ──────────────────────────────────────────────────────────
+
+    def _ensure_snapshot_table(self):
+        with self._conn() as conn:
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS snapshots (
+                    block_index   INTEGER PRIMARY KEY,
+                    block_hash    TEXT NOT NULL,
+                    timestamp     REAL NOT NULL,
+                    balances_json TEXT NOT NULL,
+                    fvr_json      TEXT NOT NULL
+                );
+            """)
+
+    def save_snapshot(self, block_index: int, block_hash: str, fvr_state: dict):
+        """Guarda snapshot de balances + FVR en bloque N."""
+        import time as _time
+        self._ensure_snapshot_table()
+        balances = self.get_all_balances()
+        balances_json = json.dumps(balances)
+        fvr_json = json.dumps(fvr_state)
+        with self._conn() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO snapshots "
+                "(block_index, block_hash, timestamp, balances_json, fvr_json) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (block_index, block_hash, _time.time(), balances_json, fvr_json)
+            )
+        print(f"[Snapshot] ✓ Guardado en bloque {block_index}")
+
+    def get_latest_snapshot(self) -> dict | None:
+        """Retorna el snapshot más reciente disponible."""
+        self._ensure_snapshot_table()
+        row = self._conn().execute(
+            "SELECT block_index, block_hash, balances_json, fvr_json "
+            "FROM snapshots ORDER BY block_index DESC LIMIT 1"
+        ).fetchone()
+        if not row:
+            return None
+        return {
+            "block_index":   row[0],
+            "block_hash":    row[1],
+            "balances_json": row[2],
+            "fvr_json":      row[3],
+        }
+
+    def restore_snapshot(self, snapshot: dict):
+        """Restaura balances desde un snapshot."""
+        balances = json.loads(snapshot["balances_json"])
+        with self._conn() as conn:
+            conn.execute("DELETE FROM balances")
+            conn.executemany(
+                "INSERT INTO balances(tensor_hash, balance) VALUES(?, ?)",
+                balances
+            )
+        print(f"[Snapshot] ✓ Balances restaurados desde bloque {snapshot['block_index']}")
