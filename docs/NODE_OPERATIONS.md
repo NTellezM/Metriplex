@@ -1,171 +1,193 @@
-# Metriplex — Genesis Node Operation Guide
-## How to start and expose the node publicly
+# Metriplex — Node Operations Guide
+
+Reference for running and maintaining Metriplex nodes.
 
 ---
 
-## Prerequisites
-
-- Ubuntu 24.04 (Lenovo Y520)
-- Python 3.12
-- ngrok installed and authenticated
-- Metriplex repo at `~/Proyectos/metriplex`
+## Current Network (May 2026)
+node-0:    157.180.113.24:65432   VPS Hetzner Germany   validator+miner   systemd
+NT-vps:    157.180.113.24:65433   VPS Hetzner Germany   observer          systemd
+node-2:    190.82.149.108:65434   Chile                 validator+miner   systemd
+NT-laptop: 190.82.149.108:65435   Chile                 validator+miner   systemd
+Chain: ~7,500+ blocks · block time 60s · FVR active · 3 validators
 
 ---
 
-## Step 1 — Kill any existing processes on the ports
+## VPS (node-0) — Systemd Services
 
 ```bash
-sudo fuser -k 8000/tcp
-sudo fuser -k 65432/tcp
-sleep 2
+# Status
+systemctl status metriplex.service metriplex-relayer.service
+
+# Restart
+systemctl restart metriplex.service
+
+# Logs
+journalctl -u metriplex.service -f --no-pager
+journalctl -u metriplex-relayer.service -f --no-pager
+
+# Health check
+bash /opt/Metriplex/metriplex_health.sh
 ```
 
 ---
 
-## Step 2 — Start the genesis node (Terminal 1)
+## Chile Nodes — Systemd Services
 
 ```bash
-cd ~/Proyectos/metriplex
-source venv/bin/activate
-python3 main.py --api-port 8000 --p2p-port 65432
-```
+# Status
+sudo systemctl status metriplex-node2.service
+sudo systemctl status metriplex-ntlap.service
 
-Expected output:
-```
-==================================================
- NODO CAF | API: 8000 | P2P: 65432 | ROL: VALIDADOR (Minero)
-==================================================
-[✓] Cadena cargada (N bloques en disco).
-[✓] Mempool inicializado.
-[Consenso] Motor de Elección de Líder iniciado.
-[Red] Nodo P2P escuchando en 0.0.0.0:65432
+# Restart
+sudo systemctl restart metriplex-node2.service
+sudo systemctl restart metriplex-ntlap.service
+
+# Logs
+sudo journalctl -u metriplex-node2.service -f --no-pager
+sudo journalctl -u metriplex-ntlap.service -f --no-pager
 ```
 
 ---
 
-## Step 3 — Open the public tunnel (Terminal 2)
+## Manual Start (Chile)
 
 ```bash
-ngrok http 8000
+# node-2
+export MINER_PASSWORD=123
+cd ~/Metriplex && source venv/bin/activate
+python3 main.py --api-port 8002 --p2p-port 65434 --miner-wallet keystore_node2.json
+
+# NT-laptop
+export MINER_PASSWORD=123
+cd ~/Proyectos/Metriplex && source venv/bin/activate
+python3 main.py --api-port 8003 --p2p-port 65435 --miner-wallet keystore_nt_laptop.json
 ```
 
 ---
 
-## Step 4 — Get the public URL (Terminal 3)
+## Resync a Node
 
 ```bash
-curl -s http://localhost:4040/api/tunnels | python3 -c \
-  "import sys,json; print(json.load(sys.stdin)['tunnels'][0]['public_url'])"
+# Stop, delete DB, restart
+systemctl stop metriplex.service
+rm /opt/Metriplex/node_data_8000.db
+systemctl start metriplex.service
+
+# Chile
+sudo systemctl stop metriplex-node2.service
+rm ~/Metriplex/node_data_8002.db
+sudo systemctl start metriplex-node2.service
 ```
 
 ---
 
-## Step 5 — Verify the node is reachable
+## Balances
 
 ```bash
-curl -s https://YOUR-NGROK-URL.ngrok-free.app/info
-```
+# node-0 wallet
+curl -s http://localhost:8000/balance/44225e0c | python3 -m json.tool
 
-Expected response:
-```json
-{
-  "chain_length": 1,
-  "mempool_size": 0,
-  "latest_block_hash": "0000...0000"
-}
+# Vault
+curl -s http://localhost:8000/balance/f695d4a5 | python3 -m json.tool
+
+# All balances
+python3 -c "
+import sqlite3
+conn = sqlite3.connect('/opt/Metriplex/node_data_8000.db')
+rows = conn.execute('SELECT tensor_hash, balance FROM balances ORDER BY balance DESC').fetchall()
+for r in rows: print(r[0][:16], r[1]/1073741824, 'MPX')
+"
 ```
 
 ---
 
-## Step 6 — Update nodes.html if the ngrok URL changed
+## FVR Validators
 
 ```bash
-cd ~/Proyectos/metriplex
-sed -i "s|var NODE_URL = '.*'|var NODE_URL = 'https://YOUR-NEW-URL.ngrok-free.app'|" nodes.html
-git add nodes.html
-git commit -m "fix: update ngrok URL for genesis node"
-git push origin main
+curl -s http://localhost:8000/validators | python3 -m json.tool
+```
+
+Current validators:
+44225e0c  node-0     157.180.113.24:65432   registered block 451
+3542268a  node-2     190.82.149.108:65434   registered block 491
+ee481176  NT-laptop  190.82.149.108:65435   registered block 713
+
+---
+
+## Bridge Relayer
+
+```bash
+# Status
+systemctl status metriplex-relayer.service
+
+# Logs
+journalctl -u metriplex-relayer.service -f --no-pager
+
+# Vault balance
+curl -s http://localhost:8000/balance/f695d4a5 | python3 -m json.tool
 ```
 
 ---
 
-## API Endpoints
+## Update Nodes
+
+```bash
+# VPS
+cd /opt/Metriplex && git pull
+systemctl restart metriplex.service
+
+# Chile (with systemd)
+cd ~/Metriplex && git pull
+sudo systemctl restart metriplex-node2.service
+
+cd ~/Proyectos/Metriplex && git pull
+sudo systemctl restart metriplex-ntlap.service
+```
+
+---
+
+## API Reference
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/info` | GET | Chain height, mempool, latest hash |
-| `/blocks` | GET | Full chain |
-| `/balance/{tensor_hash}` | GET | Account balance |
+| `/blocks` | GET | Last 10 blocks |
+| `/validators` | GET | FVR validator set |
+| `/balance/{hash8}` | GET | Account balance |
 | `/transaction` | POST | Submit signed TX |
-| `/peers` | GET | Connected P2P peers |
 | `/mine` | POST | Force block production |
 
 ---
 
-## Quick test — mine a block manually
+## Network Parameters
 
+| Parameter | Value |
+|-----------|-------|
+| Block time | 60 seconds |
+| Block reward | 50 MPX |
+| Max reorg depth | 200 blocks |
+| Snapshot interval | every 1,000 blocks |
+| TX TTL | 10 minutes |
+| P2P port | 65432 (default) |
+| API port | 8000 (default) |
+
+---
+
+## Monitoring (Telegram)
+
+Automatic alerts every 5 minutes via `@MPXAlertBot`:
+- Relayer down
+- Chain stopped
+- Node isolated
+- Fork detected
+- Vault balance drop
+
+Manual check:
 ```bash
-curl -s -X POST https://YOUR-NGROK-URL.ngrok-free.app/mine
+bash /opt/Metriplex/metriplex_health.sh
 ```
 
 ---
 
-## Node status page
-
-```
-https://metriplexmpx.xyz/nodes.html
-```
-
-Live chain stats update every 30 seconds from the genesis node API.
-
----
-
-## Current network state
-
-```
-Phase:        1 — Single validator
-Chain height: 1 (genesis block)
-Validators:   1 (node-0, genesis)
-Pending:      @zicheng588 (awaiting testnet)
-P2P port:     65432
-API port:     8000
-Consensus:    Slot-based PoS
-Block time:   10 seconds
-```
-
----
-
-## Next milestone — Multi-node testnet (Phase 2)
-
-When @zicheng588 connects their node:
-
-1. Share the genesis node P2P address: `YOUR-NGROK-URL.ngrok-free.app:65432`
-2. They start their node with: `python3 main.py --peer YOUR-IP:65432`
-3. Both nodes sync the chain
-4. First multi-node block is produced
-
-This will be the first time two independent Metriplex nodes communicate.
-
----
-
-## Long-term — VPS setup (recommended)
-
-For 24/7 uptime without depending on the laptop:
-
-```
-Provider:  Hetzner CX22 (~$4/month)
-OS:        Ubuntu 24.04
-Steps:
-1. apt install python3 python3-venv git
-2. git clone https://github.com/NTellezM/Metriplex
-3. python3 -m venv venv && source venv/bin/activate
-4. pip install -r requirements.txt
-5. python3 main.py --api-port 8000 --p2p-port 65432 &
-6. Point nodes.html to the VPS IP
-```
-
-No ngrok needed — the VPS has a fixed public IP.
-
----
-
-*Metriplex · Order from chaos · metriplexmpx.xyz*
+*Metriplex — Order from chaos · [metriplexmpx.xyz](https://metriplexmpx.xyz)*

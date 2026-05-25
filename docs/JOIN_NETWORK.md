@@ -1,68 +1,84 @@
 # Join the Metriplex Network
 
-Run your own node and participate in the first blockchain with fractal identity.
+Run your own node and participate in the first blockchain with fractal cryptographic identity.
 
-## Quick Install (Linux / macOS)
+---
+
+## Option 1 — Docker (Recommended)
+
+The fastest way to run a node. No Python setup required.
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/NTellezM/Metriplex/main/install.sh | bash
+git clone https://github.com/NTellezM/Metriplex
+cd Metriplex
+
+# Observer node (full node, no mining)
+NO_MINER=1 docker-compose up -d
+
+# Check status
+curl http://localhost:8000/info
 ```
 
-Or manually:
+Your node will automatically sync with the network (~7,500+ blocks, takes a few minutes).
+
+### Validator Node (Docker)
+
+```bash
+# 1. Generate your keystore
+docker run --rm -v metriplex-data:/data ntellezm/metriplex:latest \
+  python3 wallet_cli.py generate --output /data/keystore.json
+
+# 2. Run validator
+MINER_WALLET=keystore.json MINER_PASSWORD=your_password docker-compose up -d
+```
+
+---
+
+## Option 2 — Manual (Linux / macOS)
 
 ```bash
 git clone https://github.com/NTellezM/Metriplex
 cd Metriplex
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-python main.py
+```
+
+### Observer Node
+
+```bash
+python3 main.py --no-miner --peer 157.180.113.24:65432
+```
+
+### Validator Node
+
+```bash
+# 1. Generate encrypted keystore
+python3 wallet_cli.py
+
+# 2. Run with keystore
+export MINER_PASSWORD=your_password
+python3 main.py --miner-wallet keystore.json --peer 157.180.113.24:65432
 ```
 
 ---
 
 ## Node Types
 
-### Validator Node (mines blocks + earns MPX rewards)
-
-```bash
-# 1. Create your wallet first
-python wallet_cli.py
-# → Option 1: Create wallet
-# → Option 2: Export public key → pub_destino.json
-
-# 2. Run the node with your wallet
-python main.py --miner-wallet pub_destino.json
-```
-
-Every block you forge earns **50 MPX** in native rewards.
-
-### Observer Node (full node, no mining)
-
-```bash
-python main.py --no-miner
-```
-
-### Connect to the Network
-
-```bash
-# Connect to an existing peer
-python main.py --peer PEER_IP:65432
-
-# Custom ports
-python main.py --api-port 8001 --p2p-port 65433 --peer PEER_IP:65432
-```
+| Type | Description | Earns MPX |
+|------|-------------|-----------|
+| Validator | Mines blocks, participates in FVR | 50 MPX/block |
+| Observer | Full node, verifies all ZK proofs | No |
 
 ---
 
 ## What Your Node Does
 
-When you run a Metriplex node:
-
-1. **Downloads the chain** from connected peers
-2. **Validates transactions** — verifies the ZK fractal criterion (c1–c8) for every TX
-3. **Participates in consensus** — slot-based leader election
-4. **Forges blocks** — if elected leader in a slot, mines the pending transactions
-5. **Gossips** — propagates new blocks and transactions to peers
+1. **Downloads the chain** from connected peers (skip_zk sync — fast)
+2. **Validates transactions** — verifies ZK fractal criterion (c1–c8) for every TX
+3. **GEO_HANDSHAKE** — authenticates peers via ZK proof of fractal identity
+4. **Participates in consensus** — deterministic slot-based leader election
+5. **Forges blocks** — if elected leader in a slot, mines pending transactions
+6. **Gossips** — propagates blocks and transactions across the network
 
 ---
 
@@ -73,67 +89,41 @@ When you run a Metriplex node:
 | OS | Linux / macOS | Ubuntu 22.04+ |
 | Python | 3.10+ | 3.12 |
 | RAM | 512 MB | 2 GB |
-| Storage | 1 GB | 10 GB |
+| Storage | 2 GB | 20 GB |
 | Network | 1 Mbps | 10 Mbps |
+| Ports | 8000, 65432 | Open in firewall/router |
 
 ---
 
 ## API Endpoints
 
-Once running, your node exposes a REST API at `http://localhost:8000`:
-
 ```bash
 # Node status
 curl http://localhost:8000/info
 
-# Full chain
-curl http://localhost:8000/blocks
+# Validators (FVR)
+curl http://localhost:8000/validators
 
-# Account balance (replace HASH with tensor hash)
-curl http://localhost:8000/balance/TENSOR_HASH
+# Account balance
+curl http://localhost:8000/balance/TENSOR_HASH_8CHARS
 
 # Submit transaction
-curl -X POST http://localhost:8000/transaction -d '{...}'
-
-# Request testnet funds
-curl -X POST http://localhost:8000/faucet -d '[[[...your M3 tensor...]]]'
-
-# Force block production
-curl -X POST http://localhost:8000/mine
+curl -X POST http://localhost:8000/transaction -H 'Content-Type: application/json' -d '{...}'
 ```
 
 ---
 
-## Running the Bridge Relayer
-
-The relayer connects the native Metriplex chain to Ethereum (Base mainnet).
-
-```bash
-# Configure environment
-cp .env.example .env
-nano .env  # Add your EVM private key and vault password
-
-# Run
-VAULT_PASSWORD=your_password \
-RELAYER_EVM_KEY=your_64_hex_key \
-WEB3_RPC=https://mainnet.base.org \
-python relayer.py
-```
-
-See [DEPLOY.md](DEPLOY.md) for full bridge configuration.
-
----
-
-## Network Info
+## Network Parameters
 
 | Parameter | Value |
 |-----------|-------|
 | Token | MPX (Base Mainnet) |
 | Contract | `0x22D3f414438556d1B071cCfE52513d4d829400fd` |
-| Block time | 10 seconds |
+| Block time | 60 seconds |
 | Block reward | 50 MPX |
 | P2P port | 65432 (default) |
 | API port | 8000 (default) |
+| Genesis peer | `157.180.113.24:65432` |
 
 ---
 
@@ -141,23 +131,19 @@ See [DEPLOY.md](DEPLOY.md) for full bridge configuration.
 
 **Port already in use:**
 ```bash
-python main.py --api-port 8001 --p2p-port 65433
+python3 main.py --api-port 8001 --p2p-port 65433 --peer 157.180.113.24:65432
 ```
 
 **Node not syncing:**
 ```bash
-# Delete local chain and resync
 rm node_data_8000.db
-python main.py --peer KNOWN_PEER_IP:65432
+python3 main.py --no-miner --peer 157.180.113.24:65432
 ```
 
-**Wallet not found:**
-```bash
-# Create wallet first
-python wallet_cli.py
-# Option 1 → Create wallet → Option 2 → Export to pub_destino.json
-```
+**Fork on startup:**
+The node automatically detects chain divergence and resyncs before mining.
+If stuck, delete the DB and restart — sync takes ~2 minutes.
 
 ---
 
-*Metriplex — Order from chaos*
+*Metriplex — Order from chaos · [metriplexmpx.xyz](https://metriplexmpx.xyz)*
