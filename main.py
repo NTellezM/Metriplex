@@ -54,7 +54,9 @@ async def main():
 
     P2P_HOST = "0.0.0.0"
     API_HOST = "0.0.0.0"
-    db_filename = f"node_data_{args.api_port}.db"
+    import os as _os
+    _data_dir = _os.environ.get("NODE_DATA_DIR", ".")
+    db_filename = _os.path.join(_data_dir, f"node_data_{args.api_port}.db")
 
     rol_nodo = "OBSERVADOR (Full Node)" if args.no_miner else "VALIDADOR (Minero)"
 
