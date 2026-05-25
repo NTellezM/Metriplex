@@ -81,15 +81,38 @@ class ValidatorRegistry:
             return
 
         endpoint = tx.payload.get("endpoint", "")
+        contraction_matrices = tx.payload.get("contraction_matrices", None)
+
+        # Lyapunov diversity check — solo si el registro incluye matrices
+        lambda_value = None
+        if contraction_matrices:
+            try:
+                lambda_value = compute_lambda(contraction_matrices)
+                registered_lambdas = [
+                    v["lambda_value"] for v in self.validators.values()
+                    if v.get("lambda_value") is not None
+                ]
+                ok, reason = check_geometric_diversity(lambda_value, registered_lambdas)
+                if not ok:
+                    print(f"[FVR] Registro rechazado: diversidad geométrica insuficiente — {reason}")
+                    return
+                print(f"[FVR] λ verificado: {lambda_value:.6f}")
+            except Exception as e:
+                print(f"[FVR] Warning: no se pudo calcular λ — {e}")
+                lambda_value = None
+
         self.validators[m3_hash] = {
-            "m3":            m3,
-            "m3_hash":       m3_hash,
-            "endpoint":      endpoint,
-            "stake":         tx.amount,
-            "registered_at": block_index,
-            "slashed":       False,
+            "m3":                   m3,
+            "m3_hash":              m3_hash,
+            "endpoint":             endpoint,
+            "stake":                tx.amount,
+            "registered_at":        block_index,
+            "slashed":              False,
+            "lambda_value":         lambda_value,  # None = validador legacy
+            "contraction_matrices": contraction_matrices,
         }
-        print(f"[FVR] ✅ Validador registrado: {m3_hash[:8]}... endpoint={endpoint} bloque={block_index}")
+        legacy = " (legacy — sin restricción λ)" if lambda_value is None else f" λ={lambda_value:.4f}"
+        print(f"[FVR] ✅ Validador registrado: {m3_hash[:8]}... endpoint={endpoint} bloque={block_index}{legacy}")
 
     def _exit(self, tx, block_index: int):
         m3_hash = _hash_m3(tx.sender_m3) if tx.sender_m3 else None
@@ -130,3 +153,50 @@ class ValidatorRegistry:
         entries = [f"  {v['m3_hash'][:8]}... ep={v['endpoint']} stake={v['stake']//1073741824}MPX"
                    for v in self.get_sorted_validators()]
         return "ValidatorRegistry[\n" + "\n".join(entries) + "\n]"
+
+
+# ── Lyapunov Consensus — Geometric Diversity ──────────────────────────────
+
+SCALE_FACTOR = 2 ** 30
+LAMBDA_MIN   = -1.2039728  # log(0.30)
+LAMBDA_MAX   = -0.3566749  # log(0.70)
+N_TARGET     = 100         # capacidad objetivo de validadores
+D_MIN        = (LAMBDA_MAX - LAMBDA_MIN) / N_TARGET  # ≈ 0.00847
+
+
+def compute_lambda(contraction_matrices: list) -> float:
+    """
+    Calcula el exponente de Lyapunov medio del IFS.
+    λ(W) = (1/n) Σᵢ log ρ(Aᵢ)
+    Complejidad: O(n) donde n = número de mapas (n=4 en producción).
+    """
+    import numpy as np
+    radii = [
+        float(np.max(np.abs(np.linalg.eigvals(
+            np.array(A, dtype=float) / SCALE_FACTOR
+        ))))
+        for A in contraction_matrices
+    ]
+    import math
+    return sum(math.log(r) for r in radii) / len(radii)
+
+
+def check_geometric_diversity(new_lambda: float,
+                               registered_lambdas: list,
+                               d_min: float = D_MIN) -> tuple:
+    """
+    Verifica que new_lambda está a distancia mínima d_min
+    de todos los lambdas registrados.
+    Retorna (bool, str).
+    """
+    if not (LAMBDA_MIN <= new_lambda <= LAMBDA_MAX):
+        return False, f"lambda {new_lambda:.6f} fuera de rango [{LAMBDA_MIN:.4f}, {LAMBDA_MAX:.4f}]"
+
+    if not registered_lambdas:
+        return True, "ok"
+
+    min_dist = min(abs(new_lambda - lv) for lv in registered_lambdas)
+    if min_dist < d_min:
+        return False, f"lambda demasiado cercano a validador existente (dist={min_dist:.6f} < {d_min:.6f})"
+
+    return True, "ok"
