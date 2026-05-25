@@ -61,6 +61,10 @@ class StateDB:
                     print(f"[State] VALIDATOR_EXIT: vault sin fondos suficientes ({vault_balance})")
                 return True
 
+            # VALIDATOR_UPDATE — actualiza lambda_value
+            if op == "VALIDATOR_UPDATE":
+                return True  # solo registry lo procesa, sin movimiento de fondos
+
             # VALIDATOR_SLASH — stake quemado
             if op == "VALIDATOR_SLASH":
                 print(f"[State] VALIDATOR_SLASH: stake de {payload.get('target_m3_hash','?')[:8]} quemado.")

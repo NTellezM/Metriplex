@@ -22,6 +22,7 @@ VALIDATOR_STAKE_REQUIRED = 100 * 1073741824  # 100 MPX en CAF scale
 VALIDATOR_REGISTER_OP    = "VALIDATOR_REGISTER"
 VALIDATOR_EXIT_OP        = "VALIDATOR_EXIT"
 VALIDATOR_SLASH_OP       = "VALIDATOR_SLASH"
+VALIDATOR_UPDATE_OP      = "VALIDATOR_UPDATE"
 
 
 def _hash_m3(m3: list) -> str:
@@ -60,6 +61,8 @@ class ValidatorRegistry:
             self._exit(tx, block_index)
         elif op == VALIDATOR_SLASH_OP:
             self._slash(payload.get("target_m3_hash"), block_index)
+        elif op == VALIDATOR_UPDATE_OP:
+            self._update_lambda(tx, block_index)
 
     def _register(self, tx, block_index: int):
         m3 = tx.sender_m3
@@ -113,6 +116,26 @@ class ValidatorRegistry:
         }
         legacy = " (legacy — sin restricción λ)" if lambda_value is None else f" λ={lambda_value:.4f}"
         print(f"[FVR] ✅ Validador registrado: {m3_hash[:8]}... endpoint={endpoint} bloque={block_index}{legacy}")
+
+    def _update_lambda(self, tx, block_index: int):
+        m3_hash = _hash_m3(tx.sender_m3) if tx.sender_m3 else None
+        if not m3_hash or m3_hash not in self.validators:
+            print(f"[FVR] UPDATE rechazado: no registrado.")
+            return
+        matrices = tx.payload.get("contraction_matrices")
+        if not matrices:
+            print(f"[FVR] UPDATE rechazado: matrices faltante.")
+            return
+        try:
+            lv = compute_lambda(matrices)
+            if not (LAMBDA_MIN <= lv <= LAMBDA_MAX):
+                print(f"[FVR] UPDATE rechazado: lambda fuera de rango.")
+                return
+            self.validators[m3_hash]["lambda_value"] = lv
+            self.validators[m3_hash]["contraction_matrices"] = matrices
+            print(f"[FVR] lambda actualizado: {m3_hash[:8]} lambda={lv:.6f} bloque={block_index}")
+        except Exception as e:
+            print(f"[FVR] UPDATE error: {e}")
 
     def _exit(self, tx, block_index: int):
         m3_hash = _hash_m3(tx.sender_m3) if tx.sender_m3 else None
