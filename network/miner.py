@@ -132,13 +132,24 @@ class AutoMiner:
                     if blk.index <= (current_slot // EPOCH_SLOTS) * EPOCH_SLOTS:
                         anchor_block = blk
                         break
-                seed = f"{anchor_block.hash}{current_slot}".encode()
-                leader_hash = int(hashlib.sha256(seed).hexdigest(), 16)
-                leader_index = leader_hash % len(fvr_validators)
-                leader_m3_hash = fvr_validators[leader_index]["m3_hash"]
+                # Lyapunov Consensus
                 import hashlib as _hlib, json as _json
+                from blockchain.validator_registry import LAMBDA_MIN, LAMBDA_MAX
+                def _get_lambda(v):
+                    if v.get('lambda_value') is not None:
+                        return v['lambda_value']
+                    h = int(v['m3_hash'], 16) % (2 ** 32)
+                    return LAMBDA_MIN + (LAMBDA_MAX - LAMBDA_MIN) * h / (2 ** 32)
+                anchor_int = int(hashlib.sha256(
+                    f"{anchor_block.hash}{current_slot}".encode()
+                ).hexdigest(), 16)
+                lambda_E = LAMBDA_MIN + (LAMBDA_MAX - LAMBDA_MIN) * (anchor_int / 2 ** 256)
+                leader_m3_hash = min(
+                    fvr_validators,
+                    key=lambda v: abs(_get_lambda(v) - lambda_E)
+                )['m3_hash']
                 my_m3_hash = _hlib.sha256(
-                    _json.dumps(self.miner_m3, sort_keys=True, separators=(",",":")).encode()
+                    _json.dumps(self.miner_m3, sort_keys=True, separators=(',', ':')).encode()
                 ).hexdigest() if self.miner_m3 else None
                 is_leader = (my_m3_hash == leader_m3_hash)
             else:
