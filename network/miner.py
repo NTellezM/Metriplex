@@ -126,7 +126,7 @@ class AutoMiner:
 
             last_block = self.blockchain.chain[-1]
             if fvr_validators:
-                EPOCH_SLOTS = 10
+                EPOCH_SLOTS = 100
                 anchor_block = self.blockchain.chain[0]
                 for blk in reversed(self.blockchain.chain):
                     if blk.index <= (current_slot // EPOCH_SLOTS) * EPOCH_SLOTS:
