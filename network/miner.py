@@ -21,6 +21,9 @@ from blockchain.chain import Blockchain
 from core.arithmetic import SCALE_FACTOR
 
 from network.mempool import Mempool
+import json
+import requests
+from blockchain.validator_registry import LAMBDA_MIN, LAMBDA_MAX
 
 
 class AutoMiner:
@@ -56,14 +59,12 @@ class AutoMiner:
 
         # Verificar que nuestro último bloque coincide con el de los peers
         if self.p2p_node.peers:
-            import json as _json, asyncio as _asyncio
-            local_hash = self.blockchain.chain[-1].hash
+                        local_hash = self.blockchain.chain[-1].hash
             local_idx  = self.blockchain.chain[-1].index
             for peer in list(self.p2p_node.peers)[:2]:
                 try:
-                    import requests as _req
-                    host, port = peer.rsplit(":", 1)
-                    r = _req.get(f"http://{host}:{int(port)-57432}/info", timeout=3)
+                                        host, port = peer.rsplit(":", 1)
+                    r = requests.get(f"http://{host}:{int(port)-57432}/info", timeout=3)
                     peer_info = r.json()
                     peer_hash = peer_info.get("latest_block_hash", "")
                     peer_len  = peer_info.get("chain_length", 0)
@@ -102,9 +103,8 @@ class AutoMiner:
             # Sin peers: solo bloquear si no somos validador FVR registrado
             if not self.p2p_node.peers:
                 registry = self.blockchain.validator_registry
-                import hashlib as _hlib2, json as _json2
-                my_hash = _hlib2.sha256(
-                    _json2.dumps(self.miner_m3, sort_keys=True, separators=(",",":")).encode()
+                                my_hash = hashlib.sha256(
+                    json.dumps(self.miner_m3, sort_keys=True, separators=(",",":")).encode()
                 ).hexdigest() if self.miner_m3 else None
                 if not my_hash or not registry.validators.get(my_hash):
                     await asyncio.sleep(1)
@@ -133,9 +133,7 @@ class AutoMiner:
                         anchor_block = blk
                         break
                 # Lyapunov Consensus
-                import hashlib as _hlib, json as _json
-                from blockchain.validator_registry import LAMBDA_MIN, LAMBDA_MAX
-                def _get_lambda(v):
+                                def _get_lambda(v):
                     if v.get('lambda_value') is not None:
                         return v['lambda_value']
                     h = int(v['m3_hash'], 16) % (2 ** 32)
@@ -148,8 +146,8 @@ class AutoMiner:
                     fvr_validators,
                     key=lambda v: abs(_get_lambda(v) - lambda_E)
                 )['m3_hash']
-                my_m3_hash = _hlib.sha256(
-                    _json.dumps(self.miner_m3, sort_keys=True, separators=(',', ':')).encode()
+                my_m3_hash = hashlib.sha256(
+                    json.dumps(self.miner_m3, sort_keys=True, separators=(',', ':')).encode()
                 ).hexdigest() if self.miner_m3 else None
                 is_leader = (my_m3_hash == leader_m3_hash)
             else:
