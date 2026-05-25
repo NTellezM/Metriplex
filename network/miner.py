@@ -126,24 +126,40 @@ class AutoMiner:
 
             last_block = self.blockchain.chain[-1]
             if fvr_validators:
-                # FVR: set global determinístico desde genesis
-                # Anchor = bloque cuyo index == inicio del epoch actual
-                # Todos los nodos con la misma chain calculan el mismo anchor
+                # Lyapunov Consensus — argmin |λ(W) - λ_E|
+                # λ_E = target geométrico derivado del hash del bloque ancla
+                import math as _math
                 EPOCH_SLOTS = 10
-                epoch_start_slot = (current_slot // EPOCH_SLOTS) * EPOCH_SLOTS
                 chain_len = len(self.blockchain.chain)
-                # Buscar bloque con index <= epoch_start_slot
-                # Si no existe, usar bloque genesis
                 anchor_block = self.blockchain.chain[0]
                 for blk in reversed(self.blockchain.chain):
-                    if blk.index <= epoch_start_slot:
+                    if blk.index <= (current_slot // EPOCH_SLOTS) * EPOCH_SLOTS:
                         anchor_block = blk
                         break
-                seed = f"{anchor_block.hash}{current_slot}".encode()
-                leader_hash = int(hashlib.sha256(seed).hexdigest(), 16)
-                leader_index = leader_hash % len(fvr_validators)
-                leader_m3_hash = fvr_validators[leader_index]["m3_hash"]
+
+                # Derivar λ_E desde hash del bloque ancla
+                LAMBDA_MIN = -1.2039728  # log(0.30)
+                LAMBDA_MAX = -0.3566749  # log(0.70)
+                anchor_int = int(hashlib.sha256(
+                    f"{anchor_block.hash}{current_slot}".encode()
+                ).hexdigest(), 16)
+                lambda_E = LAMBDA_MIN + (LAMBDA_MAX - LAMBDA_MIN) * (anchor_int / (2**256))
+
+                # Calcular λ de cada validador (legacy usa hash como fallback)
                 import hashlib as _hlib, json as _json
+                import numpy as _np
+
+                def get_lambda(v):
+                    if v.get("lambda_value") is not None:
+                        return v["lambda_value"]
+                    # Legacy: derivar λ pseudo desde m3_hash (determinístico)
+                    h = int(v["m3_hash"], 16) % (2**32)
+                    return LAMBDA_MIN + (LAMBDA_MAX - LAMBDA_MIN) * h / (2**32)
+
+                # argmin — validador más cercano a λ_E es el líder
+                leader = min(fvr_validators, key=lambda v: abs(get_lambda(v) - lambda_E))
+                leader_m3_hash = leader["m3_hash"]
+
                 my_m3_hash = _hlib.sha256(
                     _json.dumps(self.miner_m3, sort_keys=True, separators=(",",":")).encode()
                 ).hexdigest() if self.miner_m3 else None
