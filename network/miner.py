@@ -59,11 +59,11 @@ class AutoMiner:
 
         # Verificar que nuestro último bloque coincide con el de los peers
         if self.p2p_node.peers:
-                        local_hash = self.blockchain.chain[-1].hash
+            local_hash = self.blockchain.chain[-1].hash
             local_idx  = self.blockchain.chain[-1].index
             for peer in list(self.p2p_node.peers)[:2]:
                 try:
-                                        host, port = peer.rsplit(":", 1)
+                    host, port = peer.rsplit(":", 1)
                     r = requests.get(f"http://{host}:{int(port)-57432}/info", timeout=3)
                     peer_info = r.json()
                     peer_hash = peer_info.get("latest_block_hash", "")
@@ -103,7 +103,7 @@ class AutoMiner:
             # Sin peers: solo bloquear si no somos validador FVR registrado
             if not self.p2p_node.peers:
                 registry = self.blockchain.validator_registry
-                                my_hash = hashlib.sha256(
+                my_hash = hashlib.sha256(
                     json.dumps(self.miner_m3, sort_keys=True, separators=(",",":")).encode()
                 ).hexdigest() if self.miner_m3 else None
                 if not my_hash or not registry.validators.get(my_hash):
@@ -133,7 +133,7 @@ class AutoMiner:
                         anchor_block = blk
                         break
                 # Lyapunov Consensus
-                                def _get_lambda(v):
+                def _get_lambda(v):
                     if v.get('lambda_value') is not None:
                         return v['lambda_value']
                     h = int(v['m3_hash'], 16) % (2 ** 32)
