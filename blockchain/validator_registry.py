@@ -183,7 +183,7 @@ class ValidatorRegistry:
 SCALE_FACTOR = 2 ** 30
 LAMBDA_MIN   = -1.2039728  # log(0.30)
 LAMBDA_MAX   = -0.3566749  # log(0.70)
-N_TARGET     = 100         # capacidad objetivo de validadores
+N_TARGET     = 200         # capacidad objetivo de validadores
 D_MIN        = (LAMBDA_MAX - LAMBDA_MIN) / N_TARGET  # ≈ 0.00847
 
 
