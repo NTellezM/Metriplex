@@ -95,7 +95,18 @@ class Blockchain:
             print("  -> ACEPTADA: Transacción Coinbase.")
             return True
 
-        # 2. Verificar saldo
+        # 2. Verificar timestamp anti-replay (TTL 10 minutos)
+        import time as _time
+        tx_ts = tx.payload.get("timestamp") if tx.payload else None
+        if tx_ts:
+            age = _time.time() - float(tx_ts)
+            if age > 600:  # 10 minutos
+                print(f"  -> RECHAZADA: TX expirada (age={int(age)}s > 600s).")
+                return False
+            if age < -60:  # reloj del cliente adelantado >1 min
+                print(f"  -> RECHAZADA: TX timestamp futuro (age={int(age)}s).")
+                return False
+        # 3. Verificar saldo
         balance = self.state_db.get_balance(tx.sender_m3)
         total_required = tx.amount + tx.fee
         if balance < total_required:
