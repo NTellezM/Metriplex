@@ -182,6 +182,11 @@ class AutoMiner:
 
             # 4b. Forjado de Bloque (Solo si este nodo ganó la lotería del slot)
             if is_leader:
+                # Ventana de agregación — esperar que lleguen bloques de otros nodos
+                await asyncio.sleep(10)
+                # Si otro nodo ya minó este slot durante la espera, ceder
+                if current_slot == self.last_mined_slot or len(self.blockchain.chain) > last_block.index + 1:
+                    continue
                 txs = self.mempool.get_transactions_for_block(limit=10)
 
                 self.last_mined_slot = current_slot
