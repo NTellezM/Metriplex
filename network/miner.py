@@ -113,7 +113,9 @@ class AutoMiner:
             if self.p2p_node.sync_target > 0:
                 local_h = len(self.blockchain.chain) - 1
                 if local_h < self.p2p_node.sync_target - 2:
+                    self.p2p_node.sync_target = 0  # reset — evita bloqueo permanente
                     await asyncio.sleep(1)
+                    continue
                     continue
             # Evitar minar múltiples veces en la misma ventana de tiempo
             if current_slot == self.last_mined_slot:
