@@ -94,25 +94,10 @@ class AutoMiner:
         print(f"[Consenso] Sync completado. Altura: {len(self.blockchain.chain)-1}. Iniciando minero.")
 
         async def _check_synced_with_peers() -> bool:
-            if not self.p2p_node.peers:
-                return True
-            peer_heights = []
-            for peer in list(self.p2p_node.peers)[:3]:
-                try:
-                    host, port = peer.rsplit(":", 1)
-                    api_port = int(port) - 57432
-                    r = requests.get(f"http://{host}:{api_port}/info", timeout=3)
-                    h = r.json().get("chain_length", 0)
-                    if h > 0:
-                        peer_heights.append(h)
-                except:
-                    pass
-            if not peer_heights:
-                return True
-            max_peer = max(peer_heights)
             local_h = len(self.blockchain.chain)
-            if local_h < max_peer - 2:
-                print(f"[Consenso] Esperando sync: local={local_h} peers={max_peer} lag={max_peer-local_h}")
+            sync_target = getattr(self.p2p_node, 'sync_target', 0)
+            if sync_target > 0 and local_h < sync_target - 2:
+                print(f"[Consenso] Esperando sync: local={local_h} target={sync_target} lag={sync_target-local_h}")
                 return False
             return True
 
