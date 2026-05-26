@@ -133,6 +133,11 @@ class ValidatorRegistry:
                 return
             self.validators[m3_hash]["lambda_value"] = lv
             self.validators[m3_hash]["contraction_matrices"] = matrices
+            # Actualizar endpoint si viene en el payload
+            new_endpoint = tx.payload.get("endpoint")
+            if new_endpoint:
+                self.validators[m3_hash]["endpoint"] = new_endpoint
+                print(f"[FVR] endpoint actualizado: {m3_hash[:8]} endpoint={new_endpoint}")
             print(f"[FVR] lambda actualizado: {m3_hash[:8]} lambda={lv:.6f} bloque={block_index}")
         except Exception as e:
             print(f"[FVR] UPDATE error: {e}")
