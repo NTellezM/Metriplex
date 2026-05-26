@@ -81,7 +81,7 @@ class Mempool:
             if active_txs >= 5:
                 print(f"[Mempool] Rechazo Anti-Spam: El remitente excedió el límite de TXs pendientes.")
                 return False
-        if self.blockchain.validate_transaction(tx):
+        if self.blockchain.validate_transaction(tx, block_index=len(self.blockchain.chain)):
             self.pending_transactions[tx.tx_id] = tx
             self._timestamps[tx.tx_id] = time.time()
             self._save()
