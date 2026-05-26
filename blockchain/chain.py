@@ -114,6 +114,7 @@ class Blockchain:
             return False
 
         # 3. Construir tx_hash reproducible
+        print(f"[DEBUG] amount={tx.amount} type={type(tx.amount)} fee={tx.fee} sender_m3[0][0][0]={tx.sender_m3[0][0][0] if tx.sender_m3 else None}")
         payload_dict = {
             "sender_m3": tx.sender_m3,
             "receiver_m3": tx.receiver_m3,
@@ -175,7 +176,7 @@ class Blockchain:
                     public_m3=sender_m3,
                     tx_hash=tx_hash,
                     criterion_params=params,
-                    N_total=400,  # ZKEngine.N_PROOF
+                    N_total=2000,  # match attractor size
                 )
             except Exception as e:
                 print(f"  [ZK] Excepción en modo compacto: {e}")

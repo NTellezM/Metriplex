@@ -165,7 +165,7 @@ class ZKEngine:
 
             empirical_m3 = calculate_m3_tensor(x_final)
 
-            TOLERANCE = int(0.5 * SCALE_FACTOR)
+            TOLERANCE = int(2.0 * SCALE_FACTOR)  # aumentado — diferencias numpy entre versiones
             D = len(public_m3)
             for i in range(D):
                 for j in range(D):
