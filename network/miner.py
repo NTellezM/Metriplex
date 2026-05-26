@@ -126,6 +126,10 @@ class AutoMiner:
             registry = self.blockchain.validator_registry
             fvr_validators = registry.get_sorted_validators()
 
+            # Excluir validadores sin nodo activo (keystore perdido)
+            EXCLUDED_VALIDATORS = {"ee481176"}
+            fvr_validators = [v for v in fvr_validators if not any(v["m3_hash"].startswith(ex) for ex in EXCLUDED_VALIDATORS)]
+
             last_block = self.blockchain.chain[-1]
             if fvr_validators:
                 EPOCH_SLOTS = 100
