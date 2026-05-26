@@ -231,7 +231,7 @@ class Blockchain:
         return True
 
     def add_new_transaction(self, tx: Transaction) -> bool:
-        if self.validate_transaction(tx):
+        if self.validate_transaction(tx, block_index=len(self.chain)):
             self.unconfirmed_transactions.append(tx)
             return True
         return False
