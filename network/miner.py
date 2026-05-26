@@ -92,6 +92,30 @@ class AutoMiner:
             if not syncing and len(self.blockchain.chain) > 1:
                 break
         print(f"[Consenso] Sync completado. Altura: {len(self.blockchain.chain)-1}. Iniciando minero.")
+
+        async def _check_synced_with_peers() -> bool:
+            if not self.p2p_node.peers:
+                return True
+            peer_heights = []
+            for peer in list(self.p2p_node.peers)[:3]:
+                try:
+                    host, port = peer.rsplit(":", 1)
+                    api_port = int(port) - 57432
+                    r = requests.get(f"http://{host}:{api_port}/info", timeout=3)
+                    h = r.json().get("chain_length", 0)
+                    if h > 0:
+                        peer_heights.append(h)
+                except:
+                    pass
+            if not peer_heights:
+                return True
+            max_peer = max(peer_heights)
+            local_h = len(self.blockchain.chain)
+            if local_h < max_peer - 2:
+                print(f"[Consenso] Esperando sync: local={local_h} peers={max_peer} lag={max_peer-local_h}")
+                return False
+            return True
+
         while True:
             await asyncio.sleep(1)  # Evaluar el estado de la red cada segundo
 
@@ -116,7 +140,10 @@ class AutoMiner:
                     self.p2p_node.sync_target = 0  # reset — evita bloqueo permanente
                     await asyncio.sleep(1)
                     continue
-                    continue
+            # Guardia 2 — altura vs peers
+            if not await _check_synced_with_peers():
+                await asyncio.sleep(5)
+                continue
             # Evitar minar múltiples veces en la misma ventana de tiempo
             if current_slot == self.last_mined_slot:
                 continue
