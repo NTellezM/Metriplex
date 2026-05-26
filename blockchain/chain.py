@@ -81,7 +81,7 @@ class Blockchain:
 
     # ── Validación de transacciones ───────────────────────────────────────
 
-    def validate_transaction(self, tx: Transaction) -> bool:
+    def validate_transaction(self, tx: Transaction, block_index: int = 0) -> bool:
         """
         Valida una transacción:
           1. Coinbase: siempre aceptada.
@@ -119,7 +119,7 @@ class Blockchain:
             "receiver_m3": tx.receiver_m3,
             "amount": tx.amount,
             "fee": tx.fee,
-            "payload": None,
+            "payload": tx.payload if (tx.payload and block_index >= 8200) else None,
         }
         tx_hash = hashlib.sha256(
             json.dumps(payload_dict, sort_keys=True, separators=(",",":")).encode()
@@ -205,7 +205,7 @@ class Blockchain:
 
         if not skip_zk:
             for tx in block.transactions:
-                if not self.validate_transaction(tx):
+                if not self.validate_transaction(tx, block_index=block.index):
                     print(f"[Cadena] Rechazo: TX {tx.tx_id[:8]} falló validación ZK.")
                     return False
         # Aplicar estado
