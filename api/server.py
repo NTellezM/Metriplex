@@ -141,6 +141,8 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
                     "endpoint": v["endpoint"],
                     "stake_mpx": v["stake"] // 1073741824,
                     "registered_at": v["registered_at"],
+                    "lambda_value": v.get("lambda_value"),
+                    "slashed": v.get("slashed", False),
                 }
                 for v in registry.get_sorted_validators()
             ],
