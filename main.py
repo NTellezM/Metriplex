@@ -203,8 +203,9 @@ async def main():
     finally:
         print("[!] Flushing base de datos...")
         try:
-            storage.conn.execute("PRAGMA wal_checkpoint(FULL)")
-            storage.conn.close()
+            conn = storage._conn()
+            conn.execute("PRAGMA wal_checkpoint(FULL)")
+            conn.close()
             print("[✓] Base de datos cerrada limpiamente.")
         except Exception as e:
             print(f"[!] Error cerrando DB: {e}")
