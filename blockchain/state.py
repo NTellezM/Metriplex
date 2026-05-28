@@ -103,10 +103,12 @@ class StateDB:
                     return False
                 # Ejecutar exit — eliminar del registry (keystore perdido, stake quemado)
                 registry = self.validator_registry
-                if target in registry.validators:
-                    del registry.validators[target]
-                    registry.slashed.add(target)
-                    print(f"[State] GOVERNANCE_EXIT: {target[:8]} expulsado con {valid_votes}/{required} votos ✓")
+                # Buscar por hash completo o prefijo
+                target_full = next((k for k in registry.validators if k.startswith(target)), target)
+                if target_full in registry.validators:
+                    del registry.validators[target_full]
+                    registry.slashed.add(target_full)
+                    print(f"[State] GOVERNANCE_EXIT: {target_full[:8]} expulsado con {valid_votes}/{required} votos ✓")
                 else:
                     print(f"[State] GOVERNANCE_EXIT: {target[:8]} no encontrado en registry")
                 return True
