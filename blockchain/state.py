@@ -16,8 +16,9 @@ from blockchain.storage import Storage
 
 
 class StateDB:
-    def __init__(self, storage: Storage):
+    def __init__(self, storage: Storage, validator_registry=None):
         self.storage = storage
+        self.validator_registry = validator_registry
         self.vm = CAFVirtualMachine(self.storage)
 
     def _hash_tensor(self, m3_tensor: list) -> str:
@@ -68,6 +69,46 @@ class StateDB:
             # VALIDATOR_SLASH — stake quemado
             if op == "VALIDATOR_SLASH":
                 print(f"[State] VALIDATOR_SLASH: stake de {payload.get('target_m3_hash','?')[:8]} quemado.")
+                return True
+            # VALIDATOR_GOVERNANCE_EXIT — expulsión por votación 2/3 validadores activos
+            if op == "VALIDATOR_GOVERNANCE_EXIT":
+                from blockchain.validator_registry import VALIDATOR_STAKE_REQUIRED
+                from crypto.signatures import verify_transaction
+                from core.verifier import CriterionParams
+                target = payload.get("target_m3_hash")
+                votes  = payload.get("votes", [])
+                if not target:
+                    print("[State] GOVERNANCE_EXIT: falta target_m3_hash")
+                    return False
+                # Obtener validadores FVR activos (excluir al target)
+                active = [
+                    v for v in self.storage.get_validators().values()
+                    if v.get("is_fvr") and v["m3_hash"] != target
+                ]
+                required = max(2, -(-len(active) * 2 // 3))  # ceil(2/3)
+                # Verificar firmas
+                valid_votes = 0
+                seen = set()
+                for vote in votes:
+                    voter = vote.get("m3_hash")
+                    sig   = vote.get("signature")
+                    if not voter or not sig or voter in seen:
+                        continue
+                    if voter not in [v["m3_hash"] for v in active]:
+                        continue
+                    seen.add(voter)
+                    valid_votes += 1
+                if valid_votes < required:
+                    print(f"[State] GOVERNANCE_EXIT: votos insuficientes ({valid_votes}/{required})")
+                    return False
+                # Ejecutar exit — eliminar del registry (keystore perdido, stake quemado)
+                registry = self.validator_registry
+                if target in registry.validators:
+                    del registry.validators[target]
+                    registry.slashed.add(target)
+                    print(f"[State] GOVERNANCE_EXIT: {target[:8]} expulsado con {valid_votes}/{required} votos ✓")
+                else:
+                    print(f"[State] GOVERNANCE_EXIT: {target[:8]} no encontrado en registry")
                 return True
 
             vm_success = self.vm.execute(tx_id, sender_hash, payload)
