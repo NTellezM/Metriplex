@@ -29,8 +29,8 @@ from blockchain.validator_registry import ValidatorRegistry
 class Blockchain:
     def __init__(self, storage: Storage):
         self.storage = storage
-        self.state_db = StateDB(self.storage, self.validator_registry)
         self.validator_registry = ValidatorRegistry()
+        self.state_db = StateDB(self.storage, self.validator_registry)
         self.chain = []
         self.unconfirmed_transactions = []
         self.load_chain_from_disk()
