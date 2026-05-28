@@ -381,7 +381,9 @@ class CAFNode:
                     payload=tx_data.get("payload", {}),
                 )
                 tx.tx_id = tx_data["tx_id"]
-                if self.mempool.add_transaction(tx):
+                loop = asyncio.get_event_loop()
+                success = await loop.run_in_executor(None, self.mempool.add_transaction, tx)
+                if success:
                     print(f"[Red] 📥 TX {tx.tx_id[:8]} recibida vía P2P.")
                     await self.broadcast_transaction(tx)
 
