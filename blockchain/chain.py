@@ -29,7 +29,7 @@ from blockchain.validator_registry import ValidatorRegistry
 class Blockchain:
     def __init__(self, storage: Storage):
         self.storage = storage
-        self.state_db = StateDB(self.storage)
+        self.state_db = StateDB(self.storage, self.validator_registry)
         self.validator_registry = ValidatorRegistry()
         self.chain = []
         self.unconfirmed_transactions = []
@@ -298,7 +298,7 @@ class Blockchain:
             print(f"[Consenso] Usando snapshot en bloque {snap_idx}")
             self.storage.clear_all()
             self.chain = []
-            self.state_db = StateDB(self.storage)
+            self.state_db = StateDB(self.storage, self.validator_registry)
             self.storage.restore_snapshot(snapshot)
             for block in new_blocks_list[:snap_idx + 1]:
                 self.chain.append(block)
@@ -308,7 +308,7 @@ class Blockchain:
             print("[Consenso] Sin snapshot — replay completo desde genesis")
             self.storage.clear_all()
             self.chain = []
-            self.state_db = StateDB(self.storage)
+            self.state_db = StateDB(self.storage, self.validator_registry)
             replay_blocks = new_blocks_list
         # 3. Re-aplicación desde el punto de inicio
         for block in replay_blocks:
