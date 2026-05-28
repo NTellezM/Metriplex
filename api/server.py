@@ -17,6 +17,7 @@ from typing import Optional  # NUEVO IMPORT
 
 from blockchain.block import Transaction
 from blockchain.chain import Blockchain
+import asyncio
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError, HTTPException
@@ -164,7 +165,8 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
                 payload=tx_req.payload,
             )
 
-            success = mempool.add_transaction(tx)
+            loop = asyncio.get_event_loop()
+            success = await loop.run_in_executor(None, mempool.add_transaction, tx)
             if success:
                 # Propagar la transacción (gossip) a los demás nodos
                 await p2p_node.broadcast_transaction(tx)
