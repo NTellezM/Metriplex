@@ -80,8 +80,8 @@ class StateDB:
                     return False
                 # Obtener validadores FVR activos (excluir al target)
                 active = [
-                    v for v in self.storage.get_validators().values()
-                    if v.get("is_fvr") and v["m3_hash"] != target
+                    v for v in self.validator_registry.validators.values()
+                    if v.get("is_fvr") and v["m3_hash"] != target_full
                 ]
                 required = max(2, -(-len(active) * 2 // 3))  # ceil(2/3)
                 # Verificar firmas
