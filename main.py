@@ -17,6 +17,7 @@ import asyncio
 import sys
 import socket
 
+import signal
 import uvicorn
 
 from api.server import create_api_app
@@ -187,19 +188,35 @@ async def main():
             miner_m3=miner_m3,
         )
         tasks.append(miner.start())
-
+    loop = asyncio.get_event_loop()
+    shutdown_event = asyncio.Event()
+    loop.add_signal_handler(signal.SIGTERM, shutdown_event.set)
+    loop.add_signal_handler(signal.SIGINT,  shutdown_event.set)
+    gather_task = asyncio.ensure_future(asyncio.gather(*tasks))
     try:
-        await asyncio.gather(*tasks)
-    except asyncio.CancelledError:
-        pass
+        await asyncio.wait([asyncio.ensure_future(shutdown_event.wait()), gather_task], return_when=asyncio.FIRST_COMPLETED)
+        gather_task.cancel()
+        try:
+            await gather_task
+        except asyncio.CancelledError:
+            pass
+    finally:
+        print("[!] Flushing base de datos...")
+        try:
+            storage.conn.execute("PRAGMA wal_checkpoint(FULL)")
+            storage.conn.close()
+            print("[✓] Base de datos cerrada limpiamente.")
+        except Exception as e:
+            print(f"[!] Error cerrando DB: {e}")
+
+
+
+
+
 
 
 if __name__ == "__main__":
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("\n[!] Apagado seguro iniciado.")
-        sys.exit(0)
+    asyncio.run(main())
