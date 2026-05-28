@@ -73,8 +73,6 @@ class StateDB:
             # VALIDATOR_GOVERNANCE_EXIT — expulsión por votación 2/3 validadores activos
             if op == "VALIDATOR_GOVERNANCE_EXIT":
                 from blockchain.validator_registry import VALIDATOR_STAKE_REQUIRED
-                from crypto.signatures import verify_transaction
-                from core.verifier import CriterionParams
                 target = payload.get("target_m3_hash")
                 votes  = payload.get("votes", [])
                 if not target:
