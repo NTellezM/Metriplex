@@ -433,41 +433,57 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
     import sqlite3 as _sqlite3, math as _math
 
     def _face_db():
+        import json as _json
         db = _sqlite3.connect('/opt/Metriplex/face_identity.db')
         db.execute("""CREATE TABLE IF NOT EXISTS face_identity (
             wallet TEXT PRIMARY KEY,
-            lam REAL, ipd REAL, face_h REAL,
-            nose_w REAL, mouth_w REAL, asym REAL,
+            vector_json TEXT NOT NULL,
+            vector_type TEXT DEFAULT 'vector6',
+            lambda REAL,
             registered_at INTEGER
         )""")
         db.commit()
         return db
 
-    def _face_dist(v1, v2):
+    def _cosine_dist(v1, v2):
+        """Distancia coseno — óptima para embeddings de redes neuronales"""
+        dot  = sum(a*b for a,b in zip(v1,v2))
+        n1   = _math.sqrt(sum(a*a for a in v1))
+        n2   = _math.sqrt(sum(b*b for b in v2))
+        if n1 == 0 or n2 == 0:
+            return 1.0
+        return 1.0 - dot/(n1*n2)
+
+    def _euclidean_dist(v1, v2):
         weights = [2.0, 1.5, 1.5, 1.0, 1.0, 0.8]
-        return _math.sqrt(sum(w*(a-b)**2 for w,(a,b) in zip(weights, zip(v1,v2))))
+        if len(v1) == 6:
+            return _math.sqrt(sum(w*(a-b)**2 for w,(a,b) in zip(weights, zip(v1,v2))))
+        return _math.sqrt(sum((a-b)**2 for a,b in zip(v1,v2)))
 
     class FaceVector(BaseModel):
         wallet: str
-        vector: list  # [lam, ipd, face_h, nose_w, mouth_w, asym]
+        vector: list
+        type: str = 'vector6'
 
     class FaceVerify(BaseModel):
         wallet: str
         vector: list
+        type: str = 'vector6'
 
     @app.post("/identity/face/register")
     def face_register(req: FaceVector):
-        if len(req.vector) != 6:
-            raise HTTPException(status_code=400, detail="Vector debe tener 6 componentes")
-        import time
+        import time, json as _json
+        if len(req.vector) not in (6, 24, 128):
+            raise HTTPException(status_code=400, detail="Vector debe tener 6 o 128 componentes")
         db = _face_db()
         try:
+            lam = req.vector[0] if req.type == 'vector6' else None
             db.execute("""INSERT OR REPLACE INTO face_identity
-                (wallet, lam, ipd, face_h, nose_w, mouth_w, asym, registered_at)
-                VALUES (?,?,?,?,?,?,?,?)""",
-                [req.wallet.lower()] + req.vector + [int(time.time())])
+                (wallet, vector_json, vector_type, lambda, registered_at)
+                VALUES (?,?,?,?,?)""",
+                [req.wallet.lower(), _json.dumps(req.vector), req.type, lam, int(time.time())])
             db.commit()
-            return {"status": "registered", "wallet": req.wallet.lower()}
+            return {"status": "registered", "wallet": req.wallet.lower(), "type": req.type, "dims": len(req.vector)}
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
         finally:
@@ -475,24 +491,40 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
 
     @app.post("/identity/face/verify")
     def face_verify(req: FaceVerify):
-        THRESHOLD = 0.12
+        import json as _json
         db = _face_db()
         try:
             row = db.execute(
-                "SELECT lam,ipd,face_h,nose_w,mouth_w,asym FROM face_identity WHERE wallet=?",
+                "SELECT vector_json, vector_type, lambda FROM face_identity WHERE wallet=?",
                 [req.wallet.lower()]
             ).fetchone()
             if not row:
                 return {"match": False, "reason": "wallet no registrada"}
-            if len(req.vector) != 6:
-                raise HTTPException(status_code=400, detail="Vector debe tener 6 componentes")
-            dist = _face_dist(list(row), req.vector)
+            stored_vec  = _json.loads(row[0])
+            stored_type = row[1]
+            stored_lam  = row[2]
+            # Verificar compatibilidad de tipos
+            if stored_type != req.type:
+                return {"match": False, "reason": f"tipo incompatible: registrado={stored_type} enviado={req.type}"}
+            if len(stored_vec) != len(req.vector):
+                return {"match": False, "reason": "dimensiones incompatibles"}
+            # Distancia y threshold según tipo
+            if req.type == 'embedding128':
+                dist      = _cosine_dist(stored_vec, req.vector)
+                THRESHOLD = 0.042
+            elif req.type == 'ifs24':
+                dist      = _math.sqrt(sum((a-b)**2 for a,b in zip(stored_vec, req.vector)) / 24)
+                THRESHOLD = 0.042
+            else:
+                dist      = _euclidean_dist(stored_vec, req.vector)
+                THRESHOLD = 0.12
             confidence = max(0, 1 - dist / THRESHOLD)
             return {
-                "match": dist < THRESHOLD,
+                "match":      dist < THRESHOLD,
                 "confidence": round(confidence, 4),
-                "delta": round(dist, 6),
-                "threshold": THRESHOLD
+                "delta":      round(dist, 6),
+                "threshold":  THRESHOLD,
+                "type":       req.type
             }
         finally:
             db.close()
@@ -502,15 +534,16 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         db = _face_db()
         try:
             row = db.execute(
-                "SELECT lam, registered_at FROM face_identity WHERE wallet=?",
+                "SELECT lambda, vector_type, registered_at FROM face_identity WHERE wallet=?",
                 [wallet.lower()]
             ).fetchone()
             if not row:
                 return {"registered": False}
             return {
-                "registered": True,
-                "lambda": round(row[0], 6),
-                "registered_at": row[1]
+                "registered":   True,
+                "lambda":       round(row[0], 6) if row[0] else None,
+                "type":         row[1],
+                "registered_at": row[2]
             }
         finally:
             db.close()
