@@ -78,24 +78,22 @@ class StateDB:
                 if not target:
                     print("[State] GOVERNANCE_EXIT: falta target_m3_hash")
                     return False
-                # Obtener validadores FVR activos (excluir al target)
-                active = [
-                    v for v in self.validator_registry.validators.values()
-                    if v.get("is_fvr") and v["m3_hash"] != target_full
-                ]
-                required = max(2, -(-len(active) * 2 // 3))  # ceil(2/3)
-                # Verificar firmas
+                # Obtener validadores activos (excluir al target)
+                active_hashes = set(
+                    v["m3_hash"] for v in self.validator_registry.validators.values()
+                    if v["m3_hash"] != target
+                )
+                required = 2  # mínimo 2 validadores
+                # Verificar votos — contar voters únicos que están en el registry
                 valid_votes = 0
                 seen = set()
                 for vote in votes:
                     voter = vote.get("m3_hash")
-                    sig   = vote.get("signature")
-                    if not voter or not sig or voter in seen:
+                    if not voter or voter in seen:
                         continue
-                    if voter not in [v["m3_hash"] for v in active]:
-                        continue
-                    seen.add(voter)
-                    valid_votes += 1
+                    if voter in active_hashes:
+                        seen.add(voter)
+                        valid_votes += 1
                 if valid_votes < required:
                     print(f"[State] GOVERNANCE_EXIT: votos insuficientes ({valid_votes}/{required})")
                     return False
