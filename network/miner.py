@@ -94,11 +94,71 @@ class AutoMiner:
         print(f"[Consenso] Sync completado. Altura: {len(self.blockchain.chain)-1}. Iniciando minero.")
 
         async def _check_synced_with_peers() -> bool:
-            local_h = len(self.blockchain.chain)
+            local_h    = len(self.blockchain.chain)
+            local_hash = self.blockchain.chain[-1].hash if self.blockchain.chain else None
             sync_target = getattr(self.p2p_node, 'sync_target', 0)
+
+            # Guardia 1 — sync_target explícito
             if sync_target > 0 and local_h < sync_target - 2:
-                print(f"[Consenso] Esperando sync: local={local_h} target={sync_target} lag={sync_target-local_h}")
+                print(f"[Consenso] Esperando sync: local={local_h} target={sync_target}")
                 return False
+
+            # Sin peers — nodo solitario, puede minar
+            if not self.p2p_node.peers:
+                return True
+
+            # Guardia 2 — consultar altura Y hash de peers activos
+            peer_heights = []
+            peer_hashes  = {}
+            for peer in list(self.p2p_node.peers)[:3]:
+                try:
+                    host, port = peer.rsplit(":", 1)
+                    api_port   = int(port) - 57432
+                    r = requests.get(f"http://{host}:{api_port}/info", timeout=3)
+                    data = r.json()
+                    ph = data.get("chain_length", 0)
+                    hh = data.get("latest_block_hash", "")
+                    if ph > 0:
+                        peer_heights.append(ph)
+                        peer_hashes[peer] = (ph, hh)
+                except:
+                    pass
+
+            if not peer_heights:
+                return True  # peers no responden — no bloquear
+
+            max_peer_h = max(peer_heights)
+
+            # Altura muy atrasada — esperar sync
+            if local_h < max_peer_h - 2:
+                print(f"[Consenso] Lag detectado: local={local_h} peers_max={max_peer_h} — esperando sync")
+                return False
+
+            # Verificar hash — si mi hash no coincide con el de peers en mi altura → fork
+            for peer, (ph, hh) in peer_hashes.items():
+                if ph == local_h and hh and local_hash and hh != local_hash:
+                    print(f"[Consenso] Hash mismatch con {peer}: local={local_hash[:8]} peer={hh[:8]} — intentando restore desde backup")
+                    # Intentar restore desde backup más reciente
+                    import glob, shutil, os
+                    db_path  = self.blockchain.storage.db_path
+                    backup_dir = os.path.join(os.path.dirname(db_path), 'backups')
+                    backups  = sorted(glob.glob(os.path.join(backup_dir, '*.db')), reverse=True)
+                    restored = False
+                    for backup in backups[:3]:  # intentar los 3 más recientes
+                        try:
+                            count = int(__import__('sqlite3').connect(backup).execute(
+                                "SELECT count(*) FROM blocks").fetchone()[0])
+                            if count >= max_peer_h - 10:
+                                shutil.copy2(backup, db_path)
+                                print(f"[Consenso] Restore desde {os.path.basename(backup)} ({count} bloques)")
+                                restored = True
+                                break
+                        except:
+                            continue
+                    if not restored:
+                        print(f"[Consenso] No se encontró backup válido — esperando replace_chain por p2p")
+                    return False
+
             return True
 
         while True:
