@@ -548,4 +548,47 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         finally:
             db.close()
 
+    @app.get("/network")
+    async def network_status():
+        """Estado agregado de todos los nodos conocidos via P2P — async"""
+        import asyncio as _asyncio
+        import httpx as _httpx
+        peers = list(p2p_node.peers)
+
+        async def fetch_peer(peer):
+            try:
+                host, p2p_port = peer.rsplit(':', 1)
+                api_port = int(p2p_port) - 57432
+                async with _httpx.AsyncClient(timeout=3.0) as client:
+                    r = await client.get(f'http://{host}:{api_port}/info')
+                    return peer, {'online': True, **r.json()}
+            except:
+                return peer, {'online': False}
+
+        results = await _asyncio.gather(*[fetch_peer(p) for p in peers])
+        result = dict(results)
+        result['local'] = {
+            'online': True,
+            'chain_length': len(blockchain.chain),
+            'mempool_size': len(mempool.pending_transactions),
+            'latest_block_hash': blockchain.chain[-1].hash if blockchain.chain else ''
+        }
+        return {'nodes': result, 'peer_count': len(peers)}
+
     return app
+
+    @app.get("/network")
+    async def network_status():
+        """Estado agregado de todos los nodos conocidos via P2P"""
+        import requests as _req
+        peers = list(p2p_node.peers)
+        result = {}
+        for peer in peers:
+            try:
+                host, p2p_port = peer.rsplit(':', 1)
+                api_port = int(p2p_port) - 57432
+                r = _req.get(f'http://{host}:{api_port}/info', timeout=3)
+                result[peer] = r.json()
+            except:
+                result[peer] = {'online': False}
+        return {'nodes': result, 'peer_count': len(peers)}
