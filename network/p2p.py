@@ -42,11 +42,15 @@ class CAFNode:
         self.max_failures = 8  # más tolerante — red intermitente
         # Peers permanentes — nunca se eliminan aunque fallen
         # permanent_peers se construye dinámicamente desde el FVR
-        # IPs hardcodeadas solo como fallback inicial
         self._static_peers = {
             "157.180.113.24:65432",
             "157.180.113.24:65433",
         }
+        # --- Identidad geométrica ---
+        self.geo_identity = geo_identity
+        self.geo_proof = None
+        self.geo_nonce = None
+        self.geo_proof_expiry = 0
 
     @property
     def permanent_peers(self):
@@ -60,11 +64,7 @@ class CAFNode:
         except Exception:
             pass
         return fvr_peers | self._static_peers
-        # --- Identidad geométrica ---
-        self.geo_identity = geo_identity
-        self.geo_proof = None       # ZK proof precomputado
-        self.geo_nonce = None       # nonce del proof
-        self.geo_proof_expiry = 0   # timestamp de expiración
+
 
     def penalize_peer(self, peer: str):
         """Aísla nodos caídos o que envían respuestas inválidas."""
