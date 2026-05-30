@@ -194,30 +194,39 @@ async def monitor_native_chain():
     Cuando detecta una TX con payload.target_eth_address, ejecuta mint() en Ethereum.
     """
     print("[Relayer] Monitoreando depósitos en la red nativa MPX...")
+    # Hash del vault para comparacion robusta por hash del M3
+    vault_hash = hashlib.sha256(
+        json.dumps(VAULT_MPX_ADDRESS, sort_keys=True, separators=(',',':')).encode()
+    ).hexdigest()
+    print(f"[Relayer] Vault hash: {vault_hash[:16]}...")
     last_processed_block = -1
-
     while True:
         try:
-            response = requests.get(f"{wMXP_NODE_URL}/blocks", timeout=5)
+            response = requests.get(f"{wMXP_NODE_URL}/blocks?limit=100", timeout=5)
             blocks = response.json()
-
             for block in blocks:
                 if block["index"] <= last_processed_block:
                     continue
-
                 for tx in block["transactions"]:
-                    # Detectar TX hacia la dirección de la Bóveda con target_eth_address
-                    if tx.get("receiver_m3") == VAULT_MPX_ADDRESS:
-                        payload = tx.get("payload", {})
-                        eth_target = payload.get("target_eth_address", "")
-                        amount = tx.get("amount", 0)
-
-                        if eth_target and w3.is_address(eth_target) and amount > 0:
-                            print(f"\n[!] Depósito detectado en bloque {block['index']}")
-                            print(f"    Monto:   {amount} MPX (raw)")
-                            print(f"    Destino: {eth_target}")
-                            execute_eth_mint(eth_target, amount)
-
+                    receiver_m3 = tx.get("receiver_m3")
+                    if receiver_m3 is None:
+                        continue
+                    try:
+                        rx_hash = hashlib.sha256(
+                            json.dumps(receiver_m3, sort_keys=True, separators=(',',':')).encode()
+                        ).hexdigest()
+                    except Exception:
+                        continue
+                    if rx_hash != vault_hash:
+                        continue
+                    payload = tx.get("payload", {}) or {}
+                    eth_target = payload.get("target_eth_address", "")
+                    amount = tx.get("amount", 0)
+                    if eth_target and w3.is_address(eth_target) and amount > 0:
+                        print(f"\n[!] Deposito detectado en bloque {block['index']}")
+                        print(f"    Monto:   {amount} MPX (raw)")
+                        print(f"    Destino: {eth_target}")
+                        execute_eth_mint(eth_target, amount)
                 last_processed_block = block["index"]
 
         except requests.exceptions.ConnectionError:
@@ -410,10 +419,6 @@ def execute_native_release(
             "fee":          fee,
             "signature_data": sig,
             "payload": bridge_payload,
-        }
-            "fee":          fee,
-            "signature_data": sig,
-            "payload": tx_payload_dict["payload"],
         }
 
         print("[Release] Enviando TX al nodo Metriplex...")
