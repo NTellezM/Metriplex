@@ -148,11 +148,12 @@ class Blockchain:
         tx_hash_null = hashlib.sha256(
             json.dumps(payload_dict_null, sort_keys=True, separators=(",",":")).encode()
         ).hexdigest()
-        # Usar payload real si tiene bridge/timestamp, sino null (legacy)
-        has_payload = bool(tx.payload and (
-            tx.payload.get("bridge") or
-            tx.payload.get("burn_tx") or
-            tx.payload.get("target_eth_address")
+        # Usar payload real si tiene campos de protocolo, sino null (legacy)
+        has_payload = bool(tx.payload and any(
+            tx.payload.get(k) for k in (
+                "bridge", "burn_tx", "target_eth_address",
+                "op", "endpoint", "public_m3",
+            )
         ))
         tx_hash = tx_hash_full if has_payload else tx_hash_null
 
