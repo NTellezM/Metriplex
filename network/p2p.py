@@ -54,12 +54,18 @@ class CAFNode:
 
     @property
     def permanent_peers(self):
-        """Peers permanentes = endpoints del FVR + peers estáticos."""
+        """Peers permanentes = endpoints del FVR activos + peers estáticos.
+        Excluye validadores legacy sin lambda y los excluidos por governance."""
+        EXCLUDED = {"ee481176"}  # validadores con keystore perdido
         fvr_peers = set()
         try:
             for v in self.blockchain.validator_registry.validators.values():
                 ep = v.get("endpoint", "")
-                if ep and not v.get("slashed"):
+                m3 = v.get("m3_hash", "")
+                # Solo incluir validadores con lambda real y no excluidos
+                if (ep and not v.get("slashed")
+                        and v.get("lambda_value") is not None
+                        and not any(m3.startswith(ex) for ex in EXCLUDED)):
                     fvr_peers.add(ep)
         except Exception:
             pass
