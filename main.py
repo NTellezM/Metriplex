@@ -200,18 +200,13 @@ async def main():
     async def auto_update_endpoint():
         """Espera sync y publica IP:puerto actual via VALIDATOR_UPDATE."""
         await asyncio.sleep(45)  # esperar que el nodo sincronice
-        if not args.miner_wallet:
+        if not geo_identity:
             return
         try:
-            import json as _json
-            from crypto.keystore import load_keystore
+            import json as _json, hashlib as _hl
             from blockchain.block import Transaction
             new_endpoint = f"{public_ip}:{args.p2p_port}"
-            # Verificar si el endpoint ya está actualizado
-            import hashlib as _hl
-            with open(args.miner_wallet) as _f:
-                _ks = _json.load(_f)
-            m3 = _ks.get('public_m3')
+            m3 = geo_identity["public_m3"]
             if not m3:
                 return
             m3_hash = _hl.sha256(
@@ -222,12 +217,13 @@ async def main():
                 print(f"[FVR] Endpoint ya actualizado: {new_endpoint}")
                 return
             # Enviar VALIDATOR_UPDATE con nuevo endpoint
-            priv = load_keystore(args.miner_wallet)
+            priv   = geo_identity["private_key"]
+            params = geo_identity["criterion_params"]
+            att    = geo_identity["attractor"]
             from crypto.zkp import ZKEngine
             from core.verifier import CriterionParams
-            from core.dynamics import compute_attractor
-            att = compute_attractor(priv)
-            params = CriterionParams.from_private_key(priv)
+            if isinstance(params, dict):
+                params = CriterionParams(**params)
             proof = ZKEngine.generate_proof(priv, m3, m3_hash[:16], params, att)
             tx = Transaction(
                 sender_m3=m3,
