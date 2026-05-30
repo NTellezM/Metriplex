@@ -41,12 +41,25 @@ class CAFNode:
         self.peer_failures = {}
         self.max_failures = 8  # más tolerante — red intermitente
         # Peers permanentes — nunca se eliminan aunque fallen
-        self.permanent_peers = {
+        # permanent_peers se construye dinámicamente desde el FVR
+        # IPs hardcodeadas solo como fallback inicial
+        self._static_peers = {
             "157.180.113.24:65432",
             "157.180.113.24:65433",
-            "152.173.186.164:65434",
-            "152.173.186.164:65435",
         }
+
+    @property
+    def permanent_peers(self):
+        """Peers permanentes = endpoints del FVR + peers estáticos."""
+        fvr_peers = set()
+        try:
+            for v in self.blockchain.validator_registry.validators.values():
+                ep = v.get("endpoint", "")
+                if ep and not v.get("slashed"):
+                    fvr_peers.add(ep)
+        except Exception:
+            pass
+        return fvr_peers | self._static_peers
         # --- Identidad geométrica ---
         self.geo_identity = geo_identity
         self.geo_proof = None       # ZK proof precomputado
