@@ -196,6 +196,61 @@ async def main():
             miner_m3=miner_m3,
         )
         tasks.append(miner.start())
+    # Auto-publicar endpoint actual al arrancar — resuelve IP dinámica
+    async def auto_update_endpoint():
+        """Espera sync y publica IP:puerto actual via VALIDATOR_UPDATE."""
+        await asyncio.sleep(45)  # esperar que el nodo sincronice
+        if not args.miner_wallet:
+            return
+        try:
+            import json as _json
+            from crypto.keystore import load_keystore
+            from blockchain.block import Transaction
+            new_endpoint = f"{public_ip}:{args.p2p_port}"
+            # Verificar si el endpoint ya está actualizado
+            import hashlib as _hl
+            with open(args.miner_wallet) as _f:
+                _ks = _json.load(_f)
+            m3 = _ks.get('public_m3')
+            if not m3:
+                return
+            m3_hash = _hl.sha256(
+                _json.dumps(m3, sort_keys=True, separators=(',',':')).encode()
+            ).hexdigest()
+            current = blockchain.validator_registry.validators.get(m3_hash, {})
+            if current.get('endpoint') == new_endpoint:
+                print(f"[FVR] Endpoint ya actualizado: {new_endpoint}")
+                return
+            # Enviar VALIDATOR_UPDATE con nuevo endpoint
+            priv = load_keystore(args.miner_wallet)
+            from crypto.zkp import ZKEngine
+            from core.verifier import CriterionParams
+            from core.dynamics import compute_attractor
+            att = compute_attractor(priv)
+            params = CriterionParams.from_private_key(priv)
+            proof = ZKEngine.generate_proof(priv, m3, m3_hash[:16], params, att)
+            tx = Transaction(
+                sender_m3=m3,
+                receiver_m3=m3,
+                amount=0,
+                signature_data=proof,
+                payload={
+                    "op": "VALIDATOR_UPDATE",
+                    "endpoint": new_endpoint,
+                    "public_m3": m3,
+                    "contraction_matrices": [a.tolist() for a in priv],
+                }
+            )
+            if mempool.add_transaction(tx):
+                print(f"[FVR] ✅ Endpoint auto-actualizado: {new_endpoint}")
+            else:
+                print(f"[FVR] ⚠️  No se pudo publicar endpoint: {new_endpoint}")
+        except Exception as e:
+            print(f"[FVR] Error en auto_update_endpoint: {e}")
+
+    if args.miner_wallet:
+        tasks.append(auto_update_endpoint())
+
     loop = asyncio.get_event_loop()
     shutdown_event = asyncio.Event()
     loop.add_signal_handler(signal.SIGTERM, shutdown_event.set)
