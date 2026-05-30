@@ -62,11 +62,11 @@ async def main():
     rol_nodo = "OBSERVADOR (Full Node)" if args.no_miner else "VALIDADOR (Minero)"
 
     # --- Auto-detección de IP pública ---
+    # Bootstrap peers — solo nodos con IP fija (VPS)
+    # Los nodos de Chile se descubren via FVR (permanent_peers dinámico)
     BOOTSTRAP_PEERS = [
         "157.180.113.24:65432",  # node-0 genesis
         "157.180.113.24:65433",  # NT-vps
-        "152.173.186.164:65434", # node-2 LOQ-15
-        "152.173.186.164:65435", # NT-laptop Y520
     ]
 
     if args.public_ip:
