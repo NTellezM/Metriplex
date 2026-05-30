@@ -126,36 +126,18 @@ class Blockchain:
             return False
 
         # 3. Construir tx_hash reproducible
-        # Intentar primero con payload real (relayer, nuevas TXs)
-        # Si falla ZK, reintentar con payload=None (TXs legacy)
-        payload_dict_full = {
-            "sender_m3":   tx.sender_m3,
-            "receiver_m3": tx.receiver_m3,
-            "amount":      tx.amount,
-            "fee":         tx.fee,
-            "payload":     tx.payload if tx.payload else None,
-        }
-        payload_dict_null = {
+        # SIEMPRE payload=None — igual que buildSignedTx en browser y relayer
+        # El payload se transporta pero no forma parte del hash firmado
+        payload_dict = {
             "sender_m3":   tx.sender_m3,
             "receiver_m3": tx.receiver_m3,
             "amount":      tx.amount,
             "fee":         tx.fee,
             "payload":     None,
         }
-        tx_hash_full = hashlib.sha256(
-            json.dumps(payload_dict_full, sort_keys=True, separators=(",",":")).encode()
+        tx_hash = hashlib.sha256(
+            json.dumps(payload_dict, sort_keys=True, separators=(",",":")).encode()
         ).hexdigest()
-        tx_hash_null = hashlib.sha256(
-            json.dumps(payload_dict_null, sort_keys=True, separators=(",",":")).encode()
-        ).hexdigest()
-        # Usar payload real si tiene campos de protocolo, sino null (legacy)
-        has_payload = bool(tx.payload and any(
-            tx.payload.get(k) for k in (
-                "bridge", "burn_tx", "target_eth_address",
-                "op", "endpoint", "public_m3",
-            )
-        ))
-        tx_hash = tx_hash_full if has_payload else tx_hash_null
 
         # 4. Verificación ZK
         sig = tx.signature_data

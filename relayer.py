@@ -378,21 +378,23 @@ def execute_native_release(
             print(f"[Release] Advertencia: No se pudo verificar saldo ({e}). Continuando...")
 
         # 3. Construir el payload de la TX
+        # Payload de auditoria — NO forma parte del tx_hash firmado
+        bridge_payload = {
+            "bridge":    "ETH_TO_NATIVE",
+            "burn_tx":   burn_tx_hash,
+            "timestamp": int(time.time()),
+        }
+        # tx_payload_dict para firmar usa payload=None — igual que browser y chain.py
         fee = 1 * SCALE_FACTOR
         tx_payload_dict = {
             "sender_m3":   vault_pub,
             "receiver_m3": receiver_m3,
             "amount":      amount,
             "fee":         fee,
-            "payload": {
-                "bridge":    "ETH_TO_NATIVE",
-                "burn_tx":   burn_tx_hash,    # auditoría: hash de la quema en ETH
-                "timestamp": int(time.time()),
-            },
+            "payload":     None,
         }
-
-        # 4. Firmar con la clave privada de la Bóveda (genera proof ZK)
-        print("[Release] Firmando TX ZK desde la Bóveda...")
+        # 4. Firmar con la clave privada de la Boveda (genera proof ZK)
+        print("[Release] Firmando TX ZK desde la Boveda...")
         sig = sign_transaction(
             vault_priv,
             tx_payload_dict,
@@ -400,12 +402,15 @@ def execute_native_release(
             criterion_params=vault_params,
             attractor=vault_att,
         )
-
-        # 5. Enviar la TX al nodo local
+        # 5. Enviar TX al nodo con payload de auditoria separado
         tx_request = {
             "sender_m3":    vault_pub,
             "receiver_m3":  receiver_m3,
             "amount":       amount,
+            "fee":          fee,
+            "signature_data": sig,
+            "payload": bridge_payload,
+        }
             "fee":          fee,
             "signature_data": sig,
             "payload": tx_payload_dict["payload"],
