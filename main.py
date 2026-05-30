@@ -255,7 +255,7 @@ async def main():
                     "op": "VALIDATOR_UPDATE",
                     "endpoint": new_endpoint,
                     "public_m3": m3,
-                    "contraction_matrices": [a.tolist() for a in priv],
+                    "contraction_matrices": [a.tolist() for a in (priv["A"] if isinstance(priv, dict) else priv)],
                 }
             )
             if mempool.add_transaction(tx):
