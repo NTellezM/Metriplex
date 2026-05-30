@@ -73,40 +73,36 @@ class AutoMiner:
             print("[Consenso] Sin peers tras 5min — arrancando como nodo solitario.")
         else:
             print(f"[Consenso] {len(self.p2p_node.peers)} peers encontrados.")
+            # Esperar handshake P2P completo antes de consultar HTTP
+            await asyncio.sleep(8)
 
-        # FASE 2 — Consultar altura de peers y sincronizar si hay alguien mas alto
+        # FASE 2 — Consultar altura de peers con reintentos
         local_idx  = self.blockchain.chain[-1].index
         local_hash = self.blockchain.chain[-1].hash
         max_peer_h = 0
         best_peer  = None
-
-        for peer in list(self.p2p_node.peers)[:4]:
-            try:
-                host, port = peer.rsplit(":", 1)
-                import httpx as _hx
-                async with _hx.AsyncClient(timeout=5.0) as _c:
-                    r = await _c.get(f"http://{host}:{int(port)-57432}/info")
-                peer_info = r.json()
-                ph = peer_info.get("chain_length", 0)
-                if ph > max_peer_h:
-                    max_peer_h = ph
-                    best_peer  = peer
-            except Exception:
-                pass
-
-        # Recolectar también el hash del peer más alto
         best_peer_hash = None
-        for peer in list(self.p2p_node.peers)[:4]:
-            try:
-                host, port = peer.rsplit(":", 1)
-                async with _hx.AsyncClient(timeout=5.0) as _c:
-                    r = await _c.get(f"http://{host}:{int(port)-57432}/info")
-                peer_info = r.json()
-                ph = peer_info.get("chain_length", 0)
-                if ph == max_peer_h and peer == best_peer:
-                    best_peer_hash = peer_info.get("latest_block_hash", "")
-            except Exception:
-                pass
+        import httpx as _hx
+
+        for attempt in range(3):
+            for peer in list(self.p2p_node.peers)[:4]:
+                try:
+                    host, port = peer.rsplit(":", 1)
+                    async with _hx.AsyncClient(timeout=5.0) as _c:
+                        r = await _c.get(f"http://{host}:{int(port)-57432}/info")
+                    peer_info = r.json()
+                    ph = peer_info.get("chain_length", 0)
+                    if ph > max_peer_h:
+                        max_peer_h = ph
+                        best_peer  = peer
+                        best_peer_hash = peer_info.get("latest_block_hash", "")
+                except Exception:
+                    pass
+            if max_peer_h > 0:
+                break
+            if attempt < 2:
+                print(f"[Consenso] Peers sin respuesta HTTP — reintentando ({attempt+1}/3)...")
+                await asyncio.sleep(5)
 
         need_sync = False
         if max_peer_h > local_idx + 1:
