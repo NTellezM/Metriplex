@@ -114,7 +114,8 @@ class AutoMiner:
                 try:
                     host, port = peer.rsplit(":", 1)
                     api_port   = int(port) - 57432
-                    r = requests.get(f"http://{host}:{api_port}/info", timeout=3)
+                    async with __import__('httpx').AsyncClient(timeout=3.0) as _c:
+                        r = await _c.get(f"http://{host}:{api_port}/info")
                     data = r.json()
                     ph = data.get("chain_length", 0)
                     hh = data.get("latest_block_hash", "")
@@ -182,8 +183,7 @@ class AutoMiner:
             if self.p2p_node.sync_target > 0:
                 local_h = len(self.blockchain.chain) - 1
                 if local_h < self.p2p_node.sync_target - 2:
-                    self.p2p_node.sync_target = 0  # reset — evita bloqueo permanente
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(5)
                     continue
             # Guardia 2 — altura vs peers
             if not await _check_synced_with_peers():
@@ -243,9 +243,12 @@ class AutoMiner:
             # 4b. Forjado de Bloque (Solo si este nodo ganó la lotería del slot)
             if is_leader:
                 # Ventana de agregación — esperar que lleguen bloques de otros nodos
-                await asyncio.sleep(10)
+                await asyncio.sleep(3)
                 # Si otro nodo ya minó este slot durante la espera, ceder
-                if current_slot == self.last_mined_slot or len(self.blockchain.chain) > last_block.index + 1:
+                current_tip = self.blockchain.chain[-1]
+                if (current_slot == self.last_mined_slot
+                        or current_tip.index > last_block.index
+                        or current_tip.hash != last_block.hash):
                     continue
                 txs = self.mempool.get_transactions_for_block(limit=10)
 
