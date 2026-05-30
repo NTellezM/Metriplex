@@ -65,6 +65,8 @@ async def main():
     BOOTSTRAP_PEERS = [
         "157.180.113.24:65432",  # node-0 genesis
         "157.180.113.24:65433",  # NT-vps
+        "152.173.186.164:65434", # node-2 LOQ-15
+        "152.173.186.164:65435", # NT-laptop Y520
     ]
 
     if args.public_ip:
@@ -81,14 +83,16 @@ async def main():
             public_ip = "127.0.0.1"
             ip_source = "fallback (sin internet)"
 
-    # --- Bootstrap peers ---
-    if not args.peer:
-        # Filtrar self — no conectar al propio puerto
-        for bp in BOOTSTRAP_PEERS:
-            bp_port = bp.split(":")[1]
-            if str(args.p2p_port) != bp_port:
-                args.peer = bp
-                break
+    # --- Bootstrap peers — conectar a TODOS (malla completa) ---
+    bootstrap_peers = [
+        bp for bp in BOOTSTRAP_PEERS
+        if bp.split(":")[1] != str(args.p2p_port)
+        and bp != f"{public_ip}:{args.p2p_port}"
+    ]
+    if not args.peer and bootstrap_peers:
+        args.peer = bootstrap_peers[0]
+    # Guardar lista completa para agregar al p2p_node después de init
+    args.all_peers = bootstrap_peers
 
     # --- Verificar alcanzabilidad del peer ---
     def check_peer(peer_str):
@@ -155,9 +159,13 @@ async def main():
         host_public=public_ip, geo_identity=geo_identity
     )
 
-    if args.peer:
-        p2p_node.peers.add(args.peer)
-        print(f"[Red] Configurado para conectar al peer: {args.peer}")
+    # Agregar TODOS los bootstrap peers — malla completa
+    all_peers = getattr(args, 'all_peers', [args.peer] if args.peer else [])
+    for bp in all_peers:
+        if bp:
+            p2p_node.peers.add(bp)
+    if all_peers:
+        print(f"[Red] Bootstrap peers: {len(all_peers)} nodos → {', '.join(all_peers)}")
 
     app = create_api_app(blockchain, mempool, p2p_node)
     config = uvicorn.Config(

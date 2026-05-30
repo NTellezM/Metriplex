@@ -39,7 +39,14 @@ class CAFNode:
         # --- Control de resiliencia P2P ---
         self.banned_peers = set()
         self.peer_failures = {}
-        self.max_failures = 3
+        self.max_failures = 8  # más tolerante — red intermitente
+        # Peers permanentes — nunca se eliminan aunque fallen
+        self.permanent_peers = {
+            "157.180.113.24:65432",
+            "157.180.113.24:65433",
+            "152.173.186.164:65434",
+            "152.173.186.164:65435",
+        }
         # --- Identidad geométrica ---
         self.geo_identity = geo_identity
         self.geo_proof = None       # ZK proof precomputado
@@ -50,6 +57,11 @@ class CAFNode:
         """Aísla nodos caídos o que envían respuestas inválidas."""
         self.peer_failures[peer] = self.peer_failures.get(peer, 0) + 1
         if self.peer_failures[peer] >= self.max_failures:
+            if peer in self.permanent_peers:
+                # Peers permanentes nunca se banean — solo se marcan para retry
+                print(f"[Red P2P] Peer permanente inalcanzable: {peer} — reintentando en maintenance")
+                self.peer_failures[peer] = 0  # reset para seguir intentando
+                return
             print(f"[Red P2P] Nodo inalcanzable. Expulsando: {peer}")
             if peer in self.peers:
                 self.peers.remove(peer)
@@ -579,13 +591,16 @@ class CAFNode:
             self.penalize_peer(peer)
 
     async def peer_maintenance_loop(self):
-        """Cada 30s: reconecta peers offline y refresca la malla."""
+        """Cada 30s: reconecta peers offline, refresca malla, reintenta permanentes."""
         await asyncio.sleep(15)
         while True:
             try:
                 await asyncio.sleep(30)
-                # Rehabilitar peers baneados que hayan vuelto
+                my_addr = f"{self.host_public}:{self.port}"
+
+                # Rehabilitar peers baneados
                 for peer in list(self.banned_peers):
+                    if peer == my_addr: continue
                     host, port = peer.split(":")
                     try:
                         reader, writer = await asyncio.wait_for(
@@ -601,12 +616,36 @@ class CAFNode:
                         asyncio.create_task(self._send_to_peer(peer, handshake))
                     except Exception:
                         pass
+
+                # Reintentar peers permanentes perdidos — malla siempre completa
+                for peer in self.permanent_peers:
+                    if peer == my_addr: continue
+                    if peer in self.peers: continue
+                    host, port = peer.split(":")
+                    try:
+                        reader, writer = await asyncio.wait_for(
+                            asyncio.open_connection(host, int(port)), timeout=3.0
+                        )
+                        writer.close()
+                        await writer.wait_closed()
+                        self.banned_peers.discard(peer)
+                        self.peer_failures[peer] = 0
+                        self.peers.add(peer)
+                        print(f"[Red] 🔗 Peer permanente reconectado: {peer}")
+                        handshake = self._build_geo_handshake()
+                        asyncio.create_task(self._send_to_peer(peer, handshake))
+                    except Exception:
+                        pass
+
                 # Refrescar malla
                 if self.peers:
                     await self._broadcast_peer_list()
-                    active = len(self.peers)
-                    banned = len(self.banned_peers)
-                    print(f"[Red] 🔄 Mantenimiento: {active} peers activos, {banned} en espera")
+                active = len(self.peers)
+                missing = [p for p in self.permanent_peers if p not in self.peers and p != my_addr]
+                if missing:
+                    print(f"[Red] 🔄 Mantenimiento: {active} activos — offline: {', '.join(missing)}")
+                else:
+                    print(f"[Red] 🔄 Mantenimiento: {active} peers — malla completa ✓")
             except Exception as e:
                 print(f"[Red] ⚠️  Error en maintenance loop: {e}")
                 await asyncio.sleep(5)
