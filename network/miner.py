@@ -105,14 +105,36 @@ class AutoMiner:
                 await asyncio.sleep(5)
 
         need_sync = False
-        if max_peer_h > local_idx + 1:
+        if max_peer_h == 0:
+            # Ningún peer respondió HTTP — esperar más antes de minar
+            print(f"[Consenso] Peers sin respuesta — esperando 30s antes de minar solo...")
+            await asyncio.sleep(30)
+            # Reintentar una vez más
+            for peer in list(self.p2p_node.peers)[:4]:
+                try:
+                    host, port = peer.rsplit(":", 1)
+                    async with _hx.AsyncClient(timeout=5.0) as _c:
+                        r = await _c.get(f"http://{host}:{int(port)-57432}/info")
+                    peer_info = r.json()
+                    ph = peer_info.get("chain_length", 0)
+                    if ph > max_peer_h:
+                        max_peer_h = ph
+                        best_peer  = peer
+                        best_peer_hash = peer_info.get("latest_block_hash", "")
+                except Exception:
+                    pass
+            if max_peer_h == 0:
+                print(f"[Consenso] Sin respuesta tras espera — arrancando como nodo solitario ({local_idx}).")
+        if max_peer_h > local_idx:
             print(f"[Consenso] Peer {best_peer} tiene altura {max_peer_h} > local {local_idx} — sincronizando...")
             need_sync = True
-        elif max_peer_h > 0 and max_peer_h == local_idx and best_peer_hash and best_peer_hash != local_hash:
+        elif max_peer_h == local_idx and best_peer_hash and best_peer_hash != local_hash:
             print(f"[Consenso] Misma altura pero hash distinto — fork detectado, sincronizando...")
             need_sync = True
+        elif max_peer_h > 0:
+            print(f"[Consenso] Cadena local sincronizada ({local_idx}). Listo para minar.")
         else:
-            print(f"[Consenso] Cadena local es la mas alta ({local_idx}). Listo para minar.")
+            print(f"[Consenso] Nodo solitario ({local_idx}). Iniciando minero.")
 
         if need_sync:
             await self.p2p_node.request_sync()
