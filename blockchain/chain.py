@@ -95,7 +95,7 @@ class Blockchain:
             print("  -> ACEPTADA: Transacción Coinbase.")
             return True
 
-        # Bypass ZK para operaciones de governance y registro de validadores
+        # 2. Operaciones de protocolo — bypass completo (saldo + ZK)
         if tx.payload and tx.payload.get("op") in (
             "VALIDATOR_GOVERNANCE_EXIT",
             "VALIDATOR_UPDATE",
@@ -104,6 +104,7 @@ class Blockchain:
         ):
             print(f"  -> ACEPTADA: Operación de protocolo ({tx.payload.get('op')}).")
             return True
+
         # 2. Verificar timestamp anti-replay (TTL 10 minutos)
         import time as _time
         tx_ts = tx.payload.get("timestamp") if tx.payload else None
