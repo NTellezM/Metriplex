@@ -105,6 +105,8 @@ class Blockchain:
             print(f"  -> ACEPTADA: Operación de protocolo ({tx.payload.get('op')}).")
             return True
 
+
+
         # 2. Verificar timestamp anti-replay (TTL 10 minutos)
         import time as _time
         tx_ts = tx.payload.get("timestamp") if tx.payload else None
@@ -124,16 +126,35 @@ class Blockchain:
             return False
 
         # 3. Construir tx_hash reproducible
-        payload_dict = {
-            "sender_m3": tx.sender_m3,
+        # Intentar primero con payload real (relayer, nuevas TXs)
+        # Si falla ZK, reintentar con payload=None (TXs legacy)
+        payload_dict_full = {
+            "sender_m3":   tx.sender_m3,
             "receiver_m3": tx.receiver_m3,
-            "amount": tx.amount,
-            "fee": tx.fee,
-            "payload": None,
+            "amount":      tx.amount,
+            "fee":         tx.fee,
+            "payload":     tx.payload if tx.payload else None,
         }
-        tx_hash = hashlib.sha256(
-            json.dumps(payload_dict, sort_keys=True, separators=(",",":")).encode()
+        payload_dict_null = {
+            "sender_m3":   tx.sender_m3,
+            "receiver_m3": tx.receiver_m3,
+            "amount":      tx.amount,
+            "fee":         tx.fee,
+            "payload":     None,
+        }
+        tx_hash_full = hashlib.sha256(
+            json.dumps(payload_dict_full, sort_keys=True, separators=(",",":")).encode()
         ).hexdigest()
+        tx_hash_null = hashlib.sha256(
+            json.dumps(payload_dict_null, sort_keys=True, separators=(",",":")).encode()
+        ).hexdigest()
+        # Usar payload real si tiene bridge/timestamp, sino null (legacy)
+        has_payload = bool(tx.payload and (
+            tx.payload.get("bridge") or
+            tx.payload.get("burn_tx") or
+            tx.payload.get("target_eth_address")
+        ))
+        tx_hash = tx_hash_full if has_payload else tx_hash_null
 
         # 4. Verificación ZK
         sig = tx.signature_data
