@@ -94,8 +94,31 @@ class AutoMiner:
             except Exception:
                 pass
 
+        # Recolectar también el hash del peer más alto
+        best_peer_hash = None
+        for peer in list(self.p2p_node.peers)[:4]:
+            try:
+                host, port = peer.rsplit(":", 1)
+                async with _hx.AsyncClient(timeout=5.0) as _c:
+                    r = await _c.get(f"http://{host}:{int(port)-57432}/info")
+                peer_info = r.json()
+                ph = peer_info.get("chain_length", 0)
+                if ph == max_peer_h and peer == best_peer:
+                    best_peer_hash = peer_info.get("latest_block_hash", "")
+            except Exception:
+                pass
+
+        need_sync = False
         if max_peer_h > local_idx + 1:
             print(f"[Consenso] Peer {best_peer} tiene altura {max_peer_h} > local {local_idx} — sincronizando...")
+            need_sync = True
+        elif max_peer_h > 0 and max_peer_h == local_idx and best_peer_hash and best_peer_hash != local_hash:
+            print(f"[Consenso] Misma altura pero hash distinto — fork detectado, sincronizando...")
+            need_sync = True
+        else:
+            print(f"[Consenso] Cadena local es la mas alta ({local_idx}). Listo para minar.")
+
+        if need_sync:
             await self.p2p_node.request_sync()
             prev_h = local_idx
             stalled = 0
@@ -114,8 +137,6 @@ class AutoMiner:
                 else:
                     stalled = 0
                 prev_h = curr_h
-        else:
-            print(f"[Consenso] Cadena local es la mas alta ({local_idx}). Listo para minar.")
 
         print(f"[Consenso] Arranque completo. Altura: {self.blockchain.chain[-1].index}. Iniciando minero.")
         print(f"[Consenso] Sync completado. Altura: {len(self.blockchain.chain)-1}. Iniciando minero.")
