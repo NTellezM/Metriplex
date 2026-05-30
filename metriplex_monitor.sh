@@ -5,7 +5,7 @@ source /opt/Metriplex/.secrets
 BOT_TOKEN="${TELEGRAM_BOT_TOKEN}"
 CHAT_ID="1165791849"
 NODE_LOCAL="http://localhost:8000"
-MAX_BLOCK_AGE=300  # 5 minutos sin bloque = alerta
+MAX_BLOCK_AGE=600  # 10 minutos sin bloque = alerta (1 validador = ~146s promedio entre bloques)
 STATE_FILE="/tmp/metriplex_monitor_state"
 
 send_alert() {
@@ -49,8 +49,17 @@ else
     fi
 
     # ── 4. Peers ──────────────────────────────────────────────
-    PEER_LINE=$(journalctl -u metriplex.service -n 20 --no-pager 2>/dev/null | grep "Mantenimiento" | tail -1)
-    ACTIVE=$(echo "$PEER_LINE" | grep -oP '\d+ peers activos' | grep -oP '\d+')
+    # Contar peers activos via API
+    NETWORK=$(curl -sf --max-time 5 "$NODE_LOCAL/network" 2>/dev/null)
+    ACTIVE=0
+    if [ -n "$NETWORK" ]; then
+        ACTIVE=$(echo "$NETWORK" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+nodes = d.get('nodes',{})
+print(sum(1 for k,v in nodes.items() if k != 'local' and v.get('online',False)))
+" 2>/dev/null)
+    fi
     ACTIVE=${ACTIVE:-0}
     if [ "$ACTIVE" -eq 0 ]; then
         ALERTS="${ALERTS}🔴 <b>NODO AISLADO</b> — 0 peers activos\n"
