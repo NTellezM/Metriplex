@@ -50,47 +50,74 @@ class AutoMiner:
         print(
             f"[Consenso] Motor de Elección de Líder iniciado. Identidad: {my_address}"
         )
+        # ── ARRANQUE SEGURO ─────────────────────────────────────────────
+        # Regla: el nodo con más bloques es la fuente de verdad.
+        # Nunca minar si hay un peer con altura mayor.
+        # ────────────────────────────────────────────────────────────────
+        BOOTSTRAP_TIMEOUT = 300  # 5 min esperando peers
 
-        # Esperar conexión a peers antes de cualquier cosa
-        for _ in range(30):
-            await asyncio.sleep(1)
-            if self.p2p_node.peers:
-                break
+        # FASE 1 — Esperar al menos 1 peer activo
+        print("[Consenso] Esperando peers antes de iniciar minero...")
+        waited = 0
+        while not self.p2p_node.peers and waited < BOOTSTRAP_TIMEOUT:
+            await asyncio.sleep(2)
+            waited += 2
+            if waited % 30 == 0:
+                print(f"[Consenso] Sin peers tras {waited}s — reintentando bootstrap...")
+                for bp in self.p2p_node.permanent_peers:
+                    if bp not in self.p2p_node.peers:
+                        self.p2p_node.peers.add(bp)
+                asyncio.create_task(self.p2p_node.announce_to_peers())
 
-        # Verificar que nuestro último bloque coincide con el de los peers
-        if self.p2p_node.peers:
-            local_hash = self.blockchain.chain[-1].hash
-            local_idx  = self.blockchain.chain[-1].index
-            for peer in list(self.p2p_node.peers)[:2]:
-                try:
-                    host, port = peer.rsplit(":", 1)
-                    r = requests.get(f"http://{host}:{int(port)-57432}/info", timeout=3)
-                    peer_info = r.json()
-                    peer_hash = peer_info.get("latest_block_hash", "")
-                    peer_len  = peer_info.get("chain_length", 0)
-                    if peer_len > local_idx and peer_hash != local_hash:
-                        print(f"[Consenso] Chain local diverge de {peer} — resincronizando DB...")
-                        # Borrar último bloque conflictivo
-                        self.blockchain.storage.conn.execute(
-                            "DELETE FROM blocks WHERE block_index = ?", (local_idx,)
-                        )
-                        self.blockchain.storage.conn.commit()
-                        self.blockchain.chain.pop()
+        if not self.p2p_node.peers:
+            print("[Consenso] Sin peers tras 5min — arrancando como nodo solitario.")
+        else:
+            print(f"[Consenso] {len(self.p2p_node.peers)} peers encontrados.")
+
+        # FASE 2 — Consultar altura de peers y sincronizar si hay alguien mas alto
+        local_idx  = self.blockchain.chain[-1].index
+        local_hash = self.blockchain.chain[-1].hash
+        max_peer_h = 0
+        best_peer  = None
+
+        for peer in list(self.p2p_node.peers)[:4]:
+            try:
+                host, port = peer.rsplit(":", 1)
+                import httpx as _hx
+                async with _hx.AsyncClient(timeout=5.0) as _c:
+                    r = await _c.get(f"http://{host}:{int(port)-57432}/info")
+                peer_info = r.json()
+                ph = peer_info.get("chain_length", 0)
+                if ph > max_peer_h:
+                    max_peer_h = ph
+                    best_peer  = peer
+            except Exception:
+                pass
+
+        if max_peer_h > local_idx + 1:
+            print(f"[Consenso] Peer {best_peer} tiene altura {max_peer_h} > local {local_idx} — sincronizando...")
+            await self.p2p_node.request_sync()
+            prev_h = local_idx
+            stalled = 0
+            while True:
+                await asyncio.sleep(3)
+                curr_h = self.blockchain.chain[-1].index
+                if curr_h >= max_peer_h - 2:
+                    print(f"[Consenso] Sincronizado. Altura: {curr_h}")
+                    break
+                if curr_h == prev_h:
+                    stalled += 1
+                    if stalled > 20:
+                        print(f"[Consenso] Sync estancado en {curr_h} — reintentando...")
                         await self.p2p_node.request_sync()
-                        # Esperar sync
-                        for _ in range(120):
-                            await asyncio.sleep(1)
-                            if getattr(self.p2p_node, 'sync_target', 0) == 0:
-                                break
-                        break
-                except Exception:
-                    pass
-        # Espera final — no minar hasta sync completo
-        for _ in range(120):
-            await asyncio.sleep(1)
-            syncing = getattr(self.p2p_node, "sync_target", 0) > 0
-            if not syncing and len(self.blockchain.chain) > 1:
-                break
+                        stalled = 0
+                else:
+                    stalled = 0
+                prev_h = curr_h
+        else:
+            print(f"[Consenso] Cadena local es la mas alta ({local_idx}). Listo para minar.")
+
+        print(f"[Consenso] Arranque completo. Altura: {self.blockchain.chain[-1].index}. Iniciando minero.")
         print(f"[Consenso] Sync completado. Altura: {len(self.blockchain.chain)-1}. Iniciando minero.")
 
         async def _check_synced_with_peers() -> bool:
