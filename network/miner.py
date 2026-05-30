@@ -143,7 +143,7 @@ class AutoMiner:
             while True:
                 await asyncio.sleep(3)
                 curr_h = self.blockchain.chain[-1].index
-                if curr_h >= max_peer_h - 2:
+                if curr_h >= max_peer_h - 1:
                     print(f"[Consenso] Sincronizado. Altura: {curr_h}")
                     break
                 if curr_h == prev_h:
