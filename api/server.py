@@ -65,12 +65,33 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         }
 
     @app.get("/blocks")
-    async def get_blocks(skip: int = 0, limit: int = 10):
-        chain_data = [
-            block.to_dict() if hasattr(block, "to_dict") else vars(block)
-            for block in blockchain.chain
-        ]
-        return chain_data[::-1][skip : skip + limit]
+    async def get_blocks(limit: int = 10, start: int = None, skip: int = 0, asc: bool = False):
+        """Paginación real directo desde SQLite.
+        ?limit=N   — número de bloques (default 10, max 500)
+        ?start=N   — índice desde donde paginar (inclusive)
+        ?asc=true  — orden ascendente (default descendente)
+        ?skip=N    — compatibilidad legacy
+        """
+        import json as _json
+        limit = min(limit, 500)
+        desc = not asc
+        if start is None and skip > 0:
+            tip = len(blockchain.chain) - 1
+            start = tip - skip if desc else skip
+        rows = blockchain.storage.get_blocks_paginated(start=start, limit=limit, desc=desc)
+        result = []
+        for row in rows:
+            block_index, hash_, prev_hash, timestamp, tx_json = row
+            txs = _json.loads(tx_json) if tx_json else []
+            result.append({
+                "index":         block_index,
+                "timestamp":     timestamp,
+                "hash":          hash_,
+                "previous_hash": prev_hash,
+                "nonce":         0,
+                "transactions":  txs,
+            })
+        return result
 
     @app.get("/identity/{address}")
     def get_identity(address: str):
