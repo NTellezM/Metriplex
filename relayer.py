@@ -221,12 +221,16 @@ async def monitor_native_chain():
                         continue
                     payload = tx.get("payload", {}) or {}
                     eth_target = payload.get("target_eth_address", "")
-                    amount = tx.get("amount", 0)
-                    if eth_target and w3.is_address(eth_target) and amount > 0:
+                    amount_raw = tx.get("amount", 0)
+                    if eth_target and w3.is_address(eth_target) and amount_raw > 0:
+                        # Convertir de CAF_SCALE (2^30) a wei (10^18)
+                        from core.arithmetic import SCALE_FACTOR
+                        amount_wei = int(amount_raw * (10**18) // SCALE_FACTOR)
+                        amount_caf = amount_raw / SCALE_FACTOR
                         print(f"\n[!] Deposito detectado en bloque {block['index']}")
-                        print(f"    Monto:   {amount} MPX (raw)")
+                        print(f"    Monto:   {amount_caf:.4f} MPX ({amount_raw} raw → {amount_wei} wei)")
                         print(f"    Destino: {eth_target}")
-                        execute_eth_mint(eth_target, amount)
+                        execute_eth_mint(eth_target, amount_wei)
                 last_processed_block = block["index"]
 
         except requests.exceptions.ConnectionError:
