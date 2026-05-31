@@ -200,10 +200,16 @@ async def monitor_native_chain():
     ).hexdigest()
     print(f"[Relayer] Vault hash: {vault_hash[:16]}...")
     last_processed_block = -1
+    _node_failures = 0
+    _node_ok = True
     while True:
         try:
             response = requests.get(f"{wMXP_NODE_URL}/blocks?limit=100", timeout=5)
             blocks = response.json()
+            if not _node_ok:
+                print(f"[Relayer] ✓ Nodo reconectado. Reanudando monitoreo.")
+            _node_failures = 0
+            _node_ok = True
             for block in blocks:
                 if block["index"] <= last_processed_block:
                     continue
@@ -234,11 +240,17 @@ async def monitor_native_chain():
                 last_processed_block = block["index"]
 
         except requests.exceptions.ConnectionError:
-            print("[Relayer] Nodo local no disponible. Reintentando...")
+            _node_failures += 1
+            _node_ok = False
+            wait = min(5 * (2 ** min(_node_failures - 1, 5)), 300)  # backoff: 5s→10s→20s→...→300s
+            print(f"[Relayer] Nodo local no disponible (fallo #{_node_failures}). Reintentando en {wait}s...")
+            await asyncio.sleep(wait)
+            continue
         except Exception as e:
             print(f"[Error Nativo] {type(e).__name__}: {e}")
 
-        await asyncio.sleep(5)
+        if _node_ok:
+            await asyncio.sleep(5)
 
 
 def execute_eth_mint(target_address: str, amount: int):
