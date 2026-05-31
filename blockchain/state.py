@@ -42,6 +42,7 @@ class StateDB:
         amount: int,
         payload: dict = None,
         fee: int = 0,
+        block_index: int = 0,
     ) -> bool:
         receiver_hash = self._hash_tensor(receiver_m3)
         sender_hash = self._hash_tensor(sender_m3) if sender_m3 else "COINBASE"
@@ -98,16 +99,14 @@ class StateDB:
                 if valid_votes < required:
                     print(f"[State] GOVERNANCE_EXIT: votos insuficientes ({valid_votes}/{required})")
                     return False
-                # Ejecutar exit — eliminar del registry (keystore perdido, stake quemado)
-                registry = self.validator_registry
-                # Buscar por hash completo o prefijo
-                target_full = next((k for k in registry.validators if k.startswith(target)), target)
-                if target_full in registry.validators:
-                    del registry.validators[target_full]
-                    registry.slashed.add(target_full)
-                    print(f"[State] GOVERNANCE_EXIT: {target_full[:8]} expulsado con {valid_votes}/{required} votos ✓")
-                else:
-                    print(f"[State] GOVERNANCE_EXIT: {target[:8]} no encontrado en registry")
+                # Delegar ejecución al registry — único punto de escritura sobre validators
+                import math
+                target_full = next(
+                    (k for k in self.validator_registry.validators if k.startswith(target)), target
+                )
+                self.validator_registry.execute_governance_exit(
+                    target_full, valid_votes, required, block_index
+                )
                 return True
 
             vm_success = self.vm.execute(tx_id, sender_hash, payload)

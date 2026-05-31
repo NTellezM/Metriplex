@@ -117,26 +117,27 @@ class Storage:
 
     def get_blocks_paginated(self, start: int = None, limit: int = 10, desc: bool = True) -> list:
         """Paginación eficiente directo desde SQLite.
-        start: índice del bloque desde donde paginar (inclusive)
-        limit: número de bloques a retornar
-        desc:  True = más recientes primero (default), False = más antiguos primero
+        Usa conexión independiente para ser seguro en cualquier thread.
         """
         order = "DESC" if desc else "ASC"
-        if start is not None:
-            op = "<=" if desc else ">="
-            rows = self._conn().execute(
-                f"SELECT block_index, hash, previous_hash, timestamp, transactions "
-                f"FROM blocks WHERE block_index {op} ? ORDER BY block_index {order} LIMIT ?",
-                (start, limit)
-            ).fetchall()
-        else:
-            rows = self._conn().execute(
-                f"SELECT block_index, hash, previous_hash, timestamp, transactions "
-                f"FROM blocks ORDER BY block_index {order} LIMIT ?",
-                (limit,)
-            ).fetchall()
-        return rows
-
+        conn = sqlite3.connect(self.db_path, timeout=10.0)
+        try:
+            if start is not None:
+                op = "<=" if desc else ">="
+                rows = conn.execute(
+                    f"SELECT block_index, hash, previous_hash, timestamp, transactions "
+                    f"FROM blocks WHERE block_index {op} ? ORDER BY block_index {order} LIMIT ?",
+                    (start, limit)
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    f"SELECT block_index, hash, previous_hash, timestamp, transactions "
+                    f"FROM blocks ORDER BY block_index {order} LIMIT ?",
+                    (limit,)
+                ).fetchall()
+            return rows
+        finally:
+            conn.close()
     def get_all_blocks(self) -> list:
         return self._conn().execute(
             "SELECT block_index, hash, previous_hash, timestamp, transactions "

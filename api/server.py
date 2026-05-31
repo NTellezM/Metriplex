@@ -78,7 +78,10 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         if start is None and skip > 0:
             tip = len(blockchain.chain) - 1
             start = tip - skip if desc else skip
-        rows = blockchain.storage.get_blocks_paginated(start=start, limit=limit, desc=desc)
+        try:
+            rows = blockchain.storage.get_blocks_paginated(start=start, limit=limit, desc=desc)
+        except Exception as _e:
+            raise HTTPException(status_code=503, detail=f"Storage temporalmente no disponible: {_e}")
         result = []
         for row in rows:
             block_index, hash_, prev_hash, timestamp, tx_json = row

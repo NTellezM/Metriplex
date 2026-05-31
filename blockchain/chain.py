@@ -225,7 +225,7 @@ class Blockchain:
         # Aplicar estado
         for tx in block.transactions:
             self.state_db.apply_transaction(
-                tx.tx_id, tx.sender_m3, tx.receiver_m3, tx.amount, tx.payload, tx.fee
+                tx.tx_id, tx.sender_m3, tx.receiver_m3, tx.amount, tx.payload, tx.fee, block.index
             )
 
         for tx in block.transactions:
