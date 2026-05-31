@@ -88,7 +88,8 @@ class StateDB:
                 valid_votes = 0
                 seen = set()
                 for vote in votes:
-                    voter = vote.get("m3_hash")
+                    # Acepta tanto strings como dicts {"m3_hash": "..."}
+                    voter = vote if isinstance(vote, str) else vote.get("m3_hash")
                     if not voter or voter in seen:
                         continue
                     if voter in active_hashes:

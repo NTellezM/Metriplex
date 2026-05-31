@@ -22,7 +22,8 @@ VALIDATOR_STAKE_REQUIRED = 100 * 1073741824  # 100 MPX en CAF scale
 VALIDATOR_REGISTER_OP    = "VALIDATOR_REGISTER"
 VALIDATOR_EXIT_OP        = "VALIDATOR_EXIT"
 VALIDATOR_SLASH_OP       = "VALIDATOR_SLASH"
-VALIDATOR_UPDATE_OP      = "VALIDATOR_UPDATE"
+VALIDATOR_UPDATE_OP          = "VALIDATOR_UPDATE"
+VALIDATOR_GOVERNANCE_EXIT_OP = "VALIDATOR_GOVERNANCE_EXIT"
 
 
 def _hash_m3(m3: list) -> str:
@@ -63,6 +64,8 @@ class ValidatorRegistry:
             self._slash(payload.get("target_m3_hash"), block_index)
         elif op == VALIDATOR_UPDATE_OP:
             self._update_lambda(tx, block_index)
+        elif op == VALIDATOR_GOVERNANCE_EXIT_OP:
+            self._governance_exit(tx, block_index)
 
     def _register(self, tx, block_index: int):
         m3 = tx.sender_m3
@@ -141,6 +144,38 @@ class ValidatorRegistry:
             print(f"[FVR] lambda actualizado: {m3_hash[:8]} lambda={lv:.6f} bloque={block_index}")
         except Exception as e:
             print(f"[FVR] UPDATE error: {e}")
+
+    def _governance_exit(self, tx, block_index: int):
+        """Expulsión de validador por supermayoría 2/3 sin necesitar su keystore.
+        
+        payload = {
+            "op": "VALIDATOR_GOVERNANCE_EXIT",
+            "target_m3_hash": "ee481176...",
+            "votes": ["bdb8c1f4...", "3542268a..."]  # hashes de validadores que aprueban
+        }
+        Regla: len(votes ∩ FVR_activo) >= ceil(2/3 * |FVR_activo|)
+        """
+        import math
+        payload = tx.payload if hasattr(tx, "payload") else {}
+        if not payload:
+            return
+        target_hash = payload.get("target_m3_hash", "")
+        votes       = payload.get("votes", [])
+        if not target_hash:
+            print(f"[FVR] GOVERNANCE_EXIT rechazado: sin target_m3_hash.")
+            return
+        if target_hash not in self.validators:
+            print(f"[FVR] GOVERNANCE_EXIT rechazado: {target_hash[:8]} no está en el FVR.")
+            return
+        # Validadores activos excluyendo el objetivo
+        active = [h for h in self.validators if h != target_hash]
+        threshold = math.ceil(2 / 3 * len(active))
+        valid_votes = [v for v in votes if v in active]
+        if len(valid_votes) < threshold:
+            print(f"[FVR] GOVERNANCE_EXIT rechazado: {len(valid_votes)}/{threshold} votos válidos para {target_hash[:8]}.")
+            return
+        del self.validators[target_hash]
+        print(f"[FVR] ✅ GOVERNANCE_EXIT ejecutado: {target_hash[:8]} expulsado en bloque {block_index} ({len(valid_votes)}/{threshold} votos).")
 
     def _exit(self, tx, block_index: int):
         m3_hash = _hash_m3(tx.sender_m3) if tx.sender_m3 else None
