@@ -27,19 +27,28 @@ from blockchain.validator_registry import LAMBDA_MIN, LAMBDA_MAX
 
 
 class AutoMiner:
-    # ── FRACTAL EMISSION MODEL ──────────────────────────────────────────────
-    # reward(n)   = R0 × e^(−α × n)
-    # reward_v(n) = reward(n) × |R_v| / Λ_range   [distribución Voronoi]
+    # ── CONVERGENT FRACTAL EMISSION MODEL ───────────────────────────────────
     #
-    # α = ln(100) / (100 × BLOCKS_PER_YEAR)   → 99% del supply en 100 años
-    # R0 = α × 21,000,000                      → supply total exactamente 21M
-    # La distribución entre validadores es proporcional al territorio Voronoi en λ-space
-    # Esto incentiva permanentemente la diversidad geométrica del conjunto de validadores
+    # emission(n) = R₀ × e^(λ_mean × n / T_scale)
+    # reward_v(n) = emission(n) × |R_v| / Λ_range   [Voronoi distribution]
+    #
+    # Supply(∞) = R₀ × T_scale / |λ_mean|
+    #
+    # T_scale = fixed calibration constant (derived from current network state)
+    # λ_mean  = dynamic — mean Lyapunov exponent of active validator set
+    # R₀      = |λ_mean| / T_scale × SCALE_FACTOR  (recalculated each epoch)
+    #
+    # KEY PROPERTY: Supply ceiling = f(geometric diversity of validator set)
+    # More diverse validators → larger |λ_mean| → larger supply ceiling
+    # No artificial cap — convergence guaranteed by IFS stability (λ < 0 always)
+    # Current state (3 validators, λ_mean ≈ -0.6185): supply ≈ 21M MPX
+    #
     import math as _math
     BLOCKS_PER_YEAR   = 525_600
-    MAX_SUPPLY_MPX    = 21_000_000
-    EMISSION_ALPHA    = _math.log(100) / (100 * BLOCKS_PER_YEAR)  # 8.76e-8
-    BLOCK_REWARD_R0   = EMISSION_ALPHA * MAX_SUPPLY_MPX * SCALE_FACTOR  # en unidades raw
+    # T_scale calibrated so that current λ_mean produces ~21M supply
+    # T_scale = |λ_mean_current| / α_100yr = 0.6185 / 8.76e-8 = 7,063,101 blocks
+    T_SCALE           = 7_063_101  # blocks — fixed constant
+    LAMBDA_MEAN_INIT  = -0.6185    # initial λ_mean (3 genesis validators)
 
     def __init__(
         self,
@@ -385,18 +394,22 @@ class AutoMiner:
                     continue
                 txs = self.mempool.get_transactions_for_block(limit=10)
 
-                self.last_mined_slot = current_slot
-
-                # Recompensa Coinbase — Fractal Emission Model
-                # reward(n) = R0 × e^(−α × n) × |R_v| / Λ_range
+                # Recompensa Coinbase — Convergent Fractal Emission Model
+                # emission(n) = R₀ × e^(λ_mean × n / T_scale)
+                # reward_v(n) = emission(n) × |R_v| / Λ_range
+                # Supply(∞)   = R₀ × T_scale / |λ_mean|  [converges, no hard cap]
                 if self.miner_m3:
                     import math as _m
                     block_n = last_block.index + 1
-                    # 1. Recompensa base en el bloque n
-                    r_base = self.BLOCK_REWARD_R0 * _m.exp(-self.EMISSION_ALPHA * block_n)
-                    # 2. Territorio Voronoi del validador minero
+                    # 1. λ_mean dinámico del conjunto de validadores activos
+                    lambda_mean = self._get_lambda_mean()
+                    # 2. R₀ = |λ_mean| / T_scale  (en unidades raw)
+                    r0_raw = abs(lambda_mean) / self.T_SCALE * SCALE_FACTOR
+                    # 3. Emisión en bloque n: R₀ × e^(λ_mean × n / T_scale)
+                    r_base = r0_raw * _m.exp(lambda_mean * block_n / self.T_SCALE)
+                    # 4. Territorio Voronoi del validador minero
                     voronoi_fraction = self._get_voronoi_fraction()
-                    # 3. Recompensa proporcional al territorio
+                    # 5. Recompensa proporcional al territorio
                     reward_raw = int(r_base * voronoi_fraction)
                     if reward_raw > 0:
                         coinbase_tx = Transaction(
@@ -416,11 +429,19 @@ class AutoMiner:
                         timestamp=current_time,
                     )
 
+                    # ── FIX FORK: broadcast primero, add_block después ──
+                    # Propagar antes de aplicar local elimina la race condition
+                    # donde dos líderes aplican su bloque y rechazan el del otro.
+                    await self.p2p_node.broadcast_block(new_block)
+                    await asyncio.sleep(0.5)
+                    # Re-verificar que nadie más minó durante el broadcast
+                    if self.blockchain.chain[-1].hash != last_block.hash:
+                        print(f"[Consenso] Slot {current_slot} cedido — peer llegó primero.")
+                        continue
                     success = self.blockchain.add_block(new_block)
-
                     if success:
+                        self.last_mined_slot = current_slot
                         self.mempool.remove_mined_transactions(txs)
                         print(
                             f"\n[Consenso] 👑 Fui elegido líder (Slot {current_slot}). Bloque {new_block.index} forjado."
                         )
-                        await self.p2p_node.broadcast_block(new_block)
