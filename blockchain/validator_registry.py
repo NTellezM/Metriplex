@@ -146,14 +146,8 @@ class ValidatorRegistry:
             print(f"[FVR] UPDATE error: {e}")
 
     def _governance_exit(self, tx, block_index: int):
-        """Expulsión de validador por supermayoría 2/3 sin necesitar su keystore.
-        
-        payload = {
-            "op": "VALIDATOR_GOVERNANCE_EXIT",
-            "target_m3_hash": "ee481176...",
-            "votes": ["bdb8c1f4...", "3542268a..."]  # hashes de validadores que aprueban
-        }
-        Regla: len(votes ∩ FVR_activo) >= ceil(2/3 * |FVR_activo|)
+        """Procesa TX GOVERNANCE_EXIT — verifica votos y delega a execute_governance_exit.
+        state.py ya ejecutó si llegó primero — en ese caso el target ya no está en validators.
         """
         import math
         payload = tx.payload if hasattr(tx, "payload") else {}
@@ -165,19 +159,32 @@ class ValidatorRegistry:
             print(f"[FVR] GOVERNANCE_EXIT rechazado: sin target_m3_hash.")
             return
         if target_hash not in self.validators:
-            # Ya fue removido por state.py — confirmar silenciosamente
-            print(f"[FVR] GOVERNANCE_EXIT: {target_hash[:8]} ya fue removido (state.py).")
-            return
+            # state.py ya ejecutó — confirmar silenciosamente
+            print(f"[FVR] GOVERNANCE_EXIT: {target_hash[:8]} ya procesado por state.py.")
             return
         # Validadores activos excluyendo el objetivo
         active = [h for h in self.validators if h != target_hash]
         threshold = math.ceil(2 / 3 * len(active))
-        valid_votes = [v for v in votes if v in active]
+        valid_votes = [v for v in votes if isinstance(v, str) and v in active]
         if len(valid_votes) < threshold:
-            print(f"[FVR] GOVERNANCE_EXIT rechazado: {len(valid_votes)}/{threshold} votos válidos para {target_hash[:8]}.")
+            print(f"[FVR] GOVERNANCE_EXIT rechazado: {len(valid_votes)}/{threshold} votos para {target_hash[:8]}.")
+            return
+        self.execute_governance_exit(target_hash, len(valid_votes), threshold, block_index)
+
+    def execute_governance_exit(self, target_hash: str, valid_votes: int, threshold: int, block_index: int):
+        """Único punto de escritura para expulsión de validador.
+        Llamado por _governance_exit (registry) y state.py (delegación).
+        Idempotente — si el target ya no está, no hace nada.
+        """
+        if target_hash not in self.validators:
+            print(f"[FVR] GOVERNANCE_EXIT: {target_hash[:8]} ya no está en FVR — idempotente.")
             return
         del self.validators[target_hash]
-        print(f"[FVR] ✅ GOVERNANCE_EXIT ejecutado: {target_hash[:8]} expulsado en bloque {block_index} ({len(valid_votes)}/{threshold} votos).")
+        self.slashed.add(target_hash)
+        if block_index > 0:
+            print(f"[FVR] ✅ GOVERNANCE_EXIT ejecutado: {target_hash[:8]} expulsado en bloque {block_index} ({valid_votes}/{threshold} votos).")
+        else:
+            print(f"[FVR] ✅ GOVERNANCE_EXIT ejecutado: {target_hash[:8]} expulsado ({valid_votes}/{threshold} votos).")
 
     def _exit(self, tx, block_index: int):
         m3_hash = _hash_m3(tx.sender_m3) if tx.sender_m3 else None
