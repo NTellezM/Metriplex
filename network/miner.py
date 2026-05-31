@@ -65,6 +65,30 @@ class AutoMiner:
         self.last_mined_slot = 0
         self.miner_m3 = miner_m3  # None = sin recompensa automática
 
+    def _get_lambda_mean(self) -> float:
+        """Calcula el λ_mean dinámico del conjunto de validadores activos.
+        
+        Returns:
+            float: media de los Lyapunov invariants del set activo
+        """
+        try:
+            registry = self.blockchain.state_db.validator_registry
+            validators_dict = registry.validators if registry else {}
+            excluded = getattr(registry, 'EXCLUDED_VALIDATORS', set())
+            lambdas = [
+                v['lambda_value']
+                for m3h, v in validators_dict.items()
+                if v.get('lambda_value') is not None
+                and v.get('active', True)
+                and m3h not in excluded
+            ]
+            if not lambdas:
+                return self.LAMBDA_MEAN_INIT
+            return sum(lambdas) / len(lambdas)
+        except Exception as e:
+            print(f"[λ_mean] Error: {e}")
+            return self.LAMBDA_MEAN_INIT
+
     def _get_voronoi_fraction(self) -> float:
         """Calcula la fracción del territorio Voronoi del minero en el eje λ.
         
