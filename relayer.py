@@ -48,6 +48,14 @@ def _init_relayer_db():
         'CREATE TABLE IF NOT EXISTS processed_burns '
         '(burn_tx_hash TEXT PRIMARY KEY, processed_at INTEGER)'
     )
+    conn.execute(
+        'CREATE TABLE IF NOT EXISTS processed_mints '
+        '(native_tx_id TEXT PRIMARY KEY, processed_at INTEGER)'
+    )
+    conn.execute(
+        'CREATE TABLE IF NOT EXISTS relayer_state '
+        '(key TEXT PRIMARY KEY, value TEXT)'
+    )
     conn.commit()
     conn.close()
     print(f'[Relayer] Estado de dedup cargado: {_RELAYER_STATE_DB}')
@@ -69,6 +77,42 @@ def _mark_processed(burn_tx_hash: str):
     )
     conn.commit()
     conn.close()
+
+def _is_mint_processed(native_tx_id: str) -> bool:
+    conn = _sqlite3.connect(_RELAYER_STATE_DB)
+    row = conn.execute(
+        'SELECT 1 FROM processed_mints WHERE native_tx_id=?', (native_tx_id,)
+    ).fetchone()
+    conn.close()
+    return row is not None
+
+def _mark_mint_processed(native_tx_id: str):
+    import time as _time
+    conn = _sqlite3.connect(_RELAYER_STATE_DB)
+    conn.execute(
+        'INSERT OR IGNORE INTO processed_mints(native_tx_id, processed_at) VALUES(?,?)',
+        (native_tx_id, int(_time.time()))
+    )
+    conn.commit()
+    conn.close()
+
+def _save_last_block(block_index: int):
+    conn = _sqlite3.connect(_RELAYER_STATE_DB)
+    conn.execute(
+        'INSERT OR REPLACE INTO relayer_state(key, value) VALUES(?,?)',
+        ('last_processed_block', str(block_index))
+    )
+    conn.commit()
+    conn.close()
+
+def _load_last_block() -> int:
+    conn = _sqlite3.connect(_RELAYER_STATE_DB)
+    row = conn.execute(
+        'SELECT value FROM relayer_state WHERE key=?', ('last_processed_block',)
+    ).fetchone()
+    conn.close()
+    return int(row[0]) if row else -1
+
 # ─────────────────────────────────────────────────────────────────────────────
 from web3 import Web3
 
@@ -199,7 +243,7 @@ async def monitor_native_chain():
         json.dumps(VAULT_MPX_ADDRESS, sort_keys=True, separators=(',',':')).encode()
     ).hexdigest()
     print(f"[Relayer] Vault hash: {vault_hash[:16]}...")
-    last_processed_block = -1
+    last_processed_block = _load_last_block()
     _node_failures = 0
     _node_ok = True
     while True:
@@ -233,11 +277,18 @@ async def monitor_native_chain():
                         from core.arithmetic import SCALE_FACTOR
                         amount_wei = int(amount_raw * (10**18) // SCALE_FACTOR)
                         amount_caf = amount_raw / SCALE_FACTOR
+                        native_tx_id = tx.get("tx_id", "")
+                        if _is_mint_processed(native_tx_id):
+                            print(f"[Relayer] Dedup FLUJO 1: TX ya minteada {native_tx_id[:16]}...")
+                            continue
                         print(f"\n[!] Deposito detectado en bloque {block['index']}")
+                        print(f"    TX nativa:  {native_tx_id[:16]}...")
                         print(f"    Monto:   {amount_caf:.4f} MPX ({amount_raw} raw → {amount_wei} wei)")
                         print(f"    Destino: {eth_target}")
                         execute_eth_mint(eth_target, amount_wei)
+                        _mark_mint_processed(native_tx_id)
                 last_processed_block = block["index"]
+                _save_last_block(last_processed_block)
 
         except requests.exceptions.ConnectionError:
             _node_failures += 1
