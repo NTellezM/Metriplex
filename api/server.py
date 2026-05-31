@@ -198,7 +198,15 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
                     detail="Transacción inválida o rechazada por el modelo matemático.",
                 )
 
+        except HTTPException:
+            raise  # re-lanzar 400 ya formateados
+        except (ValueError, KeyError, TypeError, AssertionError) as e:
+            # Errores de validación — TX malformada o parámetros inválidos
+            raise HTTPException(status_code=400, detail=str(e))
         except Exception as e:
+            # Error interno genuino — loguear y devolver 500
+            import traceback
+            print(f"[API] Error interno en /transaction: {traceback.format_exc()}")
             raise HTTPException(status_code=500, detail=str(e))
 
     @app.post("/faucet")
