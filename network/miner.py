@@ -27,8 +27,19 @@ from blockchain.validator_registry import LAMBDA_MIN, LAMBDA_MAX
 
 
 class AutoMiner:
-    BLOCK_REWARD = 50 * SCALE_FACTOR  # Recompensa inicial por bloque
-    HALVING_INTERVAL = 210_000          # Bloques entre cada halving (como Bitcoin)
+    # ── FRACTAL EMISSION MODEL ──────────────────────────────────────────────
+    # reward(n)   = R0 × e^(−α × n)
+    # reward_v(n) = reward(n) × |R_v| / Λ_range   [distribución Voronoi]
+    #
+    # α = ln(100) / (100 × BLOCKS_PER_YEAR)   → 99% del supply en 100 años
+    # R0 = α × 21,000,000                      → supply total exactamente 21M
+    # La distribución entre validadores es proporcional al territorio Voronoi en λ-space
+    # Esto incentiva permanentemente la diversidad geométrica del conjunto de validadores
+    import math as _math
+    BLOCKS_PER_YEAR   = 525_600
+    MAX_SUPPLY_MPX    = 21_000_000
+    EMISSION_ALPHA    = _math.log(100) / (100 * BLOCKS_PER_YEAR)  # 8.76e-8
+    BLOCK_REWARD_R0   = EMISSION_ALPHA * MAX_SUPPLY_MPX * SCALE_FACTOR  # en unidades raw
 
     def __init__(
         self,
@@ -44,6 +55,62 @@ class AutoMiner:
         self.block_time_seconds = block_time_seconds
         self.last_mined_slot = 0
         self.miner_m3 = miner_m3  # None = sin recompensa automática
+
+    def _get_voronoi_fraction(self) -> float:
+        """Calcula la fracción del territorio Voronoi del minero en el eje λ.
+        
+        Fractal Emission Model: la recompensa es proporcional al territorio
+        Voronoi que ocupa el validador en el espacio λ de Lyapunov.
+        Esto incentiva la diversidad geométrica del conjunto de validadores.
+        
+        Returns:
+            float: fracción en [0,1] del rango [λ_min, λ_max]
+        """
+        import math
+        try:
+            # Obtener validadores activos del FVR
+            registry = self.blockchain.state_db.validator_registry
+            validators_dict = registry.validators if registry else {}
+            active = [
+                (v['lambda_value'], m3h)
+                for m3h, v in validators_dict.items()
+                if v.get('lambda_value') is not None
+                and v.get('active', True)
+                and m3h not in getattr(registry, 'EXCLUDED_VALIDATORS', set())
+            ]
+            
+            if not active:
+                return 1.0  # único validador → todo el territorio
+            
+            # Lambda del minero actual
+            my_lambda = None
+            if self.miner_m3:
+                import hashlib, json
+                my_hash = hashlib.sha256(
+                    json.dumps(self.miner_m3, sort_keys=True, separators=(',',':')).encode()
+                ).hexdigest()
+                for lam, m3h in active:
+                    if m3h.startswith(my_hash[:8]) or my_hash.startswith(m3h[:8]):
+                        my_lambda = lam
+                        break
+            
+            if my_lambda is None:
+                # Fallback: distribución uniforme
+                return 1.0 / max(len(active), 1)
+            
+            # Calcular territorio Voronoi
+            lambdas = sorted(set(lam for lam, _ in active))
+            my_idx = lambdas.index(my_lambda)
+            
+            left  = LAMBDA_MIN if my_idx == 0 else (lambdas[my_idx-1] + my_lambda) / 2
+            right = LAMBDA_MAX if my_idx == len(lambdas)-1 else (my_lambda + lambdas[my_idx+1]) / 2
+            
+            fraction = (right - left) / (LAMBDA_MAX - LAMBDA_MIN)
+            return max(0.0, min(1.0, fraction))
+            
+        except Exception as e:
+            print(f"[Voronoi] Error calculando territorio: {e}")
+            return 1.0 / 3  # fallback conservador
 
     async def start(self):
         my_address = f"127.0.0.1:{self.p2p_node.port}"
@@ -320,15 +387,25 @@ class AutoMiner:
 
                 self.last_mined_slot = current_slot
 
-                # Recompensa Coinbase para el minero (si tiene billetera configurada)
+                # Recompensa Coinbase — Fractal Emission Model
+                # reward(n) = R0 × e^(−α × n) × |R_v| / Λ_range
                 if self.miner_m3:
-                    coinbase_tx = Transaction(
-                        sender_m3=[],
-                        receiver_m3=self.miner_m3,
-                        amount=self.BLOCK_REWARD,
-                        signature_data={"type": "COINBASE"},
-                    )
-                    txs = [coinbase_tx] + list(txs)
+                    import math as _m
+                    block_n = last_block.index + 1
+                    # 1. Recompensa base en el bloque n
+                    r_base = self.BLOCK_REWARD_R0 * _m.exp(-self.EMISSION_ALPHA * block_n)
+                    # 2. Territorio Voronoi del validador minero
+                    voronoi_fraction = self._get_voronoi_fraction()
+                    # 3. Recompensa proporcional al territorio
+                    reward_raw = int(r_base * voronoi_fraction)
+                    if reward_raw > 0:
+                        coinbase_tx = Transaction(
+                            sender_m3=[],
+                            receiver_m3=self.miner_m3,
+                            amount=reward_raw,
+                            signature_data={"type": "COINBASE"},
+                        )
+                        txs = [coinbase_tx] + list(txs)
 
                 if txs:
 
