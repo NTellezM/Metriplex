@@ -5,7 +5,14 @@ source /opt/Metriplex/.secrets
 BOT_TOKEN="${TELEGRAM_BOT_TOKEN}"
 CHAT_ID="1165791849"
 NODE_LOCAL="http://localhost:8000"
-MAX_BLOCK_AGE=600  # 10 minutos sin bloque = alerta (1 validador = ~146s promedio entre bloques)
+# MAX_BLOCK_AGE dinámico — función del número de validadores activos
+# Con N validadores y block_time=10s, el líder mina ~1 de cada N slots
+# threshold = 10s × N × 15  (buffer ×15 para tolerancia de red)
+# Mínimo 120s, máximo 600s
+_N_VALIDATORS=$(curl -sf --max-time 3 "$NODE_LOCAL/validators" 2>/dev/null | \
+    python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('count',3))" 2>/dev/null)
+_N_VALIDATORS=${_N_VALIDATORS:-3}
+MAX_BLOCK_AGE=$(python3 -c "n=int('${_N_VALIDATORS}'); t=10*n*15; print(max(120,min(t,600)))")
 STATE_FILE="/tmp/metriplex_monitor_state"
 
 send_alert() {
