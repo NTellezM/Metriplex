@@ -165,7 +165,9 @@ class ValidatorRegistry:
             print(f"[FVR] GOVERNANCE_EXIT rechazado: sin target_m3_hash.")
             return
         if target_hash not in self.validators:
-            print(f"[FVR] GOVERNANCE_EXIT rechazado: {target_hash[:8]} no está en el FVR.")
+            # Ya fue removido por state.py — confirmar silenciosamente
+            print(f"[FVR] GOVERNANCE_EXIT: {target_hash[:8]} ya fue removido (state.py).")
+            return
             return
         # Validadores activos excluyendo el objetivo
         active = [h for h in self.validators if h != target_hash]
