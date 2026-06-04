@@ -160,6 +160,14 @@ async def main():
     )
 
     # Agregar TODOS los bootstrap peers — malla completa
+    # Conectar callback — cuando un validador cambia de IP,
+    # eliminar el peer viejo del P2P para evitar entradas fantasma en /network
+    def _on_endpoint_change(old_ep, new_ep):
+        if old_ep in p2p_node.peers:
+            p2p_node.peers.discard(old_ep)
+            print(f"[P2P] Peer fantasma eliminado: {old_ep} → {new_ep}")
+    blockchain.validator_registry.on_endpoint_change = _on_endpoint_change
+
     all_peers = getattr(args, 'all_peers', [args.peer] if args.peer else [])
     for bp in all_peers:
         if bp:
