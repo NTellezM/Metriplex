@@ -42,6 +42,9 @@ class ValidatorRegistry:
         self.validators: dict[str, dict] = {}
         # m3_hash → {m3, endpoint, stake, registered_at, slashed}
         self.slashed: set[str] = set()
+        # Callback opcional — llamado cuando un endpoint cambia
+        # Firma: on_endpoint_change(old_endpoint, new_endpoint)
+        self.on_endpoint_change = None
 
     # ── Procesamiento de TXs ───────────────────────────────────────────────
 
@@ -139,8 +142,14 @@ class ValidatorRegistry:
             # Actualizar endpoint si viene en el payload
             new_endpoint = tx.payload.get("endpoint")
             if new_endpoint:
+                old_endpoint = self.validators[m3_hash].get("endpoint")
                 self.validators[m3_hash]["endpoint"] = new_endpoint
-                print(f"[FVR] endpoint actualizado: {m3_hash[:8]} endpoint={new_endpoint}")
+                if old_endpoint and old_endpoint != new_endpoint:
+                    print(f"[FVR] endpoint actualizado: {m3_hash[:8]} {old_endpoint} → {new_endpoint}")
+                    if self.on_endpoint_change:
+                        self.on_endpoint_change(old_endpoint, new_endpoint)
+                else:
+                    print(f"[FVR] Endpoint ya actualizado: {new_endpoint}")
             print(f"[FVR] lambda actualizado: {m3_hash[:8]} lambda={lv:.6f} bloque={block_index}")
         except Exception as e:
             print(f"[FVR] UPDATE error: {e}")
