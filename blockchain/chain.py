@@ -262,19 +262,19 @@ class Blockchain:
         if len(new_blocks_list) == len(self.chain):
             local_last = self.chain[-1].hash
             remote_last = new_blocks_list[-1].hash
-            if local_last <= remote_last:
-                return False  # Local gana o empata — no reemplazar
+            if local_last == remote_last:
+                return False  # Misma cadena
+            if local_last < remote_last:
+                return False  # Local gana hash menor
             # Remote gana el desempate — continuar con el reemplazo
 
         # Límite de profundidad de reorganización
         MAX_REORG_DEPTH = 200
-        diverge_at = 0
+        diverge_at = min(len(self.chain), len(new_blocks_list))
         for i in range(min(len(self.chain), len(new_blocks_list))):
             if self.chain[i].hash != new_blocks_list[i].hash:
                 diverge_at = i
                 break
-        else:
-            diverge_at = min(len(self.chain), len(new_blocks_list))
         reorg_depth = len(self.chain) - diverge_at
         if reorg_depth > MAX_REORG_DEPTH:
             print(f"[Consenso] ⛔ Reorg rechazado: profundidad {reorg_depth} > MAX {MAX_REORG_DEPTH}")
