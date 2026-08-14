@@ -358,9 +358,13 @@ class AutoMiner:
             last_block = self.blockchain.chain[-1]
             if fvr_validators:
                 EPOCH_SLOTS = 100
+                # Usar el epoch ANTERIOR — garantiza que el anchor
+                # ya esté finalizado y sea idéntico en todos los nodos
+                current_epoch = current_slot // EPOCH_SLOTS
+                safe_epoch = max(0, current_epoch - 1) * EPOCH_SLOTS
                 anchor_block = self.blockchain.chain[0]
                 for blk in reversed(self.blockchain.chain):
-                    if blk.index <= (current_slot // EPOCH_SLOTS) * EPOCH_SLOTS:
+                    if blk.index <= safe_epoch:
                         anchor_block = blk
                         break
                 # Lyapunov Consensus
