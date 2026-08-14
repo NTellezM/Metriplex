@@ -389,6 +389,12 @@ class CAFNode:
                     )
                     new_block.hash = b_data["hash"]
 
+                    # Filtro de solapamiento: ignorar bloques ya procesados
+                    local_tip = self.blockchain.chain[-1]
+                    if new_block.index <= local_tip.index:
+                        existing = self.blockchain.chain[new_block.index] if new_block.index < len(self.blockchain.chain) else None
+                        if existing and existing.hash == new_block.hash:
+                            continue
                     # Intentar inyectar en la base de datos local
                     if self.blockchain.add_block(new_block, skip_zk=True):
                         added_count += 1
