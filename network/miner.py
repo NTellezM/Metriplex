@@ -304,26 +304,13 @@ class AutoMiner:
             # Verificar hash — si mi hash no coincide con el de peers en mi altura → fork
             for peer, (ph, hh) in peer_hashes.items():
                 if ph == local_h and hh and local_hash and hh != local_hash:
-                    print(f"[Consenso] Hash mismatch con {peer}: local={local_hash[:8]} peer={hh[:8]} — intentando restore desde backup")
-                    # Intentar restore desde backup más reciente
-                    import glob, shutil, os
-                    db_path  = self.blockchain.storage.db_path
-                    backup_dir = os.path.join(os.path.dirname(db_path), 'backups')
-                    backups  = sorted(glob.glob(os.path.join(backup_dir, '*.db')), reverse=True)
-                    restored = False
-                    for backup in backups[:3]:  # intentar los 3 más recientes
-                        try:
-                            count = int(__import__('sqlite3').connect(backup).execute(
-                                "SELECT count(*) FROM blocks").fetchone()[0])
-                            if count >= max_peer_h - 10:
-                                shutil.copy2(backup, db_path)
-                                print(f"[Consenso] Restore desde {os.path.basename(backup)} ({count} bloques)")
-                                restored = True
-                                break
-                        except:
-                            continue
-                    if not restored:
-                        print(f"[Consenso] No se encontró backup válido — esperando replace_chain por p2p")
+                    # Fork detectado — NO restaurar desde backup (puede revertir demasiado)
+                    # El mecanismo replace_chain (p2p) resuelve el fork automáticamente
+                    # con la regla de desempate < (commit 26b2a7f)
+                    # Solo pausar el minado para dar tiempo al replace_chain
+                    print(f"[Consenso] Fork detectado con {peer}: "
+                          f"local={local_hash[:8]} peer={hh[:8]} — "
+                          f"pausando minado, esperando replace_chain p2p")
                     return False
 
             return True
@@ -408,8 +395,12 @@ class AutoMiner:
 
             # 4b. Forjado de Bloque (Solo si este nodo ganó la lotería del slot)
             if is_leader:
-                # Ventana de agregación — esperar que lleguen bloques de otros nodos
-                await asyncio.sleep(3)
+                # Ventana de agregación con jitter determinista por validador
+                # Si dos nodos creen ser líderes del mismo slot, esperan tiempos
+                # distintos → el segundo detecta el bloque del primero y cede
+                _jitter_base = int(my_m3_hash[:8], 16) if my_m3_hash else 0
+                _jitter = (_jitter_base % 2000) / 1000.0  # 0.0–2.0s único por validador
+                await asyncio.sleep(2.0 + _jitter)  # 2.0–4.0s total
                 # Si otro nodo ya minó este slot durante la espera, ceder
                 current_tip = self.blockchain.chain[-1]
                 if (current_slot == self.last_mined_slot
@@ -459,8 +450,11 @@ class AutoMiner:
                     await self.p2p_node.broadcast_block(new_block)
                     await asyncio.sleep(0.5)
                     # Re-verificar que nadie más minó durante el broadcast
-                    if self.blockchain.chain[-1].hash != last_block.hash:
-                        print(f"[Consenso] Slot {current_slot} cedido — peer llegó primero.")
+                    tip_now = self.blockchain.chain[-1]
+                    if (tip_now.hash != last_block.hash
+                            or tip_now.index != last_block.index):
+                        print(f"[Consenso] Slot {current_slot} cedido — peer llegó primero "
+                              f"(tip: {tip_now.index} vs expected: {last_block.index})")
                         continue
                     success = self.blockchain.add_block(new_block)
                     if success:
