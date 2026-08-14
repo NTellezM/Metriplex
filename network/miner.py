@@ -118,7 +118,6 @@ class AutoMiner:
             # Lambda del minero actual
             my_lambda = None
             if self.miner_m3:
-                import hashlib, json
                 my_hash = hashlib.sha256(
                     json.dumps(self.miner_m3, sort_keys=True, separators=(',',':')).encode()
                 ).hexdigest()
@@ -325,6 +324,10 @@ class AutoMiner:
             # Esperar sincronización completa antes de minar
             # Sin peers: solo bloquear si no somos validador FVR registrado
             if not self.p2p_node.peers:
+                leader_m3_hash = "NO_LEADER"
+                my_m3_hash = None
+                if getattr(self, "miner_m3", None):
+                    my_m3_hash = hashlib.sha256(json.dumps(self.miner_m3, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
                 registry = self.blockchain.validator_registry
                 my_hash = hashlib.sha256(
                     json.dumps(self.miner_m3, sort_keys=True, separators=(",",":")).encode()
@@ -346,6 +349,10 @@ class AutoMiner:
             if current_slot == self.last_mined_slot:
                 continue
 
+            leader_m3_hash = "NO_LEADER"
+            my_m3_hash = None
+            if getattr(self, "miner_m3", None):
+                my_m3_hash = hashlib.sha256(json.dumps(self.miner_m3, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
             # 2. Validator set — FVR si hay validadores registrados,
             #    fallback a peers+self para compatibilidad Phase 1
             registry = self.blockchain.validator_registry
@@ -411,9 +418,6 @@ class AutoMiner:
                     candidates,
                     key=lambda v: (abs(_get_lambda_fixed(v) - lambda_E_i), v['m3_hash'])
                 )['m3_hash']
-                my_m3_hash = hashlib.sha256(
-                    json.dumps(self.miner_m3, sort_keys=True, separators=(',', ':')).encode()
-                ).hexdigest() if self.miner_m3 else None
                 is_leader = (my_m3_hash == leader_m3_hash)
             else:
                 # Phase 1 fallback: peers + self

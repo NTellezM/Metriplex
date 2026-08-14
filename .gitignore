@@ -58,3 +58,6 @@ mempool.json
 *.bak2
 keystore_node0.json
 .secrets
+keystore*.json
+*.bak_*
+backups/
