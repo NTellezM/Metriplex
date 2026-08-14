@@ -349,37 +349,67 @@ class AutoMiner:
             # 2. Validator set — FVR si hay validadores registrados,
             #    fallback a peers+self para compatibilidad Phase 1
             registry = self.blockchain.validator_registry
-            fvr_validators = registry.get_sorted_validators()
 
             # Excluir validadores sin nodo activo (keystore perdido)
             EXCLUDED_VALIDATORS = {"ee481176"}
-            fvr_validators = [v for v in fvr_validators if not any(v["m3_hash"].startswith(ex) for ex in EXCLUDED_VALIDATORS)]
 
             last_block = self.blockchain.chain[-1]
+            EPOCH_SLOTS = 100
+            # Usar el epoch ANTERIOR — garantiza que el anchor
+            # ya esté finalizado y sea idéntico en todos los nodos
+            current_epoch = current_slot // EPOCH_SLOTS
+            safe_epoch = max(0, current_epoch - 1) * EPOCH_SLOTS
+
+            # Fix 2 — congelar el SET DE CANDIDATOS en el mismo punto que
+            # el anchor (safe_epoch), no en el tip actual. Antes se leía
+            # registry.get_sorted_validators() (estado mutable del tip):
+            # dos nodos a distinta altura, o que acaban de procesar un
+            # VALIDATOR_REGISTER/UPDATE/EXIT, veían sets de candidatos
+            # distintos y por lo tanto podían elegir líderes distintos
+            # para el mismo slot aunque coincidieran en el anchor_hash.
+            if safe_epoch <= last_block.index:
+                fvr_validators = registry.get_validators_at(safe_epoch)
+            else:
+                # La cadena local todavía no alcanzó el safe_epoch
+                # (arranque muy temprano) — cae a fallback Phase 1.
+                fvr_validators = []
+            fvr_validators = [v for v in fvr_validators if not any(v["m3_hash"].startswith(ex) for ex in EXCLUDED_VALIDATORS)]
+
             if fvr_validators:
-                EPOCH_SLOTS = 100
-                # Usar el epoch ANTERIOR — garantiza que el anchor
-                # ya esté finalizado y sea idéntico en todos los nodos
-                current_epoch = current_slot // EPOCH_SLOTS
-                safe_epoch = max(0, current_epoch - 1) * EPOCH_SLOTS
                 anchor_block = self.blockchain.chain[0]
                 for blk in reversed(self.blockchain.chain):
                     if blk.index <= safe_epoch:
                         anchor_block = blk
                         break
-                # Lyapunov Consensus
-                def _get_lambda(v):
+
+                # Fix 1 / 4a — aritmética en punto fijo entero + desempate
+                # explícito por m3_hash. Antes: min() con floats y sin
+                # desempate — si dos validadores empataban (o casi) en
+                # distancia a lambda_E, el ganador dependía del orden de
+                # inserción en el dict interno de cada nodo (no determinista
+                # entre nodos), y una diferencia de precisión float entre
+                # recalcular λ vs. leerlo serializado podía voltear el
+                # argmin. Todo el cálculo es ahora entero puro: mismo
+                # resultado bit a bit en cualquier máquina.
+                SCALE = 10 ** 12
+                lam_min_i = int(round(LAMBDA_MIN * SCALE))
+                lam_max_i = int(round(LAMBDA_MAX * SCALE))
+
+                def _get_lambda_fixed(v) -> int:
                     if v.get('lambda_value') is not None:
-                        return v['lambda_value']
+                        return int(round(v['lambda_value'] * SCALE))
                     h = int(v['m3_hash'], 16) % (2 ** 32)
-                    return LAMBDA_MIN + (LAMBDA_MAX - LAMBDA_MIN) * h / (2 ** 32)
+                    return lam_min_i + ((lam_max_i - lam_min_i) * h) // (2 ** 32)
+
                 anchor_int = int(hashlib.sha256(
                     f"{anchor_block.hash}{current_slot}".encode()
                 ).hexdigest(), 16)
-                lambda_E = LAMBDA_MIN + (LAMBDA_MAX - LAMBDA_MIN) * (anchor_int / 2 ** 256)
+                lambda_E_i = lam_min_i + ((lam_max_i - lam_min_i) * anchor_int) // (2 ** 256)
+
+                candidates = sorted(fvr_validators, key=lambda v: v['m3_hash'])
                 leader_m3_hash = min(
-                    fvr_validators,
-                    key=lambda v: abs(_get_lambda(v) - lambda_E)
+                    candidates,
+                    key=lambda v: (abs(_get_lambda_fixed(v) - lambda_E_i), v['m3_hash'])
                 )['m3_hash']
                 my_m3_hash = hashlib.sha256(
                     json.dumps(self.miner_m3, sort_keys=True, separators=(',', ':')).encode()

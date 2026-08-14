@@ -226,8 +226,16 @@ class Storage:
             "fvr_json":      row[3],
         }
 
-    def restore_snapshot(self, snapshot: dict):
-        """Restaura balances desde un snapshot."""
+    def restore_snapshot(self, snapshot: dict) -> dict:
+        """Restaura balances desde un snapshot y retorna el fvr_state
+        parseado (validators, slashed) para que el caller lo siembre en
+        un ValidatorRegistry nuevo (ver ValidatorRegistry.seed_history).
+
+        Antes esta función ignoraba por completo fvr_json: se guardaba
+        en cada snapshot pero nunca se leía de vuelta, así que cualquier
+        rollback/reorg que tomara la ruta de snapshot dejaba el FVR
+        vacío o con el estado viejo del registry reutilizado — causa
+        directa de que la elección de líder divergiera tras un rollback."""
         balances = json.loads(snapshot["balances_json"])
         with self._conn() as conn:
             conn.execute("DELETE FROM balances")
@@ -236,3 +244,8 @@ class Storage:
                 balances
             )
         print(f"[Snapshot] ✓ Balances restaurados desde bloque {snapshot['block_index']}")
+        try:
+            return json.loads(snapshot.get("fvr_json") or "{}")
+        except (TypeError, ValueError):
+            print("[Snapshot] ⚠️ fvr_json ilegible — FVR no restaurado desde snapshot.")
+            return {}

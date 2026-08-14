@@ -45,6 +45,19 @@ class ValidatorRegistry:
         # Callback opcional — llamado cuando un endpoint cambia
         # Firma: on_endpoint_change(old_endpoint, new_endpoint)
         self.on_endpoint_change = None
+        # Historial append-only de eventos (block_index, m3_hash, entry|None).
+        # entry=None significa remoción. Permite reconstruir el set de
+        # validadores tal como era en un bloque pasado (get_validators_at),
+        # necesario para congelar el set de candidatos en el anchor epoch
+        # y evitar que el estado *actual* (mutable, path-dependent) del
+        # registry produzca elecciones de líder distintas entre nodos.
+        self._history: list[tuple[int, str, dict | None]] = []
+
+    def _record(self, block_index: int, m3_hash: str, entry: dict | None):
+        """Registra un evento en el historial. Llamado tras cada mutación
+        exitosa de self.validators. No se llama en rechazos (registro
+        duplicado, stake insuficiente, etc.) — solo cambios de estado reales."""
+        self._history.append((block_index, m3_hash, dict(entry) if entry is not None else None))
 
     # ── Procesamiento de TXs ───────────────────────────────────────────────
 
@@ -122,6 +135,7 @@ class ValidatorRegistry:
         }
         legacy = " (legacy — sin restricción λ)" if lambda_value is None else f" λ={lambda_value:.4f}"
         print(f"[FVR] ✅ Validador registrado: {m3_hash[:8]}... endpoint={endpoint} bloque={block_index}{legacy}")
+        self._record(block_index, m3_hash, self.validators[m3_hash])
 
     def _update_lambda(self, tx, block_index: int):
         m3_hash = _hash_m3(tx.sender_m3) if tx.sender_m3 else None
@@ -151,6 +165,7 @@ class ValidatorRegistry:
                 else:
                     print(f"[FVR] Endpoint ya actualizado: {new_endpoint}")
             print(f"[FVR] lambda actualizado: {m3_hash[:8]} lambda={lv:.6f} bloque={block_index}")
+            self._record(block_index, m3_hash, self.validators[m3_hash])
         except Exception as e:
             print(f"[FVR] UPDATE error: {e}")
 
@@ -190,6 +205,7 @@ class ValidatorRegistry:
             return
         del self.validators[target_hash]
         self.slashed.add(target_hash)
+        self._record(block_index, target_hash, None)
         if block_index > 0:
             print(f"[FVR] ✅ GOVERNANCE_EXIT ejecutado: {target_hash[:8]} expulsado en bloque {block_index} ({valid_votes}/{threshold} votos).")
         else:
@@ -199,6 +215,7 @@ class ValidatorRegistry:
         m3_hash = _hash_m3(tx.sender_m3) if tx.sender_m3 else None
         if m3_hash and m3_hash in self.validators:
             del self.validators[m3_hash]
+            self._record(block_index, m3_hash, None)
             print(f"[FVR] Validador {m3_hash[:8]} salió del set en bloque {block_index}.")
 
     def _slash(self, target_m3_hash: str, block_index: int):
@@ -206,6 +223,7 @@ class ValidatorRegistry:
             return
         if target_m3_hash in self.validators:
             del self.validators[target_m3_hash]
+            self._record(block_index, target_m3_hash, None)
         self.slashed.add(target_m3_hash)
         print(f"[FVR] ⚡ Validador {target_m3_hash[:8]} slasheado en bloque {block_index}.")
 
@@ -217,6 +235,61 @@ class ValidatorRegistry:
         Todos los nodos producen el mismo array dado el mismo historial.
         """
         return sorted(self.validators.values(), key=lambda v: v["m3_hash"])
+
+    def get_validators_at(self, block_index: int) -> list[dict]:
+        """
+        Reconstruye el set de validadores tal como quedó inmediatamente
+        después de procesar block_index (inclusive), reproduciendo el
+        historial de eventos en orden — NO el estado mutable actual.
+
+        Esto es lo que hace determinista la elección de líder: dos nodos
+        con distinta altura de tip, o que acaban de aplicar un bloque más
+        reciente, deben ver el MISMO set de candidatos si están evaluando
+        el mismo safe_epoch. Congela el set de candidatos en el mismo
+        punto que el anchor_hash (Fix 2).
+        """
+        if block_index < 0:
+            return []
+        state: dict[str, dict] = {}
+        seen_any = False
+        for idx, m3_hash, entry in self._history:
+            if idx > block_index:
+                break
+            seen_any = True
+            if entry is None:
+                state.pop(m3_hash, None)
+            else:
+                state[m3_hash] = entry
+        if not seen_any and self._history:
+            # block_index cae antes del primer evento conocido — típicamente
+            # porque este registry fue reseteado (rollback/reorg) y no se
+            # sembró historial previo al punto de restauración. No hay forma
+            # de reconstruir el pasado exacto; usar el estado actual como
+            # mejor aproximación en vez de devolver un set vacío (que
+            # bloquearía el minado por completo).
+            print(f"[FVR] ⚠️ get_validators_at({block_index}): sin historial previo "
+                  f"al primer evento conocido — usando estado actual como fallback.")
+            return self.get_sorted_validators()
+        return sorted(state.values(), key=lambda v: v["m3_hash"])
+
+    def seed_history(self, block_index: int, validators_snapshot: dict, slashed: list = None):
+        """
+        Siembra un estado base conocido en block_index — usado al restaurar
+        desde un snapshot periódico (storage.restore_snapshot) para que
+        get_validators_at() funcione correctamente para índices posteriores
+        al snapshot sin requerir replay completo desde génesis.
+
+        validators_snapshot: dict m3_hash → entry (formato de fvr_state,
+        el mismo que produce Blockchain.add_block al guardar snapshots).
+        """
+        for m3_hash, entry in validators_snapshot.items():
+            e = dict(entry)
+            e.setdefault("m3_hash", m3_hash)
+            e.setdefault("m3", None)
+            self.validators[m3_hash] = e
+            self._history.append((block_index, m3_hash, dict(e)))
+        if slashed:
+            self.slashed.update(slashed)
 
     def get_endpoints(self) -> list[str]:
         return [v["endpoint"] for v in self.validators.values() if v["endpoint"]]
