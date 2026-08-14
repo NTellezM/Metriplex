@@ -178,34 +178,51 @@ class CAFNode:
             # 3. FASE F1: Solicitar sincronización del historial
             await self.request_sync()
 
-    async def request_sync(self):
-        """Pide a los pares los bloques posteriores a la altura local."""
-        if self.syncing:
+    async def request_sync(self, force: bool = False):
+        """Pide a los pares los bloques posteriores a la altura local.
+
+        Fix 4 — force=True permite re-disparar la sincronización aunque
+        self.syncing ya sea True. El catch-up handler llama a
+        request_sync() DESDE DENTRO del ciclo de vida de una sync ya en
+        curso (self.syncing sigue True en ese momento): antes, sin este
+        flag, esa llamada era un no-op silencioso — el rollback truncaba
+        la cadena pero nunca se volvían a pedir los bloques faltantes, y
+        el nodo quedaba esperando indefinidamente hasta el siguiente
+        bloque por gossip, que volvía a fallar el linaje y disparaba
+        otro rollback. Esa era la cascada real detrás de los forks.
+        """
+        if self.syncing and not force:
             return
 
         local_height = self.blockchain.chain[-1].index
-        print(f"[Red] Solicitando sincronización desde el bloque {local_height}...")
+        print(f"[Red] Solicitando sincronización desde el bloque {local_height}"
+              f"{' (forzado)' if force else ''}...")
         self.syncing = True
+        try:
+            req_msg = json.dumps(
+                {
+                    "type": "REQUEST_CHAIN_SYNC",
+                    "last_index": local_height,
+                    "requester": f"{self.host_public}:{self.port}",
+                }
+            ).encode()
+            await self._broadcast(req_msg)
 
-        req_msg = json.dumps(
-            {
-                "type": "REQUEST_CHAIN_SYNC",
-                "last_index": local_height,
-                "requester": f"{self.host_public}:{self.port}",
-            }
-        ).encode()
-        await self._broadcast(req_msg)
-
-        # Mantener syncing=True hasta estar al día
-        # Verificar cada 3s si la cadena sigue creciendo
-        prev_height = self.blockchain.chain[-1].index
-        for _ in range(40):  # máx 120s
-            await asyncio.sleep(3)
-            curr_height = self.blockchain.chain[-1].index
-            if curr_height == prev_height:
-                break  # dejó de crecer — sincronización completa
-            prev_height = curr_height
-        self.syncing = False
+            # Mantener syncing=True hasta estar al día
+            # Verificar cada 3s si la cadena sigue creciendo
+            prev_height = self.blockchain.chain[-1].index
+            for _ in range(40):  # máx 120s
+                await asyncio.sleep(3)
+                curr_height = self.blockchain.chain[-1].index
+                if curr_height == prev_height:
+                    break  # dejó de crecer — sincronización completa
+                prev_height = curr_height
+        finally:
+            # finally — antes self.syncing = False estaba fuera del try:
+            # cualquier excepción dentro de request_sync (p.ej. un peer
+            # que responde basura) dejaba el nodo permanentemente
+            # marcado como "syncing" e incapaz de volver a sincronizar.
+            self.syncing = False
         print(f"[Red] ✓ Sincronización completa. Altura: {self.blockchain.chain[-1].index}")
 
     async def handle_client(
@@ -396,9 +413,13 @@ class CAFNode:
                             if rolled:
                                 print(f"[Catch-up] Rollback OK. "
                                       f"Re-sincronizando desde {ancestor_idx}...")
-                                # Solicitar sync desde el ancestro
+                                # Fix 4 — force=True: self.syncing sigue en
+                                # True acá (venimos de dentro del ciclo de
+                                # vida de la sync original). Sin forzar,
+                                # esta llamada era un no-op y el nodo nunca
+                                # volvía a pedir los bloques faltantes.
                                 import asyncio as _aio
-                                _aio.create_task(self.request_sync())
+                                _aio.create_task(self.request_sync(force=True))
                             else:
                                 print("[Catch-up] Rollback falló — esperando sync p2p")
                         else:
@@ -409,7 +430,7 @@ class CAFNode:
                                   f"Rollback de seguridad a bloque {safe_idx}...")
                             if self.blockchain.rollback_to(safe_idx):
                                 import asyncio as _aio
-                                _aio.create_task(self.request_sync())
+                                _aio.create_task(self.request_sync(force=True))
                         break  # salir del loop de bloques — sync manejará el resto
 
                 print(

@@ -263,6 +263,19 @@ class Blockchain:
         if target_index < 0 or target_index >= len(self.chain):
             return False
 
+        # Fix 5 — límite duro de profundidad. Antes rollback_to aceptaba
+        # cualquier target sin límite: en una cascada de forks (bug de
+        # sincronización nunca re-disparándose) el nodo podía retroceder
+        # 20 bloques por iteración indefinidamente, sin fondo. Un reorg
+        # más profundo que esto es indicio de que algo más está mal y
+        # requiere intervención manual, no un rollback automático más.
+        MAX_REORG_DEPTH = 200
+        reorg_depth = current_tip - target_index
+        if reorg_depth > MAX_REORG_DEPTH:
+            print(f"[Cadena] ⛔ Rollback rechazado: profundidad {reorg_depth} > "
+                  f"MAX {MAX_REORG_DEPTH} — requiere intervención manual.")
+            return False
+
         print(f"[Cadena] Rollback: bloque {current_tip} → {target_index}")
 
         # Bloques que queremos conservar
@@ -270,16 +283,33 @@ class Blockchain:
 
         # Snapshot más cercano por debajo del target
         from blockchain.state import StateDB
+        from blockchain.validator_registry import ValidatorRegistry
         snapshot = self.storage.get_latest_snapshot()
 
         # Reset completo (igual que replace_chain)
         self.storage.clear_all()
         self.chain = []
+        # Fix 3 — instanciar un ValidatorRegistry NUEVO en vez de reutilizar
+        # self.validator_registry. Antes el registry conservaba TODO su
+        # estado acumulado hasta el tip viejo (incluyendo los bloques que
+        # se están descartando en este rollback) y ENCIMA se le
+        # reaplicaban vía process_tx las transacciones de los bloques
+        # conservados posteriores al snapshot. El resultado era un
+        # registry que no correspondía a ningún estado real de la cadena
+        # — λ_mean y elección de líder divergían entre el nodo que hizo
+        # rollback y el que no, generando un fork nuevo a partir del
+        # intento de reparar el anterior. Ahora se reconstruye desde
+        # cero, igual que hace load_chain_from_disk al arrancar el nodo.
+        self.validator_registry = ValidatorRegistry()
         self.state_db = StateDB(self.storage, self.validator_registry)
 
         if snapshot and snapshot["block_index"] <= target_index:
             snap_idx = snapshot["block_index"]
-            self.storage.restore_snapshot(snapshot)
+            fvr_state = self.storage.restore_snapshot(snapshot)
+            if fvr_state.get("validators"):
+                self.validator_registry.seed_history(
+                    snap_idx, fvr_state["validators"], fvr_state.get("slashed")
+                )
             for blk in keep_blocks[:snap_idx + 1]:
                 self.chain.append(blk)
                 self.storage.save_block(blk)
@@ -362,14 +392,26 @@ class Blockchain:
         )
         # 2. Reset de Estado — usar snapshot si existe
         from blockchain.state import StateDB
+        from blockchain.validator_registry import ValidatorRegistry
         snapshot = self.storage.get_latest_snapshot()
+        # Fix 3 (mismo bug que rollback_to) — self.validator_registry se
+        # reutilizaba sin resetear, y el replay de abajo NUNCA llamaba
+        # validator_registry.process_tx: el registry quedaba congelado con
+        # el estado de la rama vieja, sin reflejar en absoluto la rama
+        # ganadora recién aplicada. Se reconstruye desde cero igual que
+        # rollback_to y load_chain_from_disk.
+        self.validator_registry = ValidatorRegistry()
         if snapshot and snapshot["block_index"] < len(new_blocks_list):
             snap_idx = snapshot["block_index"]
             print(f"[Consenso] Usando snapshot en bloque {snap_idx}")
             self.storage.clear_all()
             self.chain = []
             self.state_db = StateDB(self.storage, self.validator_registry)
-            self.storage.restore_snapshot(snapshot)
+            fvr_state = self.storage.restore_snapshot(snapshot)
+            if fvr_state.get("validators"):
+                self.validator_registry.seed_history(
+                    snap_idx, fvr_state["validators"], fvr_state.get("slashed")
+                )
             for block in new_blocks_list[:snap_idx + 1]:
                 self.chain.append(block)
                 self.storage.save_block(block)
@@ -383,10 +425,17 @@ class Blockchain:
         # 3. Re-aplicación desde el punto de inicio
         for block in replay_blocks:
             for tx in block.transactions:
+                # Fix: faltaba block_index — sin él, apply_transaction usaba
+                # el default 0 para CADA bloque replayado, corrompiendo
+                # cualquier lógica que dependa del índice real (p.ej.
+                # GOVERNANCE_EXIT vía state.py, que delega a
+                # ValidatorRegistry.execute_governance_exit con block_index).
                 self.state_db.apply_transaction(
                     tx.tx_id, tx.sender_m3, tx.receiver_m3,
-                    tx.amount, tx.payload, tx.fee,
+                    tx.amount, tx.payload, tx.fee, block.index,
                 )
+            for tx in block.transactions:
+                self.validator_registry.process_tx(tx, block.index)
             self.chain.append(block)
             self.storage.save_block(block)
 
