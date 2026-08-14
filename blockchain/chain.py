@@ -250,6 +250,62 @@ class Blockchain:
             return True
         return False
 
+
+    def rollback_to(self, target_index: int) -> bool:
+        """
+        Retrocede la cadena al bloque target_index (inclusive).
+        Reconstruye el estado desde el snapshot más cercano.
+        Usado por el mecanismo de catch-up p2p cuando se detecta un fork.
+        """
+        current_tip = len(self.chain) - 1
+        if target_index >= current_tip:
+            return True   # nada que hacer
+        if target_index < 0 or target_index >= len(self.chain):
+            return False
+
+        print(f"[Cadena] Rollback: bloque {current_tip} → {target_index}")
+
+        # Bloques que queremos conservar
+        keep_blocks = list(self.chain[:target_index + 1])
+
+        # Snapshot más cercano por debajo del target
+        from blockchain.state import StateDB
+        snapshot = self.storage.get_latest_snapshot()
+
+        # Reset completo (igual que replace_chain)
+        self.storage.clear_all()
+        self.chain = []
+        self.state_db = StateDB(self.storage, self.validator_registry)
+
+        if snapshot and snapshot["block_index"] <= target_index:
+            snap_idx = snapshot["block_index"]
+            self.storage.restore_snapshot(snapshot)
+            for blk in keep_blocks[:snap_idx + 1]:
+                self.chain.append(blk)
+                self.storage.save_block(blk)
+            replay_start = snap_idx + 1
+        else:
+            # Sin snapshot válido — empezar desde génesis
+            genesis = keep_blocks[0]
+            self.chain.append(genesis)
+            self.storage.save_block(genesis)
+            replay_start = 1
+
+        # Replay de transacciones para reconstruir estado
+        for blk in keep_blocks[replay_start:]:
+            self.chain.append(blk)
+            self.storage.save_block(blk)
+            for tx in blk.transactions:
+                self.state_db.apply_transaction(
+                    tx.tx_id, tx.sender_m3, tx.receiver_m3,
+                    tx.amount, tx.payload, tx.fee, blk.index
+                )
+            for tx in blk.transactions:
+                self.validator_registry.process_tx(tx, blk.index)
+
+        print(f"[Cadena] Rollback completado. Tip: bloque {self.chain[-1].index}")
+        return True
+
     def replace_chain(self, new_blocks_list: list) -> bool:
         """
         Regla de Cadena Más Larga (Longest Chain Rule).

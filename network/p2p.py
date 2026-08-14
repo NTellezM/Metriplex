@@ -380,7 +380,37 @@ class CAFNode:
                         print(
                             f"[Red] ⚠️ Segmento abortado en índice {new_block.index}. Conflicto de estado."
                         )
-                        break  # Si falla un bloque, descartar el resto del segmento
+                        # ── CATCH-UP: buscar ancestro común y hacer rollback ──
+                        received_prev = new_block.previous_hash
+                        ancestor_idx = None
+                        chain_len = len(self.blockchain.chain)
+                        # Escanear los últimos 30 bloques locales
+                        for i in range(chain_len - 1, max(0, chain_len - 31), -1):
+                            if self.blockchain.chain[i].hash == received_prev:
+                                ancestor_idx = i
+                                break
+                        if ancestor_idx is not None and ancestor_idx < chain_len - 1:
+                            print(f"[Catch-up] Ancestro común: bloque {ancestor_idx}. "
+                                  f"Rollback desde {chain_len-1}...")
+                            rolled = self.blockchain.rollback_to(ancestor_idx)
+                            if rolled:
+                                print(f"[Catch-up] Rollback OK. "
+                                      f"Re-sincronizando desde {ancestor_idx}...")
+                                # Solicitar sync desde el ancestro
+                                import asyncio as _aio
+                                _aio.create_task(self.request_sync())
+                            else:
+                                print("[Catch-up] Rollback falló — esperando sync p2p")
+                        else:
+                            # Ancestro no encontrado en ventana reciente
+                            # Retroceder 20 bloques y pedir sync
+                            safe_idx = max(0, chain_len - 21)
+                            print(f"[Catch-up] Ancestro no encontrado. "
+                                  f"Rollback de seguridad a bloque {safe_idx}...")
+                            if self.blockchain.rollback_to(safe_idx):
+                                import asyncio as _aio
+                                _aio.create_task(self.request_sync())
+                        break  # salir del loop de bloques — sync manejará el resto
 
                 print(
                     f"[Red] ✓ Sincronización completada. {added_count} bloques integrados."
@@ -445,6 +475,11 @@ class CAFNode:
                     timestamp=block_data["timestamp"],
                 )
                 new_block.hash = block_data["hash"]
+                local_last_index = self.blockchain.chain[-1].index
+                if new_block.index > local_last_index:
+                    if not getattr(self, "syncing", False):
+                        print(f"[Catch-up] Gap detectado (Local: {local_last_index}, Recibido: {new_block.index}). Iniciando sync.")
+                        asyncio.create_task(self.request_sync())
 
                 if self.blockchain.add_block(new_block):
                     print(
