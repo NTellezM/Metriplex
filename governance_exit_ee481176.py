@@ -7,7 +7,7 @@ from crypto.signatures import sign_transaction
 from core.verifier import CriterionParams
 
 TARGET = "ee481176779ed17cfeccfcdae05ea97daacfa8b6ec5321348c5e4119462cea6e"
-PASSWORD = "123"
+PASSWORD = input("Password: ")
 API = "http://localhost:8000"
 
 # Obtener m3_hash completos desde el registry
