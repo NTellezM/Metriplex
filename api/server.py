@@ -212,81 +212,12 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
             print(f"[API] Error interno en /transaction: {traceback.format_exc()}")
             raise HTTPException(status_code=500, detail=str(e))
 
-    @app.post("/faucet")
-    async def request_funds(m3_tensor: list[list[list[int]]]):
-        """Genera una transacción Coinbase para asignar fondos en Testnet."""
-        import time
-        from blockchain.block import Transaction
-        from core.arithmetic import SCALE_FACTOR
-
-        amount_fp = 1000 * SCALE_FACTOR
-
-        # Nonce temporal para que cada solicitud genere un tx_id único
-        # (sin esto, dos solicitudes del mismo tensor producen el mismo tx_id
-        # y la segunda es rechazada por el mempool como duplicado)
-        nonce = int(time.time() * 1000)
-
-        tx = Transaction(
-            sender_m3=[],
-            receiver_m3=m3_tensor,
-            amount=amount_fp,
-            signature_data={"type": "COINBASE", "nonce": nonce},
-        )
-
-        if mempool.add_transaction(tx):
-            await p2p_node.broadcast_transaction(tx)
-            return {
-                "status": "success",
-                "message": "Transacción Faucet enviada a la red",
-                "tx_id": tx.tx_id,
-            }
-        # Reportar el motivo real del rechazo
-        return {
-            "status": "error",
-            "message": "El Mempool rechazó la TX (saldo suficiente o anti-spam activo)"
-        }
-
-    @app.post("/mine")
-    async def mine_block():
-        """
-        Empaqueta las transacciones validadas del mempool en un nuevo bloque.
-        """
-        import time
-
-        from blockchain.block import Block
-
-        txs = mempool.get_transactions_for_block(limit=10)
-        if not txs:
-            return {
-                "status": "ignored",
-                "message": "Mempool vacío. No hay transacciones.",
-            }
-
-        last_block = blockchain.chain[-1]
-
-        # En un sistema con Proof-of-Work, aquí se calcularía el Nonce.
-        # En este diseño, el consenso recae en las firmas IIFSP, por lo que el bloque se forja directamente.
-        new_block = Block(
-            index=last_block.index + 1,
-            transactions=txs,
-            previous_hash=last_block.hash,
-            timestamp=time.time(),
-        )
-
-        success = blockchain.add_block(new_block)
-
-        if success:
-            mempool.remove_mined_transactions(txs)
-            return {
-                "status": "success",
-                "message": f"Bloque {new_block.index} forjado.",
-                "block_hash": new_block.hash,
-                "transactions_included": len(txs),
-            }
-        else:
-            raise HTTPException(
-                status_code=500, detail="Fallo al integrar el bloque a la cadena."
-            )
+    # /faucet y /mine eliminados (2026-09-08).
+    # /faucet acuñaba 1000 MPX a cualquier tensor sin autenticación ni
+    # límite; las TX sin remitente se aceptan sin firma ni saldo, así que
+    # el endpoint era una acuñación pública ilimitada. /mine forjaba un
+    # bloque a demanda saltándose la elección de líder de Lyapunov.
+    # Ninguno de los dos era usado por el sitio ni por el relayer.
 
     @app.post("/keystore/generate")
     async def generate_keystore(req: dict):

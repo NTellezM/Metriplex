@@ -71,16 +71,23 @@ class Mempool:
     def add_transaction(self, tx: Transaction) -> bool:
         if tx.tx_id in self.pending_transactions:
             return False
-        if tx.sender_m3:
-            sender_str = str(tx.sender_m3)
-            active_txs = sum(
-                1
-                for t in self.pending_transactions.values()
-                if str(t.sender_m3) == sender_str
-            )
-            if active_txs >= 5:
-                print(f"[Mempool] Rechazo Anti-Spam: El remitente excedió el límite de TXs pendientes.")
-                return False
+        # Las TX sin remitente son de emisión (coinbase): validate_transaction
+        # las acepta sin firma, sin ZK y sin verificar saldo. El minero crea la
+        # suya y la antepone al bloque directamente, sin pasar por el mempool.
+        # Admitirlas aquí — único punto de entrada del API /transaction y del
+        # gossip P2P NEW_TX — permitiría acuñar MPX sin límite desde fuera.
+        if not tx.sender_m3:
+            print("[Mempool] Rechazo: TX de emisión (coinbase) no admitida desde el exterior.")
+            return False
+        sender_str = str(tx.sender_m3)
+        active_txs = sum(
+            1
+            for t in self.pending_transactions.values()
+            if str(t.sender_m3) == sender_str
+        )
+        if active_txs >= 5:
+            print(f"[Mempool] Rechazo Anti-Spam: El remitente excedió el límite de TXs pendientes.")
+            return False
         if self.blockchain.validate_transaction(tx, block_index=len(self.blockchain.chain)):
             self.pending_transactions[tx.tx_id] = tx
             self._timestamps[tx.tx_id] = time.time()
