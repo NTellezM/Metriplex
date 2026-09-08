@@ -65,6 +65,17 @@ class AutoMiner:
         self.last_mined_slot = 0
         self.miner_m3 = miner_m3  # None = sin recompensa automática
 
+    def _election_context(self, current_slot):
+        # Los slots son tiempo Unix; los índices son alturas de la cadena.
+        # Congelar hash y FVR en el último bloque ANTERIOR al epoch previo.
+        cutoff = max(0, current_slot // 100 - 1) * 100 * self.block_time_seconds
+        anchor = self.blockchain.chain[0]
+        for block in reversed(self.blockchain.chain):
+            if block.timestamp < cutoff:
+                anchor = block
+                break
+        return anchor, self.blockchain.validator_registry.get_validators_at(anchor.index)
+
     def _get_lambda_mean(self) -> float:
         """Calcula el λ_mean dinámico del conjunto de validadores activos.
         
@@ -190,7 +201,7 @@ class AutoMiner:
                     async with _hx.AsyncClient(timeout=5.0) as _c:
                         r = await _c.get(f"http://{host}:{int(port)-57432}/info")
                     peer_info = r.json()
-                    ph = peer_info.get("chain_length", 0)
+                    ph = peer_info.get("chain_length", 0) - 1
                     if ph > max_peer_h:
                         max_peer_h = ph
                         best_peer  = peer
@@ -215,7 +226,7 @@ class AutoMiner:
                     async with _hx.AsyncClient(timeout=5.0) as _c:
                         r = await _c.get(f"http://{host}:{int(port)-57432}/info")
                     peer_info = r.json()
-                    ph = peer_info.get("chain_length", 0)
+                    ph = peer_info.get("chain_length", 0) - 1
                     if ph > max_peer_h:
                         max_peer_h = ph
                         best_peer  = peer
@@ -242,7 +253,7 @@ class AutoMiner:
             while True:
                 await asyncio.sleep(3)
                 curr_h = self.blockchain.chain[-1].index
-                if curr_h >= max_peer_h - 1:
+                if curr_h >= max_peer_h:
                     print(f"[Consenso] Sincronizado. Altura: {curr_h}")
                     break
                 if curr_h == prev_h:
@@ -259,13 +270,14 @@ class AutoMiner:
         print(f"[Consenso] Sync completado. Altura: {len(self.blockchain.chain)-1}. Iniciando minero.")
 
         async def _check_synced_with_peers() -> bool:
-            local_h    = len(self.blockchain.chain)
+            local_h    = self.blockchain.chain[-1].index
             local_hash = self.blockchain.chain[-1].hash if self.blockchain.chain else None
             sync_target = getattr(self.p2p_node, 'sync_target', 0)
 
             # Guardia 1 — sync_target explícito
-            if sync_target > 0 and local_h < sync_target - 2:
+            if sync_target > 0 and local_h < sync_target:
                 print(f"[Consenso] Esperando sync: local={local_h} target={sync_target}")
+                await self.p2p_node.request_sync()
                 return False
 
             # Sin peers — nodo solitario, puede minar
@@ -282,7 +294,7 @@ class AutoMiner:
                     async with __import__('httpx').AsyncClient(timeout=3.0) as _c:
                         r = await _c.get(f"http://{host}:{api_port}/info")
                     data = r.json()
-                    ph = data.get("chain_length", 0)
+                    ph = data.get("chain_length", 0) - 1
                     hh = data.get("latest_block_hash", "")
                     if ph > 0:
                         peer_heights.append(ph)
@@ -296,8 +308,9 @@ class AutoMiner:
             max_peer_h = max(peer_heights)
 
             # Altura muy atrasada — esperar sync
-            if local_h < max_peer_h - 2:
+            if self.blockchain.chain[-1].index < max_peer_h:
                 print(f"[Consenso] Lag detectado: local={local_h} peers_max={max_peer_h} — esperando sync")
+                await self.p2p_node.request_sync()
                 return False
 
             # Verificar hash — si mi hash no coincide con el de peers en mi altura → fork
@@ -338,7 +351,8 @@ class AutoMiner:
                 # Es validador FVR — puede minar solo
             if self.p2p_node.sync_target > 0:
                 local_h = len(self.blockchain.chain) - 1
-                if local_h < self.p2p_node.sync_target - 2:
+                if local_h < self.p2p_node.sync_target:
+                    await self.p2p_node.request_sync()
                     await asyncio.sleep(5)
                     continue
             # Guardia 2 — altura vs peers
@@ -361,34 +375,10 @@ class AutoMiner:
             EXCLUDED_VALIDATORS = {"ee481176"}
 
             last_block = self.blockchain.chain[-1]
-            EPOCH_SLOTS = 100
-            # Usar el epoch ANTERIOR — garantiza que el anchor
-            # ya esté finalizado y sea idéntico en todos los nodos
-            current_epoch = current_slot // EPOCH_SLOTS
-            safe_epoch = max(0, current_epoch - 1) * EPOCH_SLOTS
-
-            # Fix 2 — congelar el SET DE CANDIDATOS en el mismo punto que
-            # el anchor (safe_epoch), no en el tip actual. Antes se leía
-            # registry.get_sorted_validators() (estado mutable del tip):
-            # dos nodos a distinta altura, o que acaban de procesar un
-            # VALIDATOR_REGISTER/UPDATE/EXIT, veían sets de candidatos
-            # distintos y por lo tanto podían elegir líderes distintos
-            # para el mismo slot aunque coincidieran en el anchor_hash.
-            if safe_epoch <= last_block.index:
-                fvr_validators = registry.get_validators_at(safe_epoch)
-            else:
-                # La cadena local todavía no alcanzó el safe_epoch
-                # (arranque muy temprano) — cae a fallback Phase 1.
-                fvr_validators = []
+            anchor_block, fvr_validators = self._election_context(current_slot)
             fvr_validators = [v for v in fvr_validators if not any(v["m3_hash"].startswith(ex) for ex in EXCLUDED_VALIDATORS)]
 
             if fvr_validators:
-                anchor_block = self.blockchain.chain[0]
-                for blk in reversed(self.blockchain.chain):
-                    if blk.index <= safe_epoch:
-                        anchor_block = blk
-                        break
-
                 # Fix 1 / 4a — aritmética en punto fijo entero + desempate
                 # explícito por m3_hash. Antes: min() con floats y sin
                 # desempate — si dos validadores empataban (o casi) en

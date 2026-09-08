@@ -103,7 +103,13 @@ class CAFNode:
             params = self.geo_identity["criterion_params"]
             if isinstance(params, dict):
                 params = CriterionParams(**params)
-            proof = ZKEngine.generate_proof(priv, pub, nonce, params, att)
+            proof = ZKEngine.generate_proof(
+                private_key=priv, public_m3=pub, tx_hash=nonce,
+                criterion_params=params, N_total=len(att), attractor=att,
+            )
+            proof["criterion_params"] = vars(params)
+            if not ZKEngine.verify_proof(proof, pub, nonce, params):
+                raise ValueError("La prueba GEO local no verifica")
             self.geo_proof = proof
             self.geo_nonce = nonce
             self.geo_proof_expiry = time.time() + 3600
@@ -138,6 +144,11 @@ class CAFNode:
             nonce = payload.get("nonce")
             proof = payload.get("zk_proof")
             if not m3 or not nonce or not proof:
+                return False
+            expected_hash = hashlib.sha256(
+                json.dumps(m3, sort_keys=True, separators=(",", ":")).encode()
+            ).hexdigest()
+            if payload.get("m3_hash") != expected_hash:
                 return False
             # Nonce reciente (< 2 horas)
             # El nonce es sha256(endpoint:hora) — no podemos verificar timestamp directamente
@@ -267,6 +278,7 @@ class CAFNode:
                             "m3": payload.get("m3"),
                             "authenticated_at": time.time(),
                         }
+                        self.observer_peers.discard(new_peer)
                         if new_peer not in self.peers:
                             self.peers.add(new_peer)
                         is_validator = self.blockchain.validator_registry.validators.get(m3_hash)
@@ -363,7 +375,7 @@ class CAFNode:
 
                 peer_height = payload.get("peer_height", 0)
                 if peer_height > 0:
-                    self.sync_target = peer_height
+                    self.sync_target = max(self.sync_target, peer_height)
                 added_count = 0
                 for b_data in blocks_data:
                     # Deserializar transacciones
@@ -445,7 +457,7 @@ class CAFNode:
 
                 # Si el segmento fue completo (50), hay más bloques — solicitar el siguiente
                 local_height = self.blockchain.chain[-1].index
-                if self.sync_target > 0 and local_height < self.sync_target - 2:
+                if self.sync_target > 0 and local_height < self.sync_target:
                     print(f'[Red] Segmento completo — solicitando siguiente desde {local_height}... (target={self.sync_target})')
                     req_msg = json.dumps({
                         "type": "REQUEST_CHAIN_SYNC",
@@ -477,9 +489,6 @@ class CAFNode:
 
             elif msg_type == "NEW_BLOCK":
                 block_data = payload.get("data")
-                if self.syncing:
-                    return
-
                 print(f"[Red] 📦 Bloque {block_data['index']} propuesto por la red.")
 
                 txs = []
@@ -503,7 +512,11 @@ class CAFNode:
                 )
                 new_block.hash = block_data["hash"]
                 local_last_index = self.blockchain.chain[-1].index
-                if new_block.index > local_last_index:
+                if new_block.index <= local_last_index:
+                    existing = self.blockchain.chain[new_block.index] if new_block.index >= 0 else None
+                    if existing and existing.hash == new_block.hash:
+                        return
+                if new_block.index > local_last_index + 1:
                     if not getattr(self, "syncing", False):
                         print(f"[Catch-up] Gap detectado (Local: {local_last_index}, Recibido: {new_block.index}). Iniciando sync.")
                         asyncio.create_task(self.request_sync())
@@ -602,7 +615,6 @@ class CAFNode:
                         self.mempool.remove_mined_transactions(b.transactions)
 
             elif msg_type == "STATUS_REQUEST":
-                import time
                 last_block = self.blockchain.chain[-1]
                 status = {
                     "type": "STATUS_RESPONSE",
@@ -720,7 +732,12 @@ class CAFNode:
 
                 # Refrescar malla
                 if self.peers:
+                    if self.geo_identity and time.time() >= self.geo_proof_expiry:
+                        await self._compute_geo_proof()
+                    await self._broadcast(self._build_geo_handshake())
                     await self._broadcast_peer_list()
+                    # Recuperar incluso el último bloque perdido durante un reinicio.
+                    await self.request_sync()
                 active = len(self.peers)
                 missing = [p for p in self.permanent_peers if p not in self.peers and p != my_addr]
                 if missing:
