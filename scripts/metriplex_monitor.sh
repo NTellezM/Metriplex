@@ -7,6 +7,6 @@ if [ -r /var/lib/metriplex-monitor/telegram.env ]; then
     set +a
 fi
 if [[ " ${*} " == *" --dry-run "* ]]; then
-    exec /usr/bin/python3 /opt/Metriplex/metriplex_monitor.py "$@"
+    exec /usr/bin/python3 /opt/Metriplex/scripts/metriplex_monitor.py "$@"
 fi
-exec /usr/bin/systemd-cat --identifier=metriplex-monitor /usr/bin/python3 /opt/Metriplex/metriplex_monitor.py "$@"
+exec /usr/bin/systemd-cat --identifier=metriplex-monitor /usr/bin/python3 /opt/Metriplex/scripts/metriplex_monitor.py "$@"

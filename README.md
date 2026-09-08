@@ -230,6 +230,9 @@ metriplex/
 ├── main.py                # Node entry point
 ├── wallet_cli.py          # Interactive wallet CLI
 ├── relayer.py             # Cross-chain bridge oracle
+├── contract_cli.py        # ERC-20 contract CLI
+├── scripts/               # Ops: install, deploy, backup, monitor, snapshot
+├── docker/                # Dockerfile, compose, docker guide
 ├── old/                   # Retired one-off scripts (see old/README.md)
 ├── requirements.txt
 ├── .env.example

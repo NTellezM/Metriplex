@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   metriplex-node:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     image: ntellezm/metriplex:latest
     container_name: metriplex-node
     restart: unless-stopped
