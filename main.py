@@ -14,9 +14,11 @@ Soporta configuración de puertos por CLI y roles de red (Validador/Observador).
 
 import argparse
 import asyncio
-import os
 import sys
 import socket
+# Alias propio: dentro de main() hay un `import os` local que convierte `os`
+# en variable local de toda la función y ensombrece cualquier import global.
+from os import _exit as _force_exit
 
 import signal
 import uvicorn
@@ -306,7 +308,7 @@ async def main():
         # en checkpoint y cerrada, así que salir aquí es seguro.
         print("[✓] Proceso terminado.")
         sys.stdout.flush()
-        os._exit(0)
+        _force_exit(0)
 
 
 
