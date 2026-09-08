@@ -66,7 +66,7 @@ python3 main.py --miner-wallet keystore.json --peer 157.180.113.24:65432
 
 | Type | Description | Earns MPX |
 |------|-------------|-----------|
-| Validator | Mines blocks, participates in FVR | 50 MPX/block |
+| Validator | Mines blocks, participates in FVR | Voronoi-weighted (≈1–2 MPX/block) |
 | Observer | Full node, verifies all ZK proofs | No |
 
 ---
@@ -120,7 +120,7 @@ curl -X POST http://localhost:8000/transaction -H 'Content-Type: application/jso
 | Token | MPX (Base Mainnet) |
 | Contract | `0x22D3f414438556d1B071cCfE52513d4d829400fd` |
 | Block time | 60 seconds |
-| Block reward | 50 MPX |
+| Block reward | Convergent fractal emission (Voronoi-weighted) |
 | P2P port | 65432 (default) |
 | API port | 8000 (default) |
 | Genesis peer | `157.180.113.24:65432` |

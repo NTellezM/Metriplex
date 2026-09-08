@@ -156,7 +156,6 @@ sudo systemctl restart metriplex-ntlap.service
 | `/validators` | GET | FVR validator set |
 | `/balance/{hash8}` | GET | Account balance |
 | `/transaction` | POST | Submit signed TX |
-| `/mine` | POST | Force block production |
 
 ---
 
@@ -165,7 +164,7 @@ sudo systemctl restart metriplex-ntlap.service
 | Parameter | Value |
 |-----------|-------|
 | Block time | 60 seconds |
-| Block reward | 50 MPX |
+| Block reward | Convergent fractal emission (Voronoi-weighted) |
 | Max reorg depth | 200 blocks |
 | Snapshot interval | every 1,000 blocks |
 | TX TTL | 10 minutes |

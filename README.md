@@ -31,18 +31,20 @@ Metriplex:           identity = M₃(attractor(IFS))
 
 ---
 
-## Live Network — May 2026
+## Live Network
 
 | Node | Role | Location | Status |
 |------|------|----------|--------|
 | node-0 (genesis) | Validator · Miner | Hetzner VPS · Germany | ✅ Online 24/7 |
-| NT (VPS) | Observer | Hetzner VPS · Germany | ✅ Online 24/7 |
-| NT (laptop) | Observer | Chile | ✅ Online |
-| node-2 | Observer | Chile | ✅ Online |
+| node-1 | Observer | Hetzner VPS · Germany | ✅ Online 24/7 |
+| node-3 | Validator · Miner | Hetzner VPS · Finland | ✅ Online 24/7 |
 
 **Milestones:**
 - May 14, 2026 — First cross-country ZK-verified TX (Chile → Germany, ~10s)
 - May 16, 2026 — First native browser TX — ZK proof generated in JavaScript, verified on-chain
+- May 21, 2026 — Bidirectional bridge live on Base mainnet
+- May 25, 2026 — **Lyapunov Consensus** activated — leader elected by geometric proximity in λ-space, not hash or stake
+- Jun 3, 2026 — node-3 joins from Finland (first node outside genesis infra)
 
 ---
 
@@ -53,7 +55,7 @@ Metriplex:           identity = M₃(attractor(IFS))
 │             Metriplex Layer 1 (native)           │
 │                                                  │
 │  Fractal Identity  ←→  ZK Proof  ←→  Consensus  │
-│  (IFS + M₃ tensor)     (c1–c8)       (slot PoS) │
+│  (IFS + M₃ tensor)     (c1–c8)      (Lyapunov) │
 └──────────────────────┬──────────────────────────┘
                        │ relayer.py
 ┌──────────────────────▼──────────────────────────┐
@@ -137,7 +139,6 @@ python main.py --api-port 8001 --p2p-port 65433
 python wallet_cli.py
 # Option 1: Create new wallet
 # Option 2: Export public key → pub_destino.json
-# Option 3: Request faucet funds (testnet)
 # Option 4: Send MPX
 ```
 
@@ -172,8 +173,12 @@ python relayer.py
 60% (12.6M) ── Founder / development / future listings
 ```
 
-No investors. No private sale. No vesting.  
-Block reward: 50 MPX per block (native mining).
+No investors. No private sale. No vesting.
+
+Block reward follows the **convergent fractal emission** model: each block pays
+`R₀ · e^(λ_mean·n/T) · |R_v|/Λ`, distributed to the block's validator in
+proportion to its Voronoi territory in λ-space. The supply ceiling is a function
+of validator geometric diversity (≈21M MPX at the calibration λ_mean).
 
 ---
 
@@ -225,6 +230,7 @@ metriplex/
 ├── main.py                # Node entry point
 ├── wallet_cli.py          # Interactive wallet CLI
 ├── relayer.py             # Cross-chain bridge oracle
+├── old/                   # Retired one-off scripts (see old/README.md)
 ├── requirements.txt
 ├── .env.example
 └── README.md
@@ -237,13 +243,14 @@ metriplex/
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/info` | GET | Chain height, mempool size, latest hash |
-| `/blocks` | GET | Full chain (all blocks + transactions) |
+| `/blocks` | GET | Paginated blocks (`?limit=`, `?start=`, `?asc=`) |
 | `/balance/{tensor_hash}` | GET | Account balance |
 | `/transaction` | POST | Submit signed transaction |
-| `/faucet` | POST | Request testnet funds (M3 tensor in body) |
-| `/mine` | POST | Force block production |
 | `/identity/{address}` | GET | Fractal identity lookup by M₃ hash |
 | `/peers` | GET | Connected P2P peers |
+| `/validators` | GET | Active validator registry (FVR) with λ values |
+| `/network` | GET | Per-node height/hash across the live mesh |
+| `/keystore/generate` | POST | Generate a fractal keystore (random key material) |
 
 ---
 

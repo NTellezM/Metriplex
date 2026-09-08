@@ -157,7 +157,7 @@ The Ethereum bridge uses a lock-and-mint / burn-and-release architecture:
 |-----------|-------|
 | Max supply | 21,000,000 MPX |
 | Distribution | 40% liquidity / 30% vault / 20% team / 10% community |
-| Block reward | 50 MPX per block |
+| Block reward | Convergent fractal emission — R₀·e^(λ_mean·n/T)·\|R_v\|/Λ, Voronoi-weighted |
 | Bridge fee | 1 MPX per cross-chain transfer |
 
 ---
