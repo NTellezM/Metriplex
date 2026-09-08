@@ -8,8 +8,12 @@
 # software under the terms of the MIT License.
 #
 """
-relayer.py — Oráculo Bidireccional Metriplex ↔ Ethereum (Sepolia)
-=================================================================
+relayer.py — Oráculo Bidireccional Metriplex ↔ EVM
+==================================================
+La red EVM la define WEB3_RPC; por defecto Base mainnet (chain_id 8453).
+El nombre que se imprime al arrancar se deriva del chain_id real, no de
+una etiqueta fija: hasta 2026-09-08 el código decía "Sepolia" mientras
+operaba contra Base mainnet.
 Implementa el puente cross-chain en ambas direcciones:
 
   FLUJO 1 — Nativo → Ethereum (MINT):
@@ -120,7 +124,7 @@ from web3 import Web3
 #  CONFIGURACIÓN
 # ──────────────────────────────────────────────────────────────────────────────
 
-# Dirección del contrato WrappedMetriplex en Sepolia
+# Dirección del contrato WrappedMetriplex (Base mainnet)
 CONTRACT_ADDRESS = "0x22D3f414438556d1B071cCfE52513d4d829400fd"
 
 # Clave privada EVM del relayer (dueño del contrato, autorizado a llamar mint())
@@ -146,7 +150,16 @@ VAULT_KEYSTORE_PASSWORD = os.environ.get("VAULT_PASSWORD", "")
 # Tensor M3 de la Bóveda (igual al almacenado en el relayer anterior)
 VAULT_MPX_ADDRESS = [[[-767737, -640365, 3959581, 106598], [-640364, 3512988, 3191937, 975426], [3959581, 3191937, 1345000, 4022728], [106598, 975426, 4022728, 35378]], [[-640364, 3512988, 3191937, 975426], [3512988, -3101786, 1688013, -2615231], [3191937, 1688013, 1823774, -3989328], [975426, -2615231, -3989328, -2562126]], [[3959581, 3191937, 1345000, 4022728], [3191937, 1688013, 1823774, -3989328], [1345000, 1823774, 2942833, -550010], [4022728, -3989328, -550010, -1757593]], [[106598, 975426, 4022728, 35378], [975426, -2615231, -3989328, -2562126], [4022728, -3989328, -550010, -1757593], [1847787, -3641039, 4171453, -324450]]]
 
-# Proveedor Web3 (Sepolia vía Brave o cualquier RPC público)
+# Nombres por chain_id, para que el arranque informe la red real y no una
+# etiqueta escrita a mano que puede quedar desactualizada.
+EVM_NETWORKS = {
+    1: "Ethereum mainnet",
+    8453: "Base mainnet",
+    84532: "Base Sepolia (testnet)",
+    11155111: "Ethereum Sepolia (testnet)",
+}
+
+# Proveedor Web3 — por defecto Base mainnet; override con WEB3_RPC
 WEB3_PROVIDER_URL = os.environ.get(
     "WEB3_RPC",
     "https://mainnet.base.org"
@@ -538,7 +551,9 @@ async def main():
 
     # Verificar conexión Web3
     if w3.is_connected():
-        print(f"[✓] Ethereum Sepolia: conectado (bloque #{w3.eth.block_number})")
+        _cid = w3.eth.chain_id
+        print(f"[✓] {EVM_NETWORKS.get(_cid, f'chain_id {_cid}')}: "
+              f"conectado (bloque #{w3.eth.block_number})")
     else:
         print("[!] Advertencia: Sin conexión a Ethereum. El flujo 1 no funcionará.")
 
@@ -565,7 +580,7 @@ if __name__ == "__main__":
         print("  VAULT_KEYSTORE    Ruta al keystore de la Bóveda [vault_keystore.json]")
         print("  VAULT_PASSWORD    Contraseña del keystore (o se pedirá interactivamente)")
         print("  MXP_NODE_URL      URL del nodo Metriplex [http://localhost:8000]")
-        print("  WEB3_RPC          Proveedor RPC de Ethereum Sepolia")
+        print("  WEB3_RPC          Proveedor RPC EVM [https://mainnet.base.org]")
         print()
         print("Ejemplo:")
         print("  VAULT_PASSWORD=miclave python relayer.py")
