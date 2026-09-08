@@ -61,3 +61,7 @@ keystore_node0.json
 keystore*.json
 *.bak_*
 backups/
+
+# Wallets (nunca subir)
+wallet*.json
+keystore_seguro_*.json
