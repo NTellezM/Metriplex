@@ -237,8 +237,11 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         from cryptography.fernet import Fernet
         from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
         from cryptography.hazmat.primitives import hashes
-        from crypto import keys as _keys
-        from crypto.keys import chaos_game, MAX_KEYGEN_ATTEMPTS
+        import numpy as np
+        from crypto.keys import (
+            chaos_game, _make_contraction_seeded, validate_r1, validate_scale,
+            validate_kruskal, N, D, RHO_MIN, RHO_MAX, MAX_KEYGEN_ATTEMPTS,
+        )
         from crypto.tensors import calculate_m3_tensor
         from core.verifier import calibrate, evaluate
 
@@ -251,17 +254,32 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         if not isinstance(password, str) or len(password) < 8:
             raise HTTPException(status_code=400, detail="Password demasiado corta (mínimo 8)")
 
+        # Semilla de 256 bits del sistema. Antes era sha256(evm_address)[:4],
+        # o sea 31 bits derivados de un dato público. Se usa RandomState y no
+        # default_rng porque _qr_rotation_fp_seeded llama rng.randn, que sólo
+        # existe en RandomState.
+        rng = np.random.RandomState(np.frombuffer(os.urandom(32), dtype=np.uint32))
+
         private_key = criterion_params = attractor = None
         for _ in range(MAX_KEYGEN_ATTEMPTS):
+            matrices, vectores = [], []
+            for _ in range(N):
+                scale = float(rng.uniform(RHO_MIN, RHO_MAX))
+                matrices.append(_make_contraction_seeded(scale, rng))
+                vectores.append([int(rng.uniform(-2**30, 2**30)) for _ in range(D)])
+            if not validate_r1(matrices)[0]:
+                continue
+            if not validate_scale(matrices)[0]:
+                continue
+            if not validate_kruskal(vectores, N)[0]:
+                continue
             try:
-                # Entropía del sistema; valida R1, escala y Kruskal internamente.
-                candidate = _keys.generate_private_key()
-                matrices, vectores = candidate["A"], candidate["b"]
                 att = chaos_game(matrices, vectores)
                 params = calibrate(att, matrices, vectores, len(att))
                 if not evaluate(att, matrices, vectores, params, len(att)).pass_all:
                     continue
-                private_key, criterion_params, attractor = candidate, params, att
+                private_key = {"A": matrices, "b": vectores}
+                criterion_params, attractor = params, att
                 break
             except Exception:
                 continue

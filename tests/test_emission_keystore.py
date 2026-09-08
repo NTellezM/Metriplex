@@ -76,37 +76,68 @@ class KeystoreTests(unittest.IsolatedAsyncioTestCase):
         paths = [r.path for r in self.make_app().routes]
         self.assertEqual(paths.count("/keystore/generate"), 1)
 
-    async def test_key_material_is_random_not_derived_from_address(self):
+    async def test_seed_comes_from_system_entropy_not_the_address(self):
+        import os as _os
         import httpx
         app = self.make_app()
-        addr = "0x" + "1" * 40          # MISMA dirección en ambas peticiones
-        claves = [{"A": [[[1]]], "b": [[1]]}, {"A": [[[2]]], "b": [[2]]}]
+        addr = "0x" + "1" * 40
 
-        async def pedir():
+        real_urandom = _os.urandom
+        seed_sizes = []
+
+        def spy(n):
+            seed_sizes.append(n)
+            return real_urandom(n)
+
+        with patch("os.urandom", side_effect=spy), \
+             patch("crypto.keys._make_contraction_seeded", return_value=[[1]]), \
+             patch("crypto.keys.validate_r1", return_value=(True, None)), \
+             patch("crypto.keys.validate_scale", return_value=(True, None)), \
+             patch("crypto.keys.validate_kruskal", return_value=(True, 4, None)), \
+             patch("crypto.keys.chaos_game", return_value=[[1] * 4] * 8), \
+             patch("core.verifier.calibrate", return_value=SimpleNamespace(theta=1)), \
+             patch("core.verifier.evaluate", return_value=SimpleNamespace(pass_all=True)), \
+             patch("crypto.tensors.calculate_m3_tensor", return_value=[[1]]):
             async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
                                          base_url="http://t") as c:
                 r = await c.post("/keystore/generate",
                                  json={"address": addr, "password": "una-passphrase"})
-            self.assertEqual(r.status_code, 200)
-            return r.json()
 
-        # La ruta importa estos nombres dentro de la función, así que hay que
-        # parchear el módulo de origen, no api.server.
-        with patch("crypto.keys.generate_private_key", side_effect=claves) as gen, \
-             patch("crypto.keys.chaos_game", return_value=[[1] * 4] * 8), \
-             patch("core.verifier.calibrate", return_value=SimpleNamespace(theta=1)), \
-             patch("core.verifier.evaluate", return_value=SimpleNamespace(pass_all=True)), \
-             patch("crypto.tensors.calculate_m3_tensor", side_effect=[[[1]], [[2]]]):
-            a, b = await pedir(), await pedir()
+        self.assertEqual(r.status_code, 200)
+        # 32 bytes = 256 bits para sembrar el RandomState (antes: 31 bits
+        # derivados de sha256(evm_address)). El de 16 es el salt de PBKDF2.
+        self.assertIn(32, seed_sizes)
+        body = r.json()
+        self.assertNotIn("private_key", body["keystore"])
+        self.assertIn("warning", body)
 
-        # Misma dirección EVM, identidades distintas => la clave no se deriva de ella
-        self.assertNotEqual(a["address"], b["address"])
-        self.assertEqual(gen.call_count, 2)
-        for call in gen.call_args_list:          # invocada sin semilla alguna
-            self.assertEqual(call.args, ())
-            self.assertEqual(call.kwargs, {})
-        self.assertNotIn("private_key", a["keystore"])
-        self.assertIn("warning", a)
+    def test_route_source_has_no_address_derived_seed(self):
+        # Guarda de regresión sobre el patrón exacto que causó el fallo.
+        # Mira sólo código: los comentarios mencionan el patrón viejo a propósito.
+        import inspect
+        import api.server as srv
+        src = inspect.getsource(srv.create_api_app)
+        i = src.index('@app.post("/keystore/generate")')
+        route = src[i:i + 4000]
+
+        code = []
+        in_doc = False
+        for line in route.splitlines():
+            if line.strip().startswith('"""'):
+                in_doc = not in_doc
+                continue
+            if in_doc:
+                continue
+            code.append(line.split("#", 1)[0])
+        code = "\n".join(code)
+
+        self.assertIn("os.urandom(32)", code)
+        # La dirección no debe alimentar ninguna semilla ni RNG.
+        for line in code.splitlines():
+            if "evm_address" in line:
+                self.assertNotIn("RandomState", line)
+                self.assertNotIn("seed", line.lower())
+                self.assertNotIn("sha256", line)
 
     async def test_rejects_bad_input(self):
         import httpx
