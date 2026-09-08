@@ -36,7 +36,14 @@ class AutoMiner:
     #
     # T_scale = fixed calibration constant (derived from current network state)
     # λ_mean  = dynamic — mean Lyapunov exponent of active validator set
-    # R₀      = |λ_mean| / T_scale × SCALE_FACTOR  (recalculated each epoch)
+    # R₀      = (TARGET_SUPPLY / |λ_init|) × λ_mean² / T_scale   (por epoch)
+    #
+    # OJO: R₀ NO es |λ_mean|/T_scale × SCALE_FACTOR. SCALE_FACTOR es la
+    # conversión raw↔MPX (2**30), no una constante económica. Usarla ahí
+    # hacía que |λ_mean| y T_scale se cancelaran contra el denominador de
+    # Supply(∞), dejando el techo en SCALE_FACTOR raw = 1 MPX y la
+    # recompensa en ~2.4e-8 MPX/bloque. El techo debe salir de una constante
+    # de supply explícita.
     #
     # KEY PROPERTY: Supply ceiling = f(geometric diversity of validator set)
     # More diverse validators → larger |λ_mean| → larger supply ceiling
@@ -49,6 +56,13 @@ class AutoMiner:
     # T_scale = |λ_mean_current| / α_100yr = 0.6185 / 8.76e-8 = 7,063,101 blocks
     T_SCALE           = 7_063_101  # blocks — fixed constant
     LAMBDA_MEAN_INIT  = -0.6185    # initial λ_mean (3 genesis validators)
+    # Techo de supply con el λ_mean de calibración. Supply(∞) = K·|λ_mean|,
+    # con K fijado para que en LAMBDA_MEAN_INIT dé exactamente TARGET_SUPPLY.
+    # Verificado contra la cadena: con λ_mean=-0.6185 da R₀=1.8389 MPX/bloque
+    # y node-2 (60.34% de territorio) cobra 1.110 MPX/bloque — el valor que
+    # la red pagó realmente durante 252 bloques antes de la regresión.
+    TARGET_SUPPLY_MPX = 21_000_000
+    SUPPLY_PER_LAMBDA = TARGET_SUPPLY_MPX / abs(LAMBDA_MEAN_INIT)
 
     def __init__(
         self,
@@ -446,8 +460,11 @@ class AutoMiner:
                     block_n = last_block.index + 1
                     # 1. λ_mean dinámico del conjunto de validadores activos
                     lambda_mean = self._get_lambda_mean()
-                    # 2. R₀ = |λ_mean| / T_scale  (en unidades raw)
-                    r0_raw = abs(lambda_mean) / self.T_SCALE * SCALE_FACTOR
+                    # 2. R₀ = (TARGET_SUPPLY/|λ_init|) × λ_mean² / T_scale
+                    #    de modo que Supply(∞) = R₀·T_scale/|λ_mean|
+                    #                          = SUPPLY_PER_LAMBDA·|λ_mean|
+                    r0_mpx = self.SUPPLY_PER_LAMBDA * lambda_mean ** 2 / self.T_SCALE
+                    r0_raw = r0_mpx * SCALE_FACTOR
                     # 3. Emisión en bloque n: R₀ × e^(λ_mean × n / T_scale)
                     r_base = r0_raw * _m.exp(lambda_mean * block_n / self.T_SCALE)
                     # 4. Territorio Voronoi del validador minero

@@ -14,6 +14,7 @@ Soporta configuración de puertos por CLI y roles de red (Validador/Observador).
 
 import argparse
 import asyncio
+import os
 import sys
 import socket
 
@@ -297,6 +298,15 @@ async def main():
             print("[✓] Base de datos cerrada limpiamente.")
         except Exception as e:
             print(f"[!] Error cerrando DB: {e}")
+        # gather_task.cancel() no alcanza a las tareas creadas con create_task
+        # dentro de p2p/miner (request_sync, broadcasts). Sin esta salida
+        # explícita el proceso seguía vivo y operando con la DB ya cerrada
+        # hasta que systemd lo mataba por timeout (~90 s), y un restart
+        # arrancaba la instancia nueva sobre el mismo SQLite. La DB ya está
+        # en checkpoint y cerrada, así que salir aquí es seguro.
+        print("[✓] Proceso terminado.")
+        sys.stdout.flush()
+        os._exit(0)
 
 
 
