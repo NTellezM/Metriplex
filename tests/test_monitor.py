@@ -2,8 +2,13 @@ import copy
 import io
 import json
 import os
+import sys
 import unittest
+from pathlib import Path
 from unittest.mock import patch
+
+# metriplex_monitor.py vive en scripts/ (reorganización 2026-09-08)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import metriplex_monitor as monitor
 
 
