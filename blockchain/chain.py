@@ -237,6 +237,33 @@ class Blockchain:
                 if not self.validate_transaction(tx, block_index=block.index):
                     print(f"[Cadena] Rechazo: TX {tx.tx_id[:8]} falló validación ZK.")
                     return False
+
+        # Validación de coinbase a nivel de bloque (unicidad + monto según la
+        # fórmula de emisión). Se aplica SIEMPRE (aunque skip_zk), porque es una
+        # regla de consenso que frena a un validador que mine un bloque con una
+        # coinbase inflada o múltiple. Los bloques históricos (< activación) se
+        # aceptan bajo reglas legacy.
+        from blockchain.emission import COINBASE_ACTIVATION, expected_coinbase_reward, m3_hash as _m3h
+        coinbases = [tx for tx in block.transactions if not tx.sender_m3]
+        if len(coinbases) > 1:
+            print(f"[Cadena] Rechazo: {len(coinbases)} coinbases en el bloque {block.index} (máx 1).")
+            return False
+        if block.index >= COINBASE_ACTIVATION and coinbases:
+            cb = coinbases[0]
+            if block.transactions[0] is not cb:
+                print(f"[Cadena] Rechazo: la coinbase no está en la posición 0.")
+                return False
+            registry = self.state_db.validator_registry
+            leader_hash = _m3h(cb.receiver_m3) if cb.receiver_m3 else ""
+            if leader_hash not in registry.validators:
+                print(f"[Cadena] Rechazo: receptor de coinbase {leader_hash[:8]} no es validador registrado.")
+                return False
+            expected = expected_coinbase_reward(registry, block.index, leader_hash)
+            if int(cb.amount) != expected:
+                print(f"[Cadena] Rechazo: monto de coinbase {cb.amount} != esperado {expected} "
+                      f"(bloque {block.index}, líder {leader_hash[:8]}).")
+                return False
+
         # Aplicar estado
         for tx in block.transactions:
             self.state_db.apply_transaction(
