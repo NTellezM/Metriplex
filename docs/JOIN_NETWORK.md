@@ -4,7 +4,43 @@ Run your own node and participate in the first blockchain with fractal cryptogra
 
 ---
 
-## Option 1 — Docker (Recommended)
+## Option 0 — One command (Recommended)
+
+Installs dependencies, bootstraps from the latest snapshot (syncs in seconds),
+sets up a `systemd` service, and starts the node. Run as root.
+
+```bash
+# Observer node (read-only)
+curl -sSL https://metriplexmpx.xyz/join.sh | sudo bash
+
+# Validator node (generates a fractal identity + keystore)
+curl -sSL https://metriplexmpx.xyz/join.sh | sudo bash -s -- --validator --public-ip YOUR_IP
+```
+
+Flags: `--validator` / `--observer` (default), `--api-port N`, `--p2p-port N`,
+`--peer IP:PORT`, `--public-ip IP`, `--dir PATH`. Multiple nodes on one machine
+auto-pick free ports and get isolated `.env.<port>` files.
+
+### Activating a validator
+
+A validator node prints its fractal identity when it starts. To activate it:
+
+1. Send **100 MPX** of stake to that identity.
+2. Register and switch the node to mining:
+
+```bash
+bash /opt/Metriplex/scripts/register-validator.sh --api-port PORT --public-ip YOUR_IP
+```
+
+The script verifies the stake, computes your Lyapunov λ, checks geometric
+diversity, signs and submits the `VALIDATOR_REGISTER`, and — once it appears in
+the FVR — flips the systemd service from observer to miner.
+
+Need stake? Contact the team.
+
+---
+
+## Option 1 — Docker (advanced)
 
 The fastest way to run a node. No Python setup required.
 
