@@ -74,30 +74,42 @@ class StateDB:
             # VALIDATOR_GOVERNANCE_EXIT — expulsión por votación 2/3 validadores activos
             if op == "VALIDATOR_GOVERNANCE_EXIT":
                 from blockchain.validator_registry import VALIDATOR_STAKE_REQUIRED
+                from blockchain.protocol_auth import (
+                    PROTOCOL_SIG_ACTIVATION, governance_vote_hash, verify_vote_signature,
+                )
                 target = payload.get("target_m3_hash")
                 votes  = payload.get("votes", [])
                 if not target:
                     print("[State] GOVERNANCE_EXIT: falta target_m3_hash")
                     return False
-                # Obtener validadores activos (excluir al target)
-                active_hashes = set(
-                    v["m3_hash"] for v in self.validator_registry.validators.values()
+                # Validadores activos (excluir al target), con su M3 para verificar firmas.
+                active = {
+                    v["m3_hash"]: v for v in self.validator_registry.validators.values()
                     if v["m3_hash"] != target
-                )
+                }
                 required = 2  # mínimo 2 validadores
-                # Verificar votos — contar voters únicos que están en el registry
+                strict = block_index >= PROTOCOL_SIG_ACTIVATION
+                vote_hash = governance_vote_hash(target)
                 valid_votes = 0
                 seen = set()
                 for vote in votes:
-                    # Acepta tanto strings como dicts {"m3_hash": "..."}
                     voter = vote if isinstance(vote, str) else vote.get("m3_hash")
                     if not voter or voter in seen:
                         continue
-                    if voter in active_hashes:
-                        seen.add(voter)
-                        valid_votes += 1
+                    full = next((h for h in active if h.startswith(voter)), None)
+                    if not full:
+                        continue
+                    if strict:
+                        # Estricto: cada voto debe traer una firma ZK válida del
+                        # votante sobre el mensaje del voto (no basta el hash público).
+                        sig = vote.get("signature") if isinstance(vote, dict) else None
+                        if not sig or not verify_vote_signature(sig, active[full]["m3"], vote_hash):
+                            print(f"[State] GOVERNANCE_EXIT: voto sin firma válida de {voter[:8]}")
+                            continue
+                    seen.add(voter)
+                    valid_votes += 1
                 if valid_votes < required:
-                    print(f"[State] GOVERNANCE_EXIT: votos insuficientes ({valid_votes}/{required})")
+                    print(f"[State] GOVERNANCE_EXIT: votos válidos insuficientes ({valid_votes}/{required})")
                     return False
                 # Delegar ejecución al registry — único punto de escritura sobre validators
                 import math

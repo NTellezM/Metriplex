@@ -95,14 +95,29 @@ class Blockchain:
             print("  -> ACEPTADA: Transacción Coinbase.")
             return True
 
-        # 2. Operaciones de protocolo — bypass completo (saldo + ZK)
-        if tx.payload and tx.payload.get("op") in (
-            "VALIDATOR_GOVERNANCE_EXIT",
-            "VALIDATOR_UPDATE",
-            "VALIDATOR_REGISTER",
-            "VALIDATOR_EXIT",
-        ):
-            print(f"  -> ACEPTADA: Operación de protocolo ({tx.payload.get('op')}).")
+        # Operaciones de protocolo (registro/salida/actualización/gobernanza).
+        from blockchain.protocol_auth import (
+            PROTOCOL_OPS, PROTOCOL_SIG_ACTIVATION, protocol_op_hash,
+        )
+        if tx.payload and tx.payload.get("op") in PROTOCOL_OPS:
+            op = tx.payload.get("op")
+            if block_index < PROTOCOL_SIG_ACTIVATION:
+                # Reglas legacy — necesarias para el replay de bloques históricos.
+                print(f"  -> ACEPTADA (legacy): Operación de protocolo ({op}).")
+                return True
+            # Reglas estrictas: firma ZK del emisor sobre el mensaje canónico.
+            op_hash = protocol_op_hash(tx.sender_m3, tx.payload, tx.amount)
+            if not self._verify_signature(tx.signature_data, tx.sender_m3, op_hash):
+                print(f"  -> RECHAZADA: firma inválida en operación de protocolo ({op}).")
+                return False
+            if op == "VALIDATOR_REGISTER":
+                from blockchain.validator_registry import VALIDATOR_STAKE_REQUIRED
+                bal = self.state_db.get_balance(tx.sender_m3)
+                if bal < VALIDATOR_STAKE_REQUIRED:
+                    print(f"  -> RECHAZADA: stake real insuficiente ({bal} < {VALIDATOR_STAKE_REQUIRED}).")
+                    return False
+            # Los votos de VALIDATOR_GOVERNANCE_EXIT se verifican al aplicar (state.py).
+            print(f"  -> ACEPTADA: Operación de protocolo firmada ({op}).")
             return True
 
 
