@@ -175,9 +175,24 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
             "mode": "FVR" if registry.size() > 0 else "Phase1-fallback",
         }
 
+    # Operaciones de protocolo (registro/salida/actualización de validadores y
+    # gobernanza). Hoy validate_transaction las acepta sin verificar firma; hasta
+    # que llegue el fix de consenso, se bloquean cuando entran por el proxy
+    # público (nginx añade X-Real-IP). Las herramientas locales del operador
+    # (register_validator.py contra localhost) no llevan ese header.
+    _PROTOCOL_OPS = {
+        "VALIDATOR_REGISTER", "VALIDATOR_EXIT",
+        "VALIDATOR_UPDATE", "VALIDATOR_GOVERNANCE_EXIT",
+    }
+
     @app.post("/transaction")
-    async def submit_transaction(tx_req: TransactionRequest):
+    async def submit_transaction(tx_req: TransactionRequest, request: Request):
         try:
+            op = (tx_req.payload or {}).get("op") if isinstance(tx_req.payload, dict) else None
+            via_proxy = "x-real-ip" in request.headers or "x-forwarded-for" in request.headers
+            if op in _PROTOCOL_OPS and via_proxy:
+                print(f"[API] Rechazada op de protocolo {op} desde el proxy público ({request.headers.get('x-real-ip')}).")
+                raise HTTPException(status_code=403, detail="Operación de protocolo no permitida vía API pública.")
             print(f"[API] TX recibida sender={str(tx_req.sender_m3)[:20]} sig_keys={list(tx_req.signature_data.keys())[:5]}")
             # ACTUALIZADO: Ahora le pasamos el payload al motor interno
             tx = Transaction(
