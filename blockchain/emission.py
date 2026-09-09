@@ -22,7 +22,7 @@ SUPPLY_PER_LAMBDA = TARGET_SUPPLY_MPX / abs(LAMBDA_MEAN_INIT)
 # Altura desde la cual se valida la coinbase a nivel de bloque (monto/unicidad).
 # Los bloques anteriores (era de 50 MPX, faucet, bug de emisión) se aceptan bajo
 # reglas legacy. Se fija en el despliegue coordinado.
-COINBASE_ACTIVATION = 10**12  # placeholder; el deploy la ajusta
+COINBASE_ACTIVATION = 107428  # despliegue coordinado 2026-09-09
 
 
 def _active_pairs(registry):
