@@ -46,10 +46,14 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        # Restringido al dominio de la app. La API no usa credenciales
+        # (transacciones firmadas, sin cookies/sesiones), así que
+        # allow_credentials=False — evita la reflexión de origin que hacía
+        # "*" + credentials=True. Métodos/cabeceras limitados a lo que se usa.
+        allow_origins=["https://metriplexmpx.xyz", "https://www.metriplexmpx.xyz"],
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type"],
     )
 
     @app.get("/peers")
