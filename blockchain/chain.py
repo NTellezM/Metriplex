@@ -140,19 +140,10 @@ class Blockchain:
             print(f"  -> RECHAZADA: Saldo insuficiente ({balance} < {total_required}).")
             return False
 
-        # 3. Construir tx_hash reproducible
-        # SIEMPRE payload=None — igual que buildSignedTx en browser y relayer
-        # El payload se transporta pero no forma parte del hash firmado
-        payload_dict = {
-            "sender_m3":   tx.sender_m3,
-            "receiver_m3": tx.receiver_m3,
-            "amount":      tx.amount,
-            "fee":         tx.fee,
-            "payload":     None,
-        }
-        tx_hash = hashlib.sha256(
-            json.dumps(payload_dict, sort_keys=True, separators=(",",":")).encode()
-        ).hexdigest()
+        # 3. tx_hash reproducible vía la serialización canónica ÚNICA
+        # (misma que el cliente, el relayer y validate_zk_only).
+        from blockchain.tx_canonical import canonical_tx_hash
+        tx_hash = canonical_tx_hash(tx.sender_m3, tx.receiver_m3, tx.amount, tx.fee)
 
         # 4. Verificación ZK
         sig = tx.signature_data
@@ -165,21 +156,21 @@ class Blockchain:
         return True
 
     def validate_zk_only(self, tx) -> bool:
-        """Valida solo ZK proof sin verificar saldo. Usado en replace_chain."""
+        """Valida solo la prueba ZK (sin saldo). Usa la MISMA serialización
+        canónica que validate_transaction y el cliente, resolviendo la antigua
+        discrepancia payload=None vs payload real que obligaba a saltarse la
+        verificación en replace_chain."""
         if not tx.sender_m3:
             return True
         if tx.signature_data.get("type") == "COINBASE":
             return True
-        payload_dict = {
-            "sender_m3": tx.sender_m3,
-            "receiver_m3": tx.receiver_m3,
-            "amount": tx.amount,
-            "fee": tx.fee,
-            "payload": tx.payload if tx.payload else None,
-        }
-        tx_hash = hashlib.sha256(
-            json.dumps(payload_dict, sort_keys=True, separators=(",",":")).encode()
-        ).hexdigest()
+        # Operaciones de protocolo: su firma es sobre protocol_op_hash y se
+        # verifican en add_block (con gating de activación); aquí se difieren.
+        from blockchain.protocol_auth import PROTOCOL_OPS
+        if tx.payload and isinstance(tx.payload, dict) and tx.payload.get("op") in PROTOCOL_OPS:
+            return True
+        from blockchain.tx_canonical import canonical_tx_hash
+        tx_hash = canonical_tx_hash(tx.sender_m3, tx.receiver_m3, tx.amount, tx.fee)
         return self._verify_signature(tx.signature_data, tx.sender_m3, tx_hash)
 
     def _verify_signature(
