@@ -208,6 +208,68 @@ class Blockchain:
 
     # ── Añadir bloque ──────────────────────────────────────────────────────
 
+    def _check_block_coinbase(self, block) -> bool:
+        """Unicidad + monto de la coinbase según la fórmula de emisión.
+        Reutilizado por add_block y por la validación de reorg."""
+        from blockchain.emission import COINBASE_ACTIVATION, expected_coinbase_reward, m3_hash as _m3h
+        coinbases = [tx for tx in block.transactions if not tx.sender_m3]
+        if len(coinbases) > 1:
+            print(f"[Cadena] Rechazo: {len(coinbases)} coinbases en el bloque {block.index} (máx 1).")
+            return False
+        if block.index >= COINBASE_ACTIVATION and coinbases:
+            cb = coinbases[0]
+            if block.transactions[0] is not cb:
+                print(f"[Cadena] Rechazo: la coinbase no está en la posición 0.")
+                return False
+            registry = self.state_db.validator_registry
+            leader_hash = _m3h(cb.receiver_m3) if cb.receiver_m3 else ""
+            if leader_hash not in registry.validators:
+                print(f"[Cadena] Rechazo: receptor de coinbase {leader_hash[:8]} no es validador registrado.")
+                return False
+            expected = expected_coinbase_reward(registry, block.index, leader_hash)
+            if int(cb.amount) != expected:
+                print(f"[Cadena] Rechazo: monto de coinbase {cb.amount} != esperado {expected} "
+                      f"(bloque {block.index}, lider {leader_hash[:8]}).")
+                return False
+        return True
+
+    def _check_protocol_op(self, tx, block_index: int) -> bool:
+        """Firma de una operación de protocolo (gateada por activación)."""
+        from blockchain.protocol_auth import (
+            PROTOCOL_SIG_ACTIVATION, protocol_op_hash,
+        )
+        if block_index < PROTOCOL_SIG_ACTIVATION:
+            return True  # legacy
+        op_hash = protocol_op_hash(tx.sender_m3, tx.payload, tx.amount)
+        if not self._verify_signature(tx.signature_data, tx.sender_m3, op_hash):
+            print(f"[Cadena] Rechazo (reorg): firma inválida en op de protocolo.")
+            return False
+        if tx.payload.get("op") == "VALIDATOR_REGISTER":
+            from blockchain.validator_registry import VALIDATOR_STAKE_REQUIRED
+            if self.state_db.get_balance(tx.sender_m3) < VALIDATOR_STAKE_REQUIRED:
+                print(f"[Cadena] Rechazo (reorg): stake real insuficiente en REGISTER.")
+                return False
+        return True
+
+    def _validate_block_for_reorg(self, block) -> bool:
+        """Valida un bloque candidato antes de aplicarlo en un reorg: integridad
+        del hash, firmas de TX (serialización canónica) y coinbase. Cierra el
+        bypass por el que replace_chain aplicaba estado sin validar."""
+        from blockchain.protocol_auth import PROTOCOL_OPS
+        if block.hash != block.calculate_hash():
+            print(f"[Cadena] Rechazo (reorg): hash inválido en bloque {block.index}.")
+            return False
+        for tx in block.transactions:
+            if not tx.sender_m3:
+                continue  # coinbase — se valida abajo por monto/unicidad
+            if tx.payload and isinstance(tx.payload, dict) and tx.payload.get("op") in PROTOCOL_OPS:
+                if not self._check_protocol_op(tx, block.index):
+                    return False
+            elif not self.validate_zk_only(tx):
+                print(f"[Cadena] Rechazo (reorg): firma de TX inválida en bloque {block.index}.")
+                return False
+        return self._check_block_coinbase(block)
+
     def add_block(self, block: Block, skip_zk: bool = False) -> bool:
         prev = self.chain[-1]
 
@@ -234,26 +296,8 @@ class Blockchain:
         # regla de consenso que frena a un validador que mine un bloque con una
         # coinbase inflada o múltiple. Los bloques históricos (< activación) se
         # aceptan bajo reglas legacy.
-        from blockchain.emission import COINBASE_ACTIVATION, expected_coinbase_reward, m3_hash as _m3h
-        coinbases = [tx for tx in block.transactions if not tx.sender_m3]
-        if len(coinbases) > 1:
-            print(f"[Cadena] Rechazo: {len(coinbases)} coinbases en el bloque {block.index} (máx 1).")
+        if not self._check_block_coinbase(block):
             return False
-        if block.index >= COINBASE_ACTIVATION and coinbases:
-            cb = coinbases[0]
-            if block.transactions[0] is not cb:
-                print(f"[Cadena] Rechazo: la coinbase no está en la posición 0.")
-                return False
-            registry = self.state_db.validator_registry
-            leader_hash = _m3h(cb.receiver_m3) if cb.receiver_m3 else ""
-            if leader_hash not in registry.validators:
-                print(f"[Cadena] Rechazo: receptor de coinbase {leader_hash[:8]} no es validador registrado.")
-                return False
-            expected = expected_coinbase_reward(registry, block.index, leader_hash)
-            if int(cb.amount) != expected:
-                print(f"[Cadena] Rechazo: monto de coinbase {cb.amount} != esperado {expected} "
-                      f"(bloque {block.index}, líder {leader_hash[:8]}).")
-                return False
 
         # Aplicar estado
         for tx in block.transactions:
@@ -457,6 +501,11 @@ class Blockchain:
             replay_blocks = new_blocks_list
         # 3. Re-aplicación desde el punto de inicio
         for block in replay_blocks:
+            # Fase 2: validar el bloque candidato ANTES de aplicarlo (firmas,
+            # coinbase, protocol-ops) contra el estado reconstruido hasta aquí.
+            if not self._validate_block_for_reorg(block):
+                print(f"[Consenso] Reorg abortado: bloque {block.index} inválido.")
+                return False
             for tx in block.transactions:
                 # Fix: faltaba block_index — sin él, apply_transaction usaba
                 # el default 0 para CADA bloque replayado, corrompiendo
