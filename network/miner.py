@@ -456,21 +456,13 @@ class AutoMiner:
                 # reward_v(n) = emission(n) × |R_v| / Λ_range
                 # Supply(∞)   = R₀ × T_scale / |λ_mean|  [converges, no hard cap]
                 if self.miner_m3:
-                    import math as _m
                     block_n = last_block.index + 1
-                    # 1. λ_mean dinámico del conjunto de validadores activos
-                    lambda_mean = self._get_lambda_mean()
-                    # 2. R₀ = (TARGET_SUPPLY/|λ_init|) × λ_mean² / T_scale
-                    #    de modo que Supply(∞) = R₀·T_scale/|λ_mean|
-                    #                          = SUPPLY_PER_LAMBDA·|λ_mean|
-                    r0_mpx = self.SUPPLY_PER_LAMBDA * lambda_mean ** 2 / self.T_SCALE
-                    r0_raw = r0_mpx * SCALE_FACTOR
-                    # 3. Emisión en bloque n: R₀ × e^(λ_mean × n / T_scale)
-                    r_base = r0_raw * _m.exp(lambda_mean * block_n / self.T_SCALE)
-                    # 4. Territorio Voronoi del validador minero
-                    voronoi_fraction = self._get_voronoi_fraction()
-                    # 5. Recompensa proporcional al territorio
-                    reward_raw = int(r_base * voronoi_fraction)
+                    # Recompensa vía la ÚNICA fuente de verdad (blockchain.emission),
+                    # la misma función que usa la validación de bloque en chain.py.
+                    # Así el monto producido == el monto que el verificador espera.
+                    from blockchain.emission import expected_coinbase_reward, m3_hash as _m3h
+                    registry = self.blockchain.state_db.validator_registry
+                    reward_raw = expected_coinbase_reward(registry, block_n, _m3h(self.miner_m3))
                     if reward_raw > 0:
                         coinbase_tx = Transaction(
                             sender_m3=[],
