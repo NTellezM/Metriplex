@@ -256,18 +256,21 @@ async def main():
             if isinstance(params, dict):
                 params = CriterionParams(**params)
 
-            proof = ZKEngine.generate_proof(priv, m3, m3_hash[:16], params, att)
+            _upd_payload = {
+                "op": "VALIDATOR_UPDATE",
+                "endpoint": new_endpoint,
+                "public_m3": m3,
+                "contraction_matrices": [a.tolist() if hasattr(a, "tolist") else a for a in (priv["A"] if isinstance(priv, dict) else priv)],
+            }
+            from blockchain.protocol_auth import protocol_op_hash
+            _op_hash = protocol_op_hash(m3, _upd_payload, 0)
+            proof = ZKEngine.generate_proof(priv, m3, _op_hash, params, att)
             tx = Transaction(
                 sender_m3=m3,
                 receiver_m3=m3,
                 amount=0,
                 signature_data=proof,
-                payload={
-                    "op": "VALIDATOR_UPDATE",
-                    "endpoint": new_endpoint,
-                    "public_m3": m3,
-                    "contraction_matrices": [a.tolist() if hasattr(a, "tolist") else a for a in (priv["A"] if isinstance(priv, dict) else priv)],
-                }
+                payload=_upd_payload,
             )
             if mempool.add_transaction(tx):
                 print(f"[FVR] ✅ Endpoint auto-actualizado: {new_endpoint}")

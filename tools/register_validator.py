@@ -57,12 +57,16 @@ payload = {
     'lambda_value': lam,
 }
 
-payload_for_signing = {
-    'sender_m3': pub, 'receiver_m3': pub,
-    'amount': STAKE, 'fee': 0, 'payload': None
+# Firmar el mensaje CANÓNICO de la operación (igual que protocol_op_hash en el
+# verificador): sha256({op, sender_m3, amount, endpoint, target_m3_hash}).
+canonical = {
+    'op': 'VALIDATOR_REGISTER',
+    'sender_m3': pub,
+    'amount': STAKE,
+    'endpoint': args.endpoint,
+    'target_m3_hash': '',
 }
-
-sig = sign_transaction(priv, payload_for_signing, pub, criterion_params=params_obj, attractor=att)
+sig = sign_transaction(priv, canonical, pub, criterion_params=params_obj, attractor=att)
 
 tx = {
     'sender_m3': pub, 'receiver_m3': pub,
