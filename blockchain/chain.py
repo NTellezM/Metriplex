@@ -256,6 +256,8 @@ class Blockchain:
         del hash, firmas de TX (serialización canónica) y coinbase. Cierra el
         bypass por el que replace_chain aplicaba estado sin validar."""
         from blockchain.protocol_auth import PROTOCOL_OPS
+        if block.index == 0:
+            return True  # génesis: hash constante del protocolo ("0"*64), anclaje común
         if block.hash != block.calculate_hash():
             print(f"[Cadena] Rechazo (reorg): hash inválido en bloque {block.index}.")
             return False
