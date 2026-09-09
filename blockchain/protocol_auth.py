@@ -19,7 +19,7 @@ import json
 # Altura desde la cual las reglas estrictas están activas. Los bloques
 # anteriores se validan con las reglas legacy para que el replay histórico no
 # se rompa. Debe estar unos bloques por delante del despliegue coordinado.
-PROTOCOL_SIG_ACTIVATION = 108000
+PROTOCOL_SIG_ACTIVATION = 107342  # despliegue coordinado 2026-09-09
 
 PROTOCOL_OPS = frozenset({
     "VALIDATOR_REGISTER",
