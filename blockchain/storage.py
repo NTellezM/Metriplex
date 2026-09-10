@@ -19,6 +19,7 @@ Cambios v3:
 import json
 import sqlite3
 import threading
+from contextlib import contextmanager
 
 
 class Storage:
@@ -26,6 +27,33 @@ class Storage:
         self.db_path = db_path
         self._local = threading.local()
         self._create_tables()
+
+    def _in_atomic(self) -> bool:
+        return bool(getattr(self._local, "atomic_depth", 0))
+
+    @contextmanager
+    def atomic(self):
+        """Group ledger writes in one SQLite transaction."""
+        conn = self._conn()
+        depth = getattr(self._local, "atomic_depth", 0)
+        if depth:
+            self._local.atomic_depth = depth + 1
+            try:
+                yield conn
+            finally:
+                self._local.atomic_depth -= 1
+            return
+        self._local.atomic_depth = 1
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            yield conn
+        except Exception:
+            conn.rollback()
+            raise
+        else:
+            conn.commit()
+        finally:
+            self._local.atomic_depth = 0
 
     def _conn(self) -> sqlite3.Connection:
         """
@@ -75,30 +103,57 @@ class Storage:
 
     def credit(self, tensor_hash: str, amount: int):
         """Acredita amount al tensor_hash de forma atómica. Crea el row si no existe."""
-        with self._conn() as conn:
+        if not isinstance(amount, int) or isinstance(amount, bool) or amount <= 0:
+            raise ValueError("El crédito debe ser un entero positivo")
+        def _credit(conn):
+            current = conn.execute(
+                "SELECT balance FROM balances WHERE tensor_hash=?", (tensor_hash,)
+            ).fetchone()
+            if current and current[0] > (2**63 - 1) - amount:
+                raise ValueError("El crédito excede el rango monetario")
             conn.execute(
                 "INSERT INTO balances(tensor_hash, balance) VALUES(?, ?) "
                 "ON CONFLICT(tensor_hash) DO UPDATE SET balance = balance + ?",
-                (tensor_hash, amount, amount)
+                (tensor_hash, amount, amount),
             )
+        if self._in_atomic():
+            _credit(self._conn())
+            return
+        with self._conn() as conn:
+            _credit(conn)
 
     def transfer(self, sender_hash: str, receiver_hash: str, amount: int, fee: int = 0):
         """
         Transfiere amount desde sender a receiver, deduciendo fee del sender.
         Atómica — ambas operaciones en la misma transacción SQLite.
         """
-        with self._conn() as conn:
+        if (not isinstance(amount, int) or isinstance(amount, bool) or amount <= 0
+                or not isinstance(fee, int) or isinstance(fee, bool) or fee < 0):
+            raise ValueError("Monto/comisión inválidos")
+
+        def _transfer(conn):
+            receiver = conn.execute(
+                "SELECT balance FROM balances WHERE tensor_hash=?", (receiver_hash,)
+            ).fetchone()
+            if receiver_hash != sender_hash and receiver and receiver[0] > (2**63 - 1) - amount:
+                raise ValueError("El receptor excedería el rango monetario")
             cur = conn.execute(
-                "UPDATE balances SET balance = balance - ? WHERE tensor_hash = ?",
-                (amount + fee, sender_hash)
+                "UPDATE balances SET balance = balance - ? "
+                "WHERE tensor_hash = ? AND balance >= ?",
+                (amount + fee, sender_hash, amount + fee),
             )
             if cur.rowcount == 0:
-                raise ValueError(f"Sender {sender_hash[:8]} no encontrado en balances")
+                raise ValueError(f"Saldo insuficiente para {sender_hash[:8]}")
             conn.execute(
                 "INSERT INTO balances(tensor_hash, balance) VALUES(?, ?) "
                 "ON CONFLICT(tensor_hash) DO UPDATE SET balance = balance + ?",
                 (receiver_hash, amount, amount)
             )
+        if self._in_atomic():
+            _transfer(self._conn())
+        else:
+            with self._conn() as conn:
+                _transfer(conn)
 
     # ── Bloques ────────────────────────────────────────────────────────────
 
@@ -107,6 +162,14 @@ class Storage:
             tx.to_dict() if hasattr(tx, "to_dict") else tx
             for tx in block.transactions
         ])
+        if self._in_atomic():
+            self._conn().execute(
+                "INSERT OR REPLACE INTO blocks "
+                "(block_index, hash, previous_hash, timestamp, transactions) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (block.index, block.hash, block.previous_hash, block.timestamp, tx_json),
+            )
+            return
         with self._conn() as conn:
             conn.execute(
                 "INSERT OR REPLACE INTO blocks "
@@ -155,6 +218,14 @@ class Storage:
         return row[0] if row else None
 
     def set_contract_state(self, address: str, key: str, value: str):
+        if self._in_atomic():
+            self._conn().execute(
+                "INSERT INTO contract_state(contract_address, state_key, state_value) "
+                "VALUES(?, ?, ?) ON CONFLICT(contract_address, state_key) "
+                "DO UPDATE SET state_value = excluded.state_value",
+                (address, key, value),
+            )
+            return
         with self._conn() as conn:
             conn.execute(
                 "INSERT INTO contract_state(contract_address, state_key, state_value) "
@@ -180,6 +251,14 @@ class Storage:
             "SELECT tensor_hash, balance FROM balances ORDER BY balance DESC"
         ).fetchall()
 
+    def backup_to(self, destination: str):
+        """Create a transactionally consistent SQLite copy."""
+        target = sqlite3.connect(destination, timeout=15.0)
+        try:
+            self._conn().backup(target)
+        finally:
+            target.close()
+
     # ── Snapshots ──────────────────────────────────────────────────────────
 
     def _ensure_snapshot_table(self):
@@ -193,6 +272,11 @@ class Storage:
                     fvr_json      TEXT NOT NULL
                 );
             """)
+            columns = {row[1] for row in conn.execute("PRAGMA table_info(snapshots)")}
+            if "contract_json" not in columns:
+                conn.execute(
+                    "ALTER TABLE snapshots ADD COLUMN contract_json TEXT NOT NULL DEFAULT '[]'"
+                )
 
     def save_snapshot(self, block_index: int, block_hash: str, fvr_state: dict):
         """Guarda snapshot de balances + FVR en bloque N."""
@@ -201,22 +285,33 @@ class Storage:
         balances = self.get_all_balances()
         balances_json = json.dumps(balances)
         fvr_json = json.dumps(fvr_state)
+        contract_json = json.dumps(self._conn().execute(
+            "SELECT contract_address, state_key, state_value FROM contract_state "
+            "ORDER BY contract_address, state_key"
+        ).fetchall())
         with self._conn() as conn:
             conn.execute(
                 "INSERT OR REPLACE INTO snapshots "
-                "(block_index, block_hash, timestamp, balances_json, fvr_json) "
-                "VALUES (?, ?, ?, ?, ?)",
-                (block_index, block_hash, _time.time(), balances_json, fvr_json)
+                "(block_index, block_hash, timestamp, balances_json, fvr_json, contract_json) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (block_index, block_hash, _time.time(), balances_json, fvr_json, contract_json)
             )
         print(f"[Snapshot] ✓ Guardado en bloque {block_index}")
 
-    def get_latest_snapshot(self) -> dict | None:
+    def get_latest_snapshot(self, max_index: int | None = None) -> dict | None:
         """Retorna el snapshot más reciente disponible."""
         self._ensure_snapshot_table()
-        row = self._conn().execute(
-            "SELECT block_index, block_hash, balances_json, fvr_json "
-            "FROM snapshots ORDER BY block_index DESC LIMIT 1"
-        ).fetchone()
+        if max_index is None:
+            row = self._conn().execute(
+                "SELECT block_index, block_hash, balances_json, fvr_json, contract_json "
+                "FROM snapshots ORDER BY block_index DESC LIMIT 1"
+            ).fetchone()
+        else:
+            row = self._conn().execute(
+                "SELECT block_index, block_hash, balances_json, fvr_json, contract_json "
+                "FROM snapshots WHERE block_index <= ? "
+                "ORDER BY block_index DESC LIMIT 1", (max_index,)
+            ).fetchone()
         if not row:
             return None
         return {
@@ -224,6 +319,7 @@ class Storage:
             "block_hash":    row[1],
             "balances_json": row[2],
             "fvr_json":      row[3],
+            "contract_json": row[4],
         }
 
     def restore_snapshot(self, snapshot: dict) -> dict:
@@ -237,11 +333,17 @@ class Storage:
         vacío o con el estado viejo del registry reutilizado — causa
         directa de que la elección de líder divergiera tras un rollback."""
         balances = json.loads(snapshot["balances_json"])
+        contracts = json.loads(snapshot.get("contract_json") or "[]")
         with self._conn() as conn:
             conn.execute("DELETE FROM balances")
+            conn.execute("DELETE FROM contract_state")
             conn.executemany(
                 "INSERT INTO balances(tensor_hash, balance) VALUES(?, ?)",
                 balances
+            )
+            conn.executemany(
+                "INSERT INTO contract_state(contract_address, state_key, state_value) VALUES(?, ?, ?)",
+                contracts,
             )
         print(f"[Snapshot] ✓ Balances restaurados desde bloque {snapshot['block_index']}")
         try:

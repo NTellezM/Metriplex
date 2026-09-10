@@ -23,21 +23,22 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from network.mempool import Mempool
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 # ACTUALIZADO: El portero de la API ahora acepta payloads de contratos
 class TransactionRequest(BaseModel):
     sender_m3: list
     receiver_m3: list
-    amount: int
-    fee: int = 0  # NUEVO
+    amount: int = Field(ge=0, le=2**63 - 1)
+    fee: int = Field(default=0, ge=0, le=2**63 - 1)
     signature_data: dict
     payload: Optional[dict] = None  # Permitir que sea opcional
 
 
 def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAPI:
     app = FastAPI(title="CAF Protocol Node API")
+    keygen_slots = asyncio.Semaphore(1)
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -66,7 +67,19 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
             "chain_length": len(blockchain.chain),
             "mempool_size": len(mempool.pending_transactions),
             "latest_block_hash": blockchain.chain[-1].hash,
+            "chain_id": "metriplex-mainnet",
+            "tx_v2_activation": __import__("blockchain.rules", fromlist=["TX_V2_ACTIVATION"]).TX_V2_ACTIVATION,
         }
+
+    @app.get("/transaction/{tx_id}")
+    async def get_transaction_status(tx_id: str):
+        if len(tx_id) != 64 or any(c not in "0123456789abcdef" for c in tx_id.lower()):
+            raise HTTPException(status_code=400, detail="tx_id inválido")
+        if tx_id in blockchain.confirmed_tx_ids:
+            return {"tx_id": tx_id, "status": "confirmed"}
+        if tx_id in mempool.pending_transactions:
+            return {"tx_id": tx_id, "status": "pending"}
+        raise HTTPException(status_code=404, detail="Transacción no encontrada")
 
     @app.get("/blocks")
     async def get_blocks(limit: int = 10, start: int = None, skip: int = 0, asc: bool = False):
@@ -77,7 +90,7 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         ?skip=N    — compatibilidad legacy
         """
         import json as _json
-        limit = min(limit, 500)
+        limit = max(1, min(limit, 500))
         desc = not asc
         if start is None and skip > 0:
             tip = len(blockchain.chain) - 1
@@ -105,6 +118,8 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         """Devuelve el tensor M3 completo dado un hash de address (64 o 40 chars)."""
         import hashlib, json
         address = address.lower().replace('0x','')
+        if len(address) not in (40, 64) or any(c not in "0123456789abcdef" for c in address):
+            raise HTTPException(status_code=400, detail="Address inválida")
         for block in blockchain.chain:
             for tx in block.transactions:
                 for m3 in [tx.sender_m3, tx.receiver_m3]:
@@ -134,6 +149,11 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
     @app.get("/balance/{tensor_hash}")
     def get_balance(tensor_hash: str):
         try:
+            tensor_hash = tensor_hash.lower().removeprefix("0x")
+            if len(tensor_hash) not in (40, 64) or any(
+                c not in "0123456789abcdef" for c in tensor_hash
+            ):
+                raise HTTPException(status_code=400, detail="Hash inválido")
             # Buscar con hash completo (64 chars) o prefijo (40 chars)
             balance = blockchain.storage.get_balance(tensor_hash)
             if balance == 0 and len(tensor_hash) <= 40:
@@ -155,6 +175,8 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
                 "balance_raw": balance,
                 "balance_caf": balance / SCALE_FACTOR,
             }
+        except HTTPException:
+            raise
         except Exception as e:
             return {"error": str(e)}
 
@@ -192,6 +214,21 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
     @app.post("/transaction")
     async def submit_transaction(tx_req: TransactionRequest, request: Request):
         try:
+            def valid_m3(value):
+                return (
+                    isinstance(value, list) and len(value) == 4
+                    and all(isinstance(matrix, list) and len(matrix) == 4 for matrix in value)
+                    and all(isinstance(row, list) and len(row) == 4 for matrix in value for row in matrix)
+                    and all(
+                        isinstance(item, int) and not isinstance(item, bool)
+                        for matrix in value for row in matrix for item in row
+                    )
+                )
+            if not valid_m3(tx_req.sender_m3) or not valid_m3(tx_req.receiver_m3):
+                raise HTTPException(status_code=400, detail="Tensor M3 inválido")
+            import json as _json
+            if len(_json.dumps(tx_req.signature_data)) > 2_000_000:
+                raise HTTPException(status_code=413, detail="Prueba demasiado grande")
             op = (tx_req.payload or {}).get("op") if isinstance(tx_req.payload, dict) else None
             via_proxy = "x-real-ip" in request.headers or "x-forwarded-for" in request.headers
             if op in _PROTOCOL_OPS and via_proxy:
@@ -277,6 +314,35 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         # o sea 31 bits derivados de un dato público. Se usa RandomState y no
         # default_rng porque _qr_rotation_fp_seeded llama rng.randn, que sólo
         # existe en RandomState.
+        if keygen_slots.locked():
+            raise HTTPException(status_code=429, detail="Hay otra identidad en generación; reintenta en un minuto")
+        await keygen_slots.acquire()
+        try:
+            return await asyncio.to_thread(_generate_keystore_sync, req)
+        finally:
+            keygen_slots.release()
+
+    def _generate_keystore_sync(req: dict):
+        import hashlib, json, os, base64, re
+        from fastapi import HTTPException
+        from cryptography.fernet import Fernet
+        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+        from cryptography.hazmat.primitives import hashes
+        import numpy as np
+        from crypto.keys import (
+            chaos_game, _make_contraction_seeded, validate_r1, validate_scale,
+            validate_kruskal, N, D, RHO_MIN, RHO_MAX, MAX_KEYGEN_ATTEMPTS,
+        )
+        from crypto.tensors import calculate_m3_tensor
+        from core.verifier import calibrate, evaluate
+
+        raw_address = req.get("address")
+        evm_address = raw_address.strip().lower() if isinstance(raw_address, str) else ""
+        password = req.get("password") or ""
+        if not re.fullmatch(r"0x[0-9a-f]{40}", evm_address):
+            raise HTTPException(status_code=400, detail="Address EVM inválida")
+        if not isinstance(password, str) or len(password) < 8:
+            raise HTTPException(status_code=400, detail="Password demasiado corta (mínimo 8)")
         rng = np.random.RandomState(np.frombuffer(os.urandom(32), dtype=np.uint32))
 
         private_key = criterion_params = attractor = None
@@ -381,6 +447,9 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
 
     @app.post("/identity/face/register")
     def face_register(req: FaceVector):
+        import os
+        if os.environ.get("ENABLE_FACE_IDENTITY", "0") != "1":
+            raise HTTPException(status_code=503, detail="Registro biométrico deshabilitado")
         import time, json as _json
         if len(req.vector) not in (6, 24, 128):
             raise HTTPException(status_code=400, detail="Vector debe tener 6 o 128 componentes")
@@ -400,6 +469,9 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
 
     @app.post("/identity/face/verify")
     def face_verify(req: FaceVerify):
+        import os
+        if os.environ.get("ENABLE_FACE_IDENTITY", "0") != "1":
+            raise HTTPException(status_code=503, detail="Verificación biométrica deshabilitada")
         import json as _json
         db = _face_db()
         try:

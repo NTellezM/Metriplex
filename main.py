@@ -205,6 +205,7 @@ async def main():
             p2p_node=p2p_node,
             block_time_seconds=60,
             miner_m3=miner_m3,
+            miner_identity=geo_identity,
         )
         tasks.append(miner.start())
     # Auto-publicar endpoint actual al arrancar — resuelve IP dinámica
@@ -262,8 +263,16 @@ async def main():
                 "public_m3": m3,
                 "contraction_matrices": [a.tolist() if hasattr(a, "tolist") else a for a in (priv["A"] if isinstance(priv, dict) else priv)],
             }
+            from blockchain.rules import CHAIN_ID, TX_V2_ACTIVATION
+            if len(blockchain.chain) >= TX_V2_ACTIVATION:
+                import secrets
+                _upd_payload.update({
+                    "version": 2,
+                    "chain_id": CHAIN_ID,
+                    "nonce": secrets.token_hex(16),
+                })
             from blockchain.protocol_auth import protocol_op_hash
-            _op_hash = protocol_op_hash(m3, _upd_payload, 0)
+            _op_hash = protocol_op_hash(m3, _upd_payload, 0, m3, 0)
             proof = ZKEngine.generate_proof(priv, m3, _op_hash, params, att)
             tx = Transaction(
                 sender_m3=m3,

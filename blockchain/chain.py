@@ -32,6 +32,7 @@ class Blockchain:
         self.validator_registry = ValidatorRegistry()
         self.state_db = StateDB(self.storage, self.validator_registry)
         self.chain = []
+        self.confirmed_tx_ids = set()
         self.unconfirmed_transactions = []
         self.load_chain_from_disk()
 
@@ -60,6 +61,8 @@ class Blockchain:
                 )
                 tx.tx_id = tx_data["tx_id"]
                 transactions.append(tx)
+                if tx.sender_m3:
+                    self.confirmed_tx_ids.add(tx.tx_id)
 
             block = Block(index, transactions, prev_hash, timestamp)
             block.hash = b_hash
@@ -90,10 +93,33 @@ class Blockchain:
         """
         print(f"\n[Consenso] Verificando TX {tx.tx_id[:8]}...")
 
+        from blockchain.rules import MAX_MONEY_RAW, TX_V2_ACTIVATION
+        is_int = lambda value: isinstance(value, int) and not isinstance(value, bool)
+        if not is_int(tx.amount) or not is_int(tx.fee):
+            print("  -> RECHAZADA: monto o comisión no son enteros.")
+            return False
+        if tx.amount < 0 or tx.fee < 0 or tx.amount > MAX_MONEY_RAW or tx.fee > MAX_MONEY_RAW:
+            print("  -> RECHAZADA: monto o comisión fuera de rango.")
+            return False
+        if tx.amount + tx.fee > MAX_MONEY_RAW:
+            print("  -> RECHAZADA: suma de monto y comisión fuera de rango.")
+            return False
+
         # 1. Transacciones de emisión (Coinbase / Faucet)
         if not tx.sender_m3:
-            print("  -> ACEPTADA: Transacción Coinbase.")
-            return True
+            return tx.amount > 0 and tx.fee == 0
+
+        op = tx.payload.get("op") if isinstance(tx.payload, dict) else None
+        if tx.amount == 0 and op not in {"VALIDATOR_EXIT", "VALIDATOR_UPDATE", "VALIDATOR_GOVERNANCE_EXIT"}:
+            print("  -> RECHAZADA: el monto debe ser positivo.")
+            return False
+
+        is_v2 = isinstance(tx.payload, dict) and tx.payload.get("version") == 2
+        if block_index >= TX_V2_ACTIVATION or is_v2:
+            from blockchain.tx_canonical import validate_v2_payload
+            if not validate_v2_payload(tx.payload):
+                print("  -> RECHAZADA: falta sobre firmado v2 (chain_id/nonce).")
+                return False
 
         # Operaciones de protocolo (registro/salida/actualización/gobernanza).
         from blockchain.protocol_auth import (
@@ -106,7 +132,9 @@ class Blockchain:
                 print(f"  -> ACEPTADA (legacy): Operación de protocolo ({op}).")
                 return True
             # Reglas estrictas: firma ZK del emisor sobre el mensaje canónico.
-            op_hash = protocol_op_hash(tx.sender_m3, tx.payload, tx.amount)
+            op_hash = protocol_op_hash(
+                tx.sender_m3, tx.payload, tx.amount, tx.receiver_m3, tx.fee
+            )
             if not self._verify_signature(tx.signature_data, tx.sender_m3, op_hash):
                 print(f"  -> RECHAZADA: firma inválida en operación de protocolo ({op}).")
                 return False
@@ -115,6 +143,21 @@ class Blockchain:
                 bal = self.state_db.get_balance(tx.sender_m3)
                 if bal < VALIDATOR_STAKE_REQUIRED:
                     print(f"  -> RECHAZADA: stake real insuficiente ({bal} < {VALIDATOR_STAKE_REQUIRED}).")
+                    return False
+                if block_index >= TX_V2_ACTIVATION:
+                    from blockchain.rules import STAKE_VAULT_M3_HASH
+                    if (tx.amount != VALIDATOR_STAKE_REQUIRED
+                            or self.get_tensor_hash(tx.receiver_m3) != STAKE_VAULT_M3_HASH
+                            or self.get_tensor_hash(tx.sender_m3) in self.validator_registry.validators):
+                        print("  -> RECHAZADA: registro de validador no bloquea el stake en el vault.")
+                        return False
+            elif op == "VALIDATOR_EXIT" and block_index >= TX_V2_ACTIVATION:
+                from blockchain.rules import STAKE_VAULT_M3_HASH
+                sender_hash = self.get_tensor_hash(tx.sender_m3)
+                if (sender_hash not in self.validator_registry.validators
+                        or self.get_tensor_hash(tx.receiver_m3) != STAKE_VAULT_M3_HASH
+                        or tx.amount != 0 or tx.fee != 0):
+                    print("  -> RECHAZADA: salida de validador inválida.")
                     return False
             # Los votos de VALIDATOR_GOVERNANCE_EXIT se verifican al aplicar (state.py).
             print(f"  -> ACEPTADA: Operación de protocolo firmada ({op}).")
@@ -142,8 +185,13 @@ class Blockchain:
 
         # 3. tx_hash reproducible vía la serialización canónica ÚNICA
         # (misma que el cliente, el relayer y validate_zk_only).
-        from blockchain.tx_canonical import canonical_tx_hash
-        tx_hash = canonical_tx_hash(tx.sender_m3, tx.receiver_m3, tx.amount, tx.fee)
+        from blockchain.tx_canonical import canonical_tx_hash, canonical_tx_hash_v2
+        if is_v2:
+            tx_hash = canonical_tx_hash_v2(
+                tx.sender_m3, tx.receiver_m3, tx.amount, tx.fee, tx.payload
+            )
+        else:
+            tx_hash = canonical_tx_hash(tx.sender_m3, tx.receiver_m3, tx.amount, tx.fee)
 
         # 4. Verificación ZK
         sig = tx.signature_data
@@ -155,7 +203,7 @@ class Blockchain:
         print("  -> ACEPTADA: Prueba ZK verificada.")
         return True
 
-    def validate_zk_only(self, tx) -> bool:
+    def validate_zk_only(self, tx, block_index: int = 0) -> bool:
         """Valida solo la prueba ZK (sin saldo). Usa la MISMA serialización
         canónica que validate_transaction y el cliente, resolviendo la antigua
         discrepancia payload=None vs payload real que obligaba a saltarse la
@@ -169,8 +217,18 @@ class Blockchain:
         from blockchain.protocol_auth import PROTOCOL_OPS
         if tx.payload and isinstance(tx.payload, dict) and tx.payload.get("op") in PROTOCOL_OPS:
             return True
-        from blockchain.tx_canonical import canonical_tx_hash
-        tx_hash = canonical_tx_hash(tx.sender_m3, tx.receiver_m3, tx.amount, tx.fee)
+        from blockchain.rules import TX_V2_ACTIVATION
+        from blockchain.tx_canonical import canonical_tx_hash, canonical_tx_hash_v2, validate_v2_payload
+        is_v2 = isinstance(tx.payload, dict) and tx.payload.get("version") == 2
+        if block_index >= TX_V2_ACTIVATION or is_v2:
+            if not validate_v2_payload(tx.payload):
+                return False
+        if is_v2:
+            tx_hash = canonical_tx_hash_v2(
+                tx.sender_m3, tx.receiver_m3, tx.amount, tx.fee, tx.payload
+            )
+        else:
+            tx_hash = canonical_tx_hash(tx.sender_m3, tx.receiver_m3, tx.amount, tx.fee)
         return self._verify_signature(tx.signature_data, tx.sender_m3, tx_hash)
 
     def _verify_signature(
@@ -213,6 +271,10 @@ class Blockchain:
         Reutilizado por add_block y por la validación de reorg."""
         from blockchain.emission import COINBASE_ACTIVATION, expected_coinbase_reward, m3_hash as _m3h
         coinbases = [tx for tx in block.transactions if not tx.sender_m3]
+        from blockchain.rules import TX_V2_ACTIVATION
+        if block.index >= TX_V2_ACTIVATION and len(coinbases) != 1:
+            print(f"[Cadena] Rechazo: bloque {block.index} requiere exactamente una coinbase.")
+            return False
         if len(coinbases) > 1:
             print(f"[Cadena] Rechazo: {len(coinbases)} coinbases en el bloque {block.index} (máx 1).")
             return False
@@ -231,6 +293,31 @@ class Blockchain:
                 print(f"[Cadena] Rechazo: monto de coinbase {cb.amount} != esperado {expected} "
                       f"(bloque {block.index}, lider {leader_hash[:8]}).")
                 return False
+            if block.index >= TX_V2_ACTIVATION:
+                import time
+                from blockchain.block_auth import BLOCK_TIME_SECONDS, expected_leader, producer_hash
+                if block.timestamp <= self.chain[-1].timestamp:
+                    print("[Cadena] Rechazo: timestamp no avanza.")
+                    return False
+                if int(block.timestamp // BLOCK_TIME_SECONDS) <= int(
+                    self.chain[-1].timestamp // BLOCK_TIME_SECONDS
+                ):
+                    print("[Cadena] Rechazo: ya existe un bloque en este slot.")
+                    return False
+                if block.timestamp > time.time() + 120:
+                    print("[Cadena] Rechazo: timestamp demasiado futuro.")
+                    return False
+                elected = expected_leader(
+                    self.chain, self.validator_registry, block.timestamp
+                )
+                if elected != leader_hash:
+                    print("[Cadena] Rechazo: la coinbase no pertenece al líder del slot.")
+                    return False
+                if not self._verify_signature(
+                    cb.signature_data, cb.receiver_m3, producer_hash(block)
+                ):
+                    print("[Cadena] Rechazo: autenticación del productor inválida.")
+                    return False
         return True
 
     def _check_protocol_op(self, tx, block_index: int) -> bool:
@@ -240,7 +327,9 @@ class Blockchain:
         )
         if block_index < PROTOCOL_SIG_ACTIVATION:
             return True  # legacy
-        op_hash = protocol_op_hash(tx.sender_m3, tx.payload, tx.amount)
+        op_hash = protocol_op_hash(
+            tx.sender_m3, tx.payload, tx.amount, tx.receiver_m3, tx.fee
+        )
         if not self._verify_signature(tx.signature_data, tx.sender_m3, op_hash):
             print(f"[Cadena] Rechazo (reorg): firma inválida en op de protocolo.")
             return False
@@ -248,6 +337,21 @@ class Blockchain:
             from blockchain.validator_registry import VALIDATOR_STAKE_REQUIRED
             if self.state_db.get_balance(tx.sender_m3) < VALIDATOR_STAKE_REQUIRED:
                 print(f"[Cadena] Rechazo (reorg): stake real insuficiente en REGISTER.")
+                return False
+            from blockchain.rules import STAKE_VAULT_M3_HASH, TX_V2_ACTIVATION
+            if block_index >= TX_V2_ACTIVATION and (
+                tx.amount != VALIDATOR_STAKE_REQUIRED
+                or self.get_tensor_hash(tx.receiver_m3) != STAKE_VAULT_M3_HASH
+                or self.get_tensor_hash(tx.sender_m3) in self.validator_registry.validators
+            ):
+                return False
+        elif tx.payload.get("op") == "VALIDATOR_EXIT":
+            from blockchain.rules import STAKE_VAULT_M3_HASH, TX_V2_ACTIVATION
+            if block_index >= TX_V2_ACTIVATION and (
+                self.get_tensor_hash(tx.sender_m3) not in self.validator_registry.validators
+                or self.get_tensor_hash(tx.receiver_m3) != STAKE_VAULT_M3_HASH
+                or tx.amount != 0 or tx.fee != 0
+            ):
                 return False
         return True
 
@@ -257,17 +361,28 @@ class Blockchain:
         bypass por el que replace_chain aplicaba estado sin validar."""
         from blockchain.protocol_auth import PROTOCOL_OPS
         if block.index == 0:
-            return True  # génesis: hash constante del protocolo ("0"*64), anclaje común
+            return (
+                block.hash == "0" * 64
+                and block.previous_hash == "0"
+                and block.timestamp == 1.0
+                and not block.transactions
+            )
         if block.hash != block.calculate_hash():
             print(f"[Cadena] Rechazo (reorg): hash inválido en bloque {block.index}.")
             return False
         for tx in block.transactions:
+            from blockchain.rules import MAX_MONEY_RAW
+            if (not isinstance(tx.amount, int) or isinstance(tx.amount, bool)
+                    or not isinstance(tx.fee, int) or isinstance(tx.fee, bool)
+                    or tx.amount < 0 or tx.fee < 0
+                    or tx.amount + tx.fee > MAX_MONEY_RAW):
+                return False
             if not tx.sender_m3:
                 continue  # coinbase — se valida abajo por monto/unicidad
             if tx.payload and isinstance(tx.payload, dict) and tx.payload.get("op") in PROTOCOL_OPS:
                 if not self._check_protocol_op(tx, block.index):
                     return False
-            elif not self.validate_zk_only(tx):
+            elif not self.validate_zk_only(tx, block.index):
                 print(f"[Cadena] Rechazo (reorg): firma de TX inválida en bloque {block.index}.")
                 return False
         return self._check_block_coinbase(block)
@@ -287,6 +402,22 @@ class Blockchain:
             print(f"[Cadena] Rechazo: hash del bloque inválido.")
             return False
 
+        block_ids = [tx.tx_id for tx in block.transactions if tx.sender_m3]
+        from blockchain.rules import TX_V2_ACTIVATION
+        if any(
+            tx.tx_id != tx.calculate_hash()
+            for tx in block.transactions
+            if block.index >= TX_V2_ACTIVATION
+            or (isinstance(tx.payload, dict) and tx.payload.get("version") == 2)
+        ):
+            print("[Cadena] Rechazo: tx_id no corresponde al contenido.")
+            return False
+        if len(block_ids) != len(set(block_ids)) or any(
+            tx_id in self.confirmed_tx_ids for tx_id in block_ids
+        ):
+            print("[Cadena] Rechazo: transacción duplicada o ya confirmada.")
+            return False
+
         if not skip_zk:
             for tx in block.transactions:
                 if not self.validate_transaction(tx, block_index=block.index):
@@ -301,16 +432,29 @@ class Blockchain:
         if not self._check_block_coinbase(block):
             return False
 
-        # Aplicar estado
-        for tx in block.transactions:
-            self.state_db.apply_transaction(
-                tx.tx_id, tx.sender_m3, tx.receiver_m3, tx.amount, tx.payload, tx.fee, block.index
-            )
-
-        for tx in block.transactions:
-            self.validator_registry.process_tx(tx, block.index)
+        # Aplicar el bloque como una sola transacción SQLite. Si una operación
+        # falla, no persisten saldos parciales ni el bloque.
+        import copy
+        registry_backup = copy.deepcopy(self.validator_registry)
+        try:
+            with self.storage.atomic():
+                for tx in block.transactions:
+                    applied = self.state_db.apply_transaction(
+                        tx.tx_id, tx.sender_m3, tx.receiver_m3,
+                        tx.amount, tx.payload, tx.fee, block.index,
+                    )
+                    if not applied:
+                        raise ValueError(f"no se pudo aplicar TX {tx.tx_id[:8]}")
+                for tx in block.transactions:
+                    self.validator_registry.process_tx(tx, block.index)
+                self.storage.save_block(block)
+        except Exception as exc:
+            self.validator_registry = registry_backup
+            self.state_db.validator_registry = registry_backup
+            print(f"[Cadena] Rechazo: aplicación atómica falló: {exc}")
+            return False
         self.chain.append(block)
-        self.storage.save_block(block)
+        self.confirmed_tx_ids.update(block_ids)
         # Snapshot cada 1000 bloques
         if block.index > 0 and block.index % 1000 == 0:
             fvr_state = {
@@ -324,6 +468,8 @@ class Blockchain:
         return True
 
     def add_new_transaction(self, tx: Transaction) -> bool:
+        if tx.tx_id in self.confirmed_tx_ids:
+            return False
         if self.validate_transaction(tx, block_index=len(self.chain)):
             self.unconfirmed_transactions.append(tx)
             return True
@@ -363,7 +509,7 @@ class Blockchain:
         # Snapshot más cercano por debajo del target
         from blockchain.state import StateDB
         from blockchain.validator_registry import ValidatorRegistry
-        snapshot = self.storage.get_latest_snapshot()
+        snapshot = self.storage.get_latest_snapshot(target_index)
 
         # Reset completo (igual que replace_chain)
         self.storage.clear_all()
@@ -382,7 +528,9 @@ class Blockchain:
         self.validator_registry = ValidatorRegistry()
         self.state_db = StateDB(self.storage, self.validator_registry)
 
-        if snapshot and snapshot["block_index"] <= target_index:
+        if (snapshot and snapshot["block_index"] <= target_index
+                and snapshot["block_index"] < len(keep_blocks)
+                and keep_blocks[snapshot["block_index"]].hash == snapshot["block_hash"]):
             snap_idx = snapshot["block_index"]
             fvr_state = self.storage.restore_snapshot(snapshot)
             if fvr_state.get("validators"):
@@ -411,6 +559,10 @@ class Blockchain:
                 )
             for tx in blk.transactions:
                 self.validator_registry.process_tx(tx, blk.index)
+
+        self.confirmed_tx_ids = {
+            tx.tx_id for blk in self.chain for tx in blk.transactions if tx.sender_m3
+        }
 
         print(f"[Cadena] Rollback completado. Tip: bloque {self.chain[-1].index}")
         return True
@@ -445,85 +597,47 @@ class Blockchain:
             print(f"[Consenso] ⛔ Reorg rechazado: profundidad {reorg_depth} > MAX {MAX_REORG_DEPTH}")
             return False
 
-        print(
-            f"\n[Consenso] ⚖️ Evaluando bifurcación: Local ({len(self.chain)}) vs Red ({len(new_blocks_list)}) reorg_depth={reorg_depth}"
-        )
-
-        # 1. Validación Estructural de la nueva rama
-        for i in range(1, len(new_blocks_list)):
-            prev = new_blocks_list[i - 1]
-            curr = new_blocks_list[i]
-            if curr.previous_hash != prev.hash:
-                print(
-                    f"  -> [Rechazo] Linaje roto en el bloque {curr.index} de la cadena propuesta."
-                )
+        print(f"\n[Consenso] Evaluando rama remota; profundidad={reorg_depth}")
+        if not new_blocks_list or not self._validate_block_for_reorg(new_blocks_list[0]):
+            return False
+        for i, block in enumerate(new_blocks_list):
+            if block.index != i:
+                print(f"[Consenso] Reorg rechazado: índice no canónico en posición {i}.")
                 return False
-            # Skip hash recalculation — confiar en hash del peer
-            # (TX serialization puede diferir por payload null vs {})
-            # La integridad se garantiza por la cadena de previous_hash
-            pass
-
-        # ZK skip en reorg — la cadena ya fue validada al minarse
-        print("[Consenso] ✓ Cadena propuesta válida. Aplicando reorg...")
-
-        print(
-            "[Consenso] 🔄 Bifurcación ganadora. Iniciando Rollback de estado global..."
-        )
-        # 2. Reset de Estado — usar snapshot si existe
-        from blockchain.state import StateDB
-        from blockchain.validator_registry import ValidatorRegistry
-        snapshot = self.storage.get_latest_snapshot()
-        # Fix 3 (mismo bug que rollback_to) — self.validator_registry se
-        # reutilizaba sin resetear, y el replay de abajo NUNCA llamaba
-        # validator_registry.process_tx: el registry quedaba congelado con
-        # el estado de la rama vieja, sin reflejar en absoluto la rama
-        # ganadora recién aplicada. Se reconstruye desde cero igual que
-        # rollback_to y load_chain_from_disk.
-        self.validator_registry = ValidatorRegistry()
-        if snapshot and snapshot["block_index"] < len(new_blocks_list):
-            snap_idx = snapshot["block_index"]
-            print(f"[Consenso] Usando snapshot en bloque {snap_idx}")
-            self.storage.clear_all()
-            self.chain = []
-            self.state_db = StateDB(self.storage, self.validator_registry)
-            fvr_state = self.storage.restore_snapshot(snapshot)
-            if fvr_state.get("validators"):
-                self.validator_registry.seed_history(
-                    snap_idx, fvr_state["validators"], fvr_state.get("slashed")
-                )
-            for block in new_blocks_list[:snap_idx + 1]:
-                self.chain.append(block)
-                self.storage.save_block(block)
-            replay_blocks = new_blocks_list[snap_idx + 1:]
-        else:
-            print("[Consenso] Sin snapshot — replay completo desde genesis")
-            self.storage.clear_all()
-            self.chain = []
-            self.state_db = StateDB(self.storage, self.validator_registry)
-            replay_blocks = new_blocks_list
-        # 3. Re-aplicación desde el punto de inicio
-        for block in replay_blocks:
-            # Fase 2: validar el bloque candidato ANTES de aplicarlo (firmas,
-            # coinbase, protocol-ops) contra el estado reconstruido hasta aquí.
-            if not self._validate_block_for_reorg(block):
-                print(f"[Consenso] Reorg abortado: bloque {block.index} inválido.")
+            if i and (block.previous_hash != new_blocks_list[i - 1].hash
+                      or block.hash != block.calculate_hash()):
+                print(f"[Consenso] Reorg rechazado: bloque {i} sin integridad.")
                 return False
-            for tx in block.transactions:
-                # Fix: faltaba block_index — sin él, apply_transaction usaba
-                # el default 0 para CADA bloque replayado, corrompiendo
-                # cualquier lógica que dependa del índice real (p.ej.
-                # GOVERNANCE_EXIT vía state.py, que delega a
-                # ValidatorRegistry.execute_governance_exit con block_index).
-                self.state_db.apply_transaction(
-                    tx.tx_id, tx.sender_m3, tx.receiver_m3,
-                    tx.amount, tx.payload, tx.fee, block.index,
-                )
-            for tx in block.transactions:
-                self.validator_registry.process_tx(tx, block.index)
-            self.chain.append(block)
-            self.storage.save_block(block)
 
-        print(
-            f"[Consenso] ✓ Reorganización exitosa. Nueva altura del ledger: {len(self.chain)}"
-        )
+        # Validate the divergent branch against a private database copy. An
+        # invalid candidate can no longer erase or partially rewrite live state.
+        import os
+        import tempfile
+        fd, staging_path = tempfile.mkstemp(prefix="metriplex-reorg-", suffix=".db")
+        os.close(fd)
+        try:
+            self.storage.backup_to(staging_path)
+            staged = Blockchain(Storage(staging_path))
+            ancestor = diverge_at - 1
+            if not staged.rollback_to(ancestor):
+                return False
+            for block in new_blocks_list[diverge_at:]:
+                if not staged._validate_block_for_reorg(block):
+                    return False
+                if not staged.add_block(block, skip_zk=True):
+                    return False
+        finally:
+            for suffix in ("", "-wal", "-shm"):
+                try:
+                    os.unlink(staging_path + suffix)
+                except FileNotFoundError:
+                    pass
+
+        ancestor = diverge_at - 1
+        if ancestor < self.chain[-1].index and not self.rollback_to(ancestor):
+            return False
+        for block in new_blocks_list[diverge_at:]:
+            if not self.add_block(block, skip_zk=True):
+                raise RuntimeError("La rama validada no pudo aplicarse al estado local")
+        print(f"[Consenso] ✓ Reorganización exitosa. Nueva altura: {self.chain[-1].index}")
         return True

@@ -150,9 +150,16 @@ class CAFNode:
             ).hexdigest()
             if payload.get("m3_hash") != expected_hash:
                 return False
-            # Nonce reciente (< 2 horas)
-            # El nonce es sha256(endpoint:hora) — no podemos verificar timestamp directamente
-            # pero el ZK proof lo vincula al nonce
+            endpoint = payload.get("endpoint")
+            if not isinstance(endpoint, str):
+                return False
+            hour = int(time.time() // 3600)
+            valid_nonces = {
+                hashlib.sha256(f"{endpoint}:{h}".encode()).hexdigest()
+                for h in (hour, hour - 1)
+            }
+            if nonce not in valid_nonces:
+                return False
             params_raw = proof.get("criterion_params")
             if not params_raw:
                 return False
@@ -239,19 +246,30 @@ class CAFNode:
     async def handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ):
-        # Buffer de 10 MB para soportar segmentos enteros de cadena (Block Sync)
-        data = await reader.read(10485760)
-        if len(data) == 10485760 or (data and data[-1:] != b'}'):
+        # Límite duro: un peer no puede obligar al proceso a acumular memoria
+        # sin cota. Los segmentos normales contienen como máximo 50 bloques.
+        max_message = 16 * 1024 * 1024
+        data = await reader.read(min(10485760, max_message + 1))
+        if len(data) >= 10485760 or (data and data[-1:] != b'}'):
             chunks = [data]
-            while True:
+            total = len(data)
+            while total <= max_message:
                 try:
-                    chunk = await asyncio.wait_for(reader.read(65536), timeout=1.0)
+                    chunk = await asyncio.wait_for(
+                        reader.read(min(65536, max_message + 1 - total)), timeout=1.0
+                    )
                     if not chunk:
                         break
                     chunks.append(chunk)
+                    total += len(chunk)
                 except asyncio.TimeoutError:
                     break
             data = b"".join(chunks)
+        if len(data) > max_message:
+            print("[P2P] Mensaje rechazado: excede 16 MiB")
+            writer.close()
+            await writer.wait_closed()
+            return
         if not data:
             writer.close()
             await writer.wait_closed()
@@ -267,6 +285,21 @@ class CAFNode:
         try:
             payload = json.loads(message)
             msg_type = payload.get("type")
+
+            def validated_requester(value):
+                if not isinstance(value, str) or value.count(":") != 1:
+                    return None
+                host, port_text = value.rsplit(":", 1)
+                try:
+                    port_value = int(port_text)
+                except ValueError:
+                    return None
+                peername = writer.get_extra_info("peername")
+                peer_ip = peername[0] if peername else None
+                if host != peer_ip or not (1 <= port_value <= 65535):
+                    print(f"[P2P] Requester rechazado: {value} no coincide con {peer_ip}")
+                    return None
+                return host, port_value
 
             if msg_type == "GEO_HANDSHAKE":
                 new_peer = payload.get("endpoint")
@@ -327,6 +360,9 @@ class CAFNode:
                 # Un nodo recién conectado pide bloques
                 requester_index = payload.get("last_index")
                 requester_addr = payload.get("requester")
+                requester_target = validated_requester(requester_addr)
+                if requester_target is None:
+                    return
 
                 local_height = self.blockchain.chain[-1].index
 
@@ -350,10 +386,10 @@ class CAFNode:
                     ).encode()
 
                     # Conectar directamente al solicitante para no saturar la red (Gossip)
-                    host, port = requester_addr.split(":")
+                    host, port = requester_target
                     try:
                         resp_reader, resp_writer = await asyncio.open_connection(
-                            host, int(port)
+                            host, port
                         )
                         resp_writer.write(resp_msg)
                         await resp_writer.drain()
@@ -389,7 +425,11 @@ class CAFNode:
                             signature_data=tx_data.get("signature_data", {}),
                             payload=tx_data.get("payload", {}),
                         )
-                        tx.tx_id = tx_data["tx_id"]
+                        calculated_id = tx.tx_id
+                        from blockchain.rules import TX_V2_ACTIVATION
+                        if b_data["index"] >= TX_V2_ACTIVATION and tx_data.get("tx_id") != calculated_id:
+                            raise ValueError("tx_id P2P no coincide con el contenido")
+                        tx.tx_id = tx_data.get("tx_id", calculated_id)
                         txs.append(tx)
 
                     # Construir bloque
@@ -408,7 +448,7 @@ class CAFNode:
                         if existing and existing.hash == new_block.hash:
                             continue
                     # Intentar inyectar en la base de datos local
-                    if self.blockchain.add_block(new_block, skip_zk=True):
+                    if self.blockchain.add_block(new_block):
                         added_count += 1
                         self.mempool.remove_mined_transactions(txs)
                     else:
@@ -480,7 +520,11 @@ class CAFNode:
                     signature_data=tx_data["signature_data"],
                     payload=tx_data.get("payload", {}),
                 )
-                tx.tx_id = tx_data["tx_id"]
+                calculated_id = tx.tx_id
+                from blockchain.rules import TX_V2_ACTIVATION
+                if len(self.blockchain.chain) >= TX_V2_ACTIVATION and tx_data.get("tx_id") != calculated_id:
+                    raise ValueError("tx_id P2P no coincide con el contenido")
+                tx.tx_id = tx_data.get("tx_id", calculated_id)
                 loop = asyncio.get_event_loop()
                 success = await loop.run_in_executor(None, self.mempool.add_transaction, tx)
                 if success:
@@ -501,7 +545,11 @@ class CAFNode:
                         signature_data=tx_data.get("signature_data", {}),
                         payload=tx_data.get("payload", {}),
                     )
-                    tx.tx_id = tx_data["tx_id"]
+                    calculated_id = tx.tx_id
+                    from blockchain.rules import TX_V2_ACTIVATION
+                    if block_data["index"] >= TX_V2_ACTIVATION and tx_data.get("tx_id") != calculated_id:
+                        raise ValueError("tx_id P2P no coincide con el contenido")
+                    tx.tx_id = tx_data.get("tx_id", calculated_id)
                     txs.append(tx)
 
                 new_block = Block(
@@ -555,21 +603,25 @@ class CAFNode:
             # --- FASE F2: ENVIAR HISTORIAL COMPLETO ANTE UN CONFLICTO ---
             elif msg_type == "REQUEST_FULL_CHAIN":
                 requester_addr = payload.get("requester")
+                requester_target = validated_requester(requester_addr)
+                if requester_target is None:
+                    return
                 print(
                     f"[Red] Nodo {requester_addr} solicita resolución de fork. Enviando cadena completa..."
                 )
+                base_index = max(0, len(self.blockchain.chain) - 201)
                 blocks_data = [
                     b.to_dict() if hasattr(b, "to_dict") else vars(b)
-                    for b in self.blockchain.chain
+                    for b in self.blockchain.chain[base_index:]
                 ]
                 resp_msg = json.dumps(
-                    {"type": "FULL_CHAIN", "blocks": blocks_data}
+                    {"type": "FULL_CHAIN", "base_index": base_index, "blocks": blocks_data}
                 ).encode()
 
-                host, port = requester_addr.split(":")
+                host, port = requester_target
                 try:
                     resp_reader, resp_writer = await asyncio.wait_for(
-                        asyncio.open_connection(host, int(port)), timeout=5.0
+                        asyncio.open_connection(host, port), timeout=5.0
                     )
                     resp_writer.write(resp_msg)
                     await resp_writer.drain()
@@ -581,13 +633,15 @@ class CAFNode:
             # --- FASE F2: RECIBIR Y EVALUAR HISTORIAL COMPETITIVO ---
             elif msg_type == "FULL_CHAIN":
                 blocks_data = payload.get("blocks", [])
-                if len(blocks_data) <= len(self.blockchain.chain):
-                    return  # Ignorar silenciosamente si la cadena recibida es inferior o igual
+                base_index = payload.get("base_index", 0)
+                if (not isinstance(base_index, int) or base_index < 0
+                        or base_index > len(self.blockchain.chain)):
+                    return
 
                 print(
                     f"[Red] 📥 Descargando historial competitivo ({len(blocks_data)} bloques)..."
                 )
-                new_chain = []
+                new_chain = list(self.blockchain.chain[:base_index])
                 for b_data in blocks_data:
                     txs = []
                     for tx_data in b_data["transactions"]:
@@ -595,10 +649,15 @@ class CAFNode:
                             sender_m3=tx_data["sender_m3"],
                             receiver_m3=tx_data["receiver_m3"],
                             amount=tx_data["amount"],
+                            fee=tx_data.get("fee", 0),
                             signature_data=tx_data.get("signature_data", {}),
                             payload=tx_data.get("payload", {}),
                         )
-                        tx.tx_id = tx_data["tx_id"]
+                        calculated_id = tx.tx_id
+                        from blockchain.rules import TX_V2_ACTIVATION
+                        if b_data["index"] >= TX_V2_ACTIVATION and tx_data.get("tx_id") != calculated_id:
+                            raise ValueError("tx_id P2P no coincide con el contenido")
+                        tx.tx_id = tx_data.get("tx_id", calculated_id)
                         txs.append(tx)
 
                     new_b = Block(

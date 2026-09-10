@@ -55,21 +55,35 @@ payload = {
     'contraction_matrices': priv['A'],
     'endpoint': args.endpoint,
     'lambda_value': lam,
+    'version': 2,
+    'chain_id': 'metriplex-mainnet',
 }
+import secrets
+payload['nonce'] = secrets.token_hex(16)
+
+vault_res = requests.get(
+    f"{args.api}/identity/f695d4a52988e1d55a0dc9650f5088bbe33b0c69",
+    timeout=10,
+)
+vault_res.raise_for_status()
+vault_m3 = vault_res.json().get('public_m3')
+if not vault_m3:
+    raise RuntimeError('No se pudo resolver el vault canónico de stake')
 
 # Firmar el mensaje CANÓNICO de la operación (igual que protocol_op_hash en el
 # verificador): sha256({op, sender_m3, amount, endpoint, target_m3_hash}).
 canonical = {
-    'op': 'VALIDATOR_REGISTER',
+    'chain_id': 'metriplex-mainnet',
     'sender_m3': pub,
+    'receiver_m3': vault_m3,
     'amount': STAKE,
-    'endpoint': args.endpoint,
-    'target_m3_hash': '',
+    'fee': 0,
+    'payload': payload,
 }
 sig = sign_transaction(priv, canonical, pub, criterion_params=params_obj, attractor=att)
 
 tx = {
-    'sender_m3': pub, 'receiver_m3': pub,
+    'sender_m3': pub, 'receiver_m3': vault_m3,
     'amount': STAKE, 'fee': 0,
     'signature_data': sig,
     'payload': payload

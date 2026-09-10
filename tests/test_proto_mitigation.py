@@ -20,7 +20,8 @@ def make_app():
 
 
 def tx_body(op=None):
-    b = {"sender_m3": [[[1]]], "receiver_m3": [[[1]]], "amount": 0,
+    m3 = [[[1 for _ in range(4)] for _ in range(4)] for _ in range(4)]
+    b = {"sender_m3": m3, "receiver_m3": m3, "amount": 0,
          "fee": 0, "signature_data": {"type": "X"}}
     if op:
         b["payload"] = {"op": op}

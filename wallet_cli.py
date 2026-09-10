@@ -151,7 +151,14 @@ def wallet_session(priv, pub, params_dict, attractor):
             eth_address = input(
                 "Dirección Ethereum destino (Deja vacío si no es para el puente): "
             ).strip()
-            custom_payload = {}
+            import secrets
+            from blockchain.rules import CHAIN_ID
+            custom_payload = {
+                "version": 2,
+                "chain_id": CHAIN_ID,
+                "nonce": secrets.token_hex(16),
+                "timestamp": int(__import__("time").time()),
+            }
             if eth_address:
                 custom_payload["target_eth_address"] = eth_address
             # -----------------------------------
@@ -165,7 +172,7 @@ def wallet_session(priv, pub, params_dict, attractor):
                     "receiver_m3": receiver_pub,
                     "amount": amount,
                     "fee": fee,
-                    "payload": custom_payload,  # Usamos el payload dinámico
+                    "payload": custom_payload,
                 }
 
                 print("[*] Firmando transacción (Instántaneo usando caché)...")

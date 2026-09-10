@@ -44,6 +44,10 @@ class StateDB:
         fee: int = 0,
         block_index: int = 0,
     ) -> bool:
+        if (not isinstance(amount, int) or isinstance(amount, bool)
+                or not isinstance(fee, int) or isinstance(fee, bool)
+                or amount < 0 or fee < 0):
+            return False
         receiver_hash = self._hash_tensor(receiver_m3)
         sender_hash = self._hash_tensor(sender_m3) if sender_m3 else "COINBASE"
 
@@ -54,6 +58,14 @@ class StateDB:
             # VALIDATOR_EXIT — devolver stake al sender desde el vault
             if op == "VALIDATOR_EXIT":
                 from blockchain.validator_registry import VALIDATOR_STAKE_REQUIRED
+                validator_hash = self._hash_tensor(sender_m3) if sender_m3 else ""
+                if not self.validator_registry or validator_hash not in self.validator_registry.validators:
+                    print("[State] VALIDATOR_EXIT: remitente no es validador activo")
+                    return False
+                from blockchain.rules import STAKE_VAULT_M3_HASH, TX_V2_ACTIVATION
+                if block_index >= TX_V2_ACTIVATION and receiver_hash != STAKE_VAULT_M3_HASH:
+                    print("[State] VALIDATOR_EXIT: vault de stake inválido")
+                    return False
                 vault_hash = receiver_hash
                 vault_balance = self.storage.get_balance(vault_hash)
                 if vault_balance >= VALIDATOR_STAKE_REQUIRED:
@@ -87,7 +99,8 @@ class StateDB:
                     v["m3_hash"]: v for v in self.validator_registry.validators.values()
                     if v["m3_hash"] != target
                 }
-                required = 2  # mínimo 2 validadores
+                import math
+                required = max(1, math.ceil(2 * len(active) / 3))
                 strict = block_index >= PROTOCOL_SIG_ACTIVATION
                 vote_hash = governance_vote_hash(target)
                 valid_votes = 0
@@ -112,7 +125,6 @@ class StateDB:
                     print(f"[State] GOVERNANCE_EXIT: votos válidos insuficientes ({valid_votes}/{required})")
                     return False
                 # Delegar ejecución al registry — único punto de escritura sobre validators
-                import math
                 target_full = next(
                     (k for k in self.validator_registry.validators if k.startswith(target)), target
                 )

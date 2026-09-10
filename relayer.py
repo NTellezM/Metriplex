@@ -60,6 +60,10 @@ def _init_relayer_db():
         'CREATE TABLE IF NOT EXISTS relayer_state '
         '(key TEXT PRIMARY KEY, value TEXT)'
     )
+    conn.execute(
+        'CREATE TABLE IF NOT EXISTS submitted_mints '
+        '(native_tx_id TEXT PRIMARY KEY, evm_tx_hash TEXT NOT NULL, submitted_at INTEGER NOT NULL)'
+    )
     conn.commit()
     conn.close()
     print(f'[Relayer] Estado de dedup cargado: {_RELAYER_STATE_DB}')
@@ -116,6 +120,21 @@ def _load_last_block() -> int:
     ).fetchone()
     conn.close()
     return int(row[0]) if row else -1
+
+def _state_get(key: str, default: int) -> int:
+    conn = _sqlite3.connect(_RELAYER_STATE_DB)
+    row = conn.execute('SELECT value FROM relayer_state WHERE key=?', (key,)).fetchone()
+    conn.close()
+    return int(row[0]) if row else default
+
+def _state_set(key: str, value: int):
+    conn = _sqlite3.connect(_RELAYER_STATE_DB)
+    conn.execute('INSERT OR REPLACE INTO relayer_state(key,value) VALUES(?,?)', (key, str(value)))
+    conn.commit()
+    conn.close()
+
+NATIVE_CONFIRMATIONS = max(1, int(os.environ.get("NATIVE_CONFIRMATIONS", "6")))
+EVM_CONFIRMATIONS = max(1, int(os.environ.get("EVM_CONFIRMATIONS", "20")))
 
 # ─────────────────────────────────────────────────────────────────────────────
 from web3 import Web3
@@ -261,7 +280,17 @@ async def monitor_native_chain():
     _node_ok = True
     while True:
         try:
-            response = requests.get(f"{wMXP_NODE_URL}/blocks?limit=100", timeout=5)
+            info = requests.get(f"{wMXP_NODE_URL}/info", timeout=5).json()
+            confirmed_tip = int(info["chain_length"]) - 1 - NATIVE_CONFIRMATIONS
+            if confirmed_tip <= last_processed_block:
+                await asyncio.sleep(5)
+                continue
+            response = requests.get(
+                f"{wMXP_NODE_URL}/blocks",
+                params={"start": last_processed_block + 1, "limit": 100, "asc": "true"},
+                timeout=10,
+            )
+            response.raise_for_status()
             blocks = response.json()
             if not _node_ok:
                 print(f"[Relayer] ✓ Nodo reconectado. Reanudando monitoreo.")
@@ -270,6 +299,9 @@ async def monitor_native_chain():
             for block in blocks:
                 if block["index"] <= last_processed_block:
                     continue
+                if block["index"] > confirmed_tip:
+                    break
+                block_complete = True
                 for tx in block["transactions"]:
                     receiver_m3 = tx.get("receiver_m3")
                     if receiver_m3 is None:
@@ -283,6 +315,9 @@ async def monitor_native_chain():
                     if rx_hash != vault_hash:
                         continue
                     payload = tx.get("payload", {}) or {}
+                    if (payload.get("version") != 2
+                            or payload.get("chain_id") != "metriplex-mainnet"):
+                        continue
                     eth_target = payload.get("target_eth_address", "")
                     amount_raw = tx.get("amount", 0)
                     if eth_target and w3.is_address(eth_target) and amount_raw > 0:
@@ -298,8 +333,13 @@ async def monitor_native_chain():
                         print(f"    TX nativa:  {native_tx_id[:16]}...")
                         print(f"    Monto:   {amount_caf:.4f} MPX ({amount_raw} raw → {amount_wei} wei)")
                         print(f"    Destino: {eth_target}")
-                        execute_eth_mint(eth_target, amount_wei)
-                        _mark_mint_processed(native_tx_id)
+                        if execute_eth_mint(eth_target, amount_wei, native_tx_id):
+                            _mark_mint_processed(native_tx_id)
+                        else:
+                            block_complete = False
+                            break
+                if not block_complete:
+                    break
                 last_processed_block = block["index"]
                 _save_last_block(last_processed_block)
 
@@ -317,10 +357,29 @@ async def monitor_native_chain():
             await asyncio.sleep(5)
 
 
-def execute_eth_mint(target_address: str, amount: int):
+def execute_eth_mint(target_address: str, amount: int, native_tx_id: str) -> bool:
     """Ejecuta mint() en el Smart Contract de Ethereum."""
     try:
-        nonce = w3.eth.get_transaction_count(relayer_account.address)
+        conn = _sqlite3.connect(_RELAYER_STATE_DB)
+        existing = conn.execute(
+            'SELECT evm_tx_hash FROM submitted_mints WHERE native_tx_id=?',
+            (native_tx_id,),
+        ).fetchone()
+        conn.close()
+        if existing:
+            try:
+                receipt = w3.eth.get_transaction_receipt(existing[0])
+            except Exception:
+                return False
+            if receipt and receipt.get("status") == 1:
+                return True
+            if not receipt or receipt.get("status") != 0:
+                return False
+            conn = _sqlite3.connect(_RELAYER_STATE_DB)
+            conn.execute('DELETE FROM submitted_mints WHERE native_tx_id=?', (native_tx_id,))
+            conn.commit()
+            conn.close()
+        nonce = w3.eth.get_transaction_count(relayer_account.address, "pending")
         tx = contract.functions.mint(
             Web3.to_checksum_address(target_address), amount
         ).build_transaction({
@@ -331,9 +390,20 @@ def execute_eth_mint(target_address: str, amount: int):
         })
         signed_tx = w3.eth.account.sign_transaction(tx, private_key=RELAYER_EVM_PRIV_KEY)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
-        print(f"[>] Mint ejecutado en Ethereum. TX Hash: {w3.to_hex(tx_hash)}")
+        tx_hex = w3.to_hex(tx_hash)
+        conn = _sqlite3.connect(_RELAYER_STATE_DB)
+        conn.execute(
+            'INSERT OR REPLACE INTO submitted_mints(native_tx_id,evm_tx_hash,submitted_at) VALUES(?,?,?)',
+            (native_tx_id, tx_hex, int(time.time())),
+        )
+        conn.commit()
+        conn.close()
+        print(f"[>] Mint enviado a EVM. TX Hash: {tx_hex}")
+        receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        return bool(receipt and receipt.get("status") == 1)
     except Exception as e:
         print(f"[Error Mint] {type(e).__name__}: {e}")
+        return False
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -349,11 +419,13 @@ async def monitor_eth_events(vault_priv, vault_pub, vault_params, vault_att):
     serializado como JSON (lo que produce wallet_cli.py al exportar la llave pública).
     """
     print("[Relayer] Monitoreando evento BridgeBurn en Ethereum...")
-    last_processed_eth_block = w3.eth.block_number - 250  # lookback 250 blocks on start
+    last_processed_eth_block = _state_get(
+        "last_processed_eth_block", max(0, w3.eth.block_number - 250)
+    )
 
     while True:
         try:
-            current_block = w3.eth.block_number
+            current_block = max(0, w3.eth.block_number - EVM_CONFIRMATIONS)
 
             if current_block > last_processed_eth_block:
                 events = contract.events.BridgeBurn().get_logs(
@@ -378,13 +450,16 @@ async def monitor_eth_events(vault_priv, vault_pub, vault_params, vault_att):
                     if _is_processed(burn_tx_hash):
                         print(f'[Relayer] Dedup: TX ya procesada {burn_tx_hash[:16]}...')
                         continue
-                    execute_native_release(
+                    released = execute_native_release(
                         native_recipient, amount, burn_tx_hash,
                         vault_priv, vault_pub, vault_params, vault_att
                     )
+                    if not released:
+                        raise RuntimeError(f"release nativo no aceptado para {burn_tx_hash}")
                     _mark_processed(burn_tx_hash)
 
                 last_processed_eth_block = current_block
+                _state_set("last_processed_eth_block", last_processed_eth_block)
 
         except Exception as e:
             print(f"[Error EVM] {type(e).__name__}: {e}")
@@ -426,11 +501,11 @@ def execute_native_release(
         except (json.JSONDecodeError, ValueError):
             print(f"[Release] ERROR: nativeRecipient no es un JSON válido.")
             print(f"          El usuario debe pasar json.dumps(pub_m3) en burnForNative().")
-            return
+            return False
 
         if not isinstance(receiver_m3, list):
             print("[Release] ERROR: nativeRecipient no es una lista (tensor M3 inválido).")
-            return
+            return False
 
         # 2. Verificar saldo de la Bóveda antes de intentar la TX
         try:
@@ -462,25 +537,34 @@ def execute_native_release(
             if vault_balance < amount + fee:
                 print(f"[Release] ERROR: Saldo insuficiente en la Bóveda.")
                 print(f"          Bóveda: {vault_balance}  Requerido: {amount + fee}")
-                return
+                return False
         except Exception as e:
             print(f"[Release] Advertencia: No se pudo verificar saldo ({e}). Continuando...")
 
         # 3. Construir el payload de la TX
-        # Payload de auditoria — NO forma parte del tx_hash firmado
         bridge_payload = {
             "bridge":    "ETH_TO_NATIVE",
             "burn_tx":   burn_tx_hash,
-            "timestamp": int(time.time()),
+            "version": 2,
+            "chain_id": "metriplex-mainnet",
+            "nonce": burn_tx_hash.lower().removeprefix("0x"),
         }
-        # tx_payload_dict para firmar usa payload=None — igual que browser y chain.py
         fee = 1 * SCALE_FACTOR
+        from blockchain.block import Transaction
+        expected_tx_id = Transaction(
+            vault_pub, receiver_m3, amount, {}, bridge_payload, fee
+        ).tx_id
+        existing = requests.get(
+            f"{wMXP_NODE_URL}/transaction/{expected_tx_id}", timeout=5
+        )
+        if existing.status_code == 200:
+            return existing.json().get("status") == "confirmed"
         tx_payload_dict = {
             "sender_m3":   vault_pub,
             "receiver_m3": receiver_m3,
             "amount":      amount,
             "fee":         fee,
-            "payload":     None,
+            "payload":     bridge_payload,
         }
         # 4. Firmar con la clave privada de la Boveda (genera proof ZK)
         print("[Release] Firmando TX ZK desde la Boveda...")
@@ -513,17 +597,21 @@ def execute_native_release(
             print(f"[✓] Release exitoso.")
             print(f"    TX nativa: {tx_id}")
             print(f"    Monto liberado: {amount / SCALE_FACTOR:.4f} wMXP")
+            return False
         else:
             print(f"[Release] ERROR: El nodo rechazó la TX.")
             print(f"          Código: {response.status_code}")
             print(f"          Detalle: {response.text[:300]}")
+            return False
 
     except requests.exceptions.ConnectionError:
         print("[Release] ERROR: No se puede conectar al nodo local.")
+        return False
     except Exception as e:
         import traceback
         print(f"[Release] Excepción inesperada: {type(e).__name__}: {e}")
         traceback.print_exc()
+        return False
 
 
 # ──────────────────────────────────────────────────────────────────────────────

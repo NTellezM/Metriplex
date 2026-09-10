@@ -35,7 +35,7 @@ def _sha(obj) -> str:
     ).hexdigest()
 
 
-def protocol_op_hash(sender_m3, payload: dict, amount: int) -> str:
+def protocol_op_hash(sender_m3, payload: dict, amount: int, receiver_m3=None, fee: int = 0) -> str:
     """Mensaje canónico que firma el emisor de una operación de protocolo.
 
     Incluye el op y los campos que autorizan la acción, para que una firma de
@@ -49,6 +49,16 @@ def protocol_op_hash(sender_m3, payload: dict, amount: int) -> str:
         "endpoint": payload.get("endpoint", ""),
         "target_m3_hash": payload.get("target_m3_hash", ""),
     }
+    if payload.get("version") == 2:
+        from blockchain.rules import CHAIN_ID
+        canonical = {
+            "chain_id": CHAIN_ID,
+            "sender_m3": sender_m3,
+            "receiver_m3": receiver_m3,
+            "amount": int(amount or 0),
+            "fee": int(fee or 0),
+            "payload": payload,
+        }
     return _sha(canonical)
 
 

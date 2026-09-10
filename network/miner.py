@@ -71,6 +71,7 @@ class AutoMiner:
         p2p_node,
         block_time_seconds: int = 10,
         miner_m3: list = None,  # Tensor M3 de la billetera del minero
+        miner_identity: dict = None,
     ):
         self.blockchain = blockchain
         self.mempool = mempool
@@ -78,6 +79,7 @@ class AutoMiner:
         self.block_time_seconds = block_time_seconds
         self.last_mined_slot = 0
         self.miner_m3 = miner_m3  # None = sin recompensa automática
+        self.miner_identity = miner_identity
 
     def _election_context(self, current_slot):
         # Los slots son tiempo Unix; los índices son alturas de la cadena.
@@ -480,6 +482,30 @@ class AutoMiner:
                         previous_hash=last_block.hash,
                         timestamp=current_time,
                     )
+
+                    from blockchain.rules import TX_V2_ACTIVATION
+                    if new_block.index >= TX_V2_ACTIVATION:
+                        if not self.miner_identity or not self.miner_identity.get("private_key"):
+                            print("[Consenso] No se puede autenticar el bloque: identidad privada ausente.")
+                            continue
+                        from blockchain.block_auth import producer_hash
+                        from core.verifier import CriterionParams
+                        from crypto.zkp import ZKEngine
+                        identity = self.miner_identity
+                        params = identity["criterion_params"]
+                        if isinstance(params, dict):
+                            params = CriterionParams.from_dict(params)
+                        proof = ZKEngine.generate_proof(
+                            private_key=identity["private_key"],
+                            public_m3=identity["public_m3"],
+                            tx_hash=producer_hash(new_block),
+                            criterion_params=params,
+                            N_total=len(identity["attractor"]),
+                            attractor=identity["attractor"],
+                        )
+                        proof["criterion_params"] = vars(params)
+                        coinbase_tx.signature_data = proof
+                        new_block.hash = new_block.calculate_hash()
 
                     # ── FIX FORK: broadcast primero, add_block después ──
                     # Propagar antes de aplicar local elimina la race condition

@@ -36,7 +36,17 @@ class Mempool:
                     signature_data=tx_data.get("signature_data", {}),
                     payload=tx_data.get("payload", {}),
                 )
-                tx.tx_id = tx_data["tx_id"]
+                calculated_id = tx.tx_id
+                from blockchain.rules import TX_V2_ACTIVATION
+                strict = (
+                    len(self.blockchain.chain) >= TX_V2_ACTIVATION
+                    or (isinstance(tx.payload, dict) and tx.payload.get("version") == 2)
+                )
+                if strict and tx_data.get("tx_id") != calculated_id:
+                    continue
+                tx.tx_id = tx_data.get("tx_id", calculated_id)
+                if tx.tx_id in self.blockchain.confirmed_tx_ids:
+                    continue
                 self.pending_transactions[tx.tx_id] = tx
                 self._timestamps[tx.tx_id] = tx_data.get("timestamp", time.time())
             print(f"[Mempool] {len(self.pending_transactions)} TXs restauradas desde disco.")
@@ -69,8 +79,14 @@ class Mempool:
             self._save()
 
     def add_transaction(self, tx: Transaction) -> bool:
-        if tx.tx_id in self.pending_transactions:
+        if (tx.tx_id in self.pending_transactions
+                or tx.tx_id in getattr(self.blockchain, "confirmed_tx_ids", set())):
             return False
+        from blockchain.rules import TX_V2_ACTIVATION
+        if (len(self.blockchain.chain) >= TX_V2_ACTIVATION
+                or (isinstance(tx.payload, dict) and tx.payload.get("version") == 2)):
+            if tx.tx_id != tx.calculate_hash():
+                return False
         # Las TX sin remitente son de emisión (coinbase): validate_transaction
         # las acepta sin firma, sin ZK y sin verificar saldo. El minero crea la
         # suya y la antepone al bloque directamente, sin pasar por el mempool.
