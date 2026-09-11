@@ -24,10 +24,15 @@ import signal
 import uvicorn
 
 from api.server import create_api_app
+from crypto.tensors import require_rust as _require_rust
 from blockchain.chain import Blockchain
 from blockchain.storage import Storage
 from network.mempool import Mempool
 from network.miner import AutoMiner
+
+# Consenso: sin la extension Rust este nodo calcularia tensores distintos
+# al resto de la red. Abortar es preferible a divergir en silencio.
+_require_rust("ejecutar un nodo")
 from network.p2p import CAFNode
 
 
