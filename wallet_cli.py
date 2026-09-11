@@ -29,7 +29,7 @@ NODE_URL = "http://localhost:8001"
 
 
 def get_tensor_hash(m3_tensor: list) -> str:
-    m3_str = json.dumps(m3_tensor, sort_keys=True).encode()
+    m3_str = json.dumps(m3_tensor, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(m3_str).hexdigest()
 
 
