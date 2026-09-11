@@ -135,7 +135,7 @@ class Blockchain:
             op_hash = protocol_op_hash(
                 tx.sender_m3, tx.payload, tx.amount, tx.receiver_m3, tx.fee
             )
-            if not self._verify_signature(tx.signature_data, tx.sender_m3, op_hash):
+            if not self._verify_signature(tx.signature_data, tx.sender_m3, op_hash, block_index):
                 print(f"  -> RECHAZADA: firma inválida en operación de protocolo ({op}).")
                 return False
             if op == "VALIDATOR_REGISTER":
@@ -195,7 +195,7 @@ class Blockchain:
 
         # 4. Verificación ZK
         sig = tx.signature_data
-        is_valid = self._verify_signature(sig, tx.sender_m3, tx_hash)
+        is_valid = self._verify_signature(sig, tx.sender_m3, tx_hash, block_index)
         if not is_valid:
             print("  -> RECHAZADA: Falla en la prueba ZK-STARK.")
             return False
@@ -229,7 +229,7 @@ class Blockchain:
             )
         else:
             tx_hash = canonical_tx_hash(tx.sender_m3, tx.receiver_m3, tx.amount, tx.fee)
-        return self._verify_signature(tx.signature_data, tx.sender_m3, tx_hash)
+        return self._verify_signature(tx.signature_data, tx.sender_m3, tx_hash, block_index)
 
     def _verify_signature(
 
@@ -237,6 +237,7 @@ class Blockchain:
         sig: dict,
         sender_m3: list,
         tx_hash: str,
+        block_index: int = None,
     ) -> bool:
         """
         Delega la verificación al motor apropiado según los campos disponibles.
@@ -254,6 +255,7 @@ class Blockchain:
                     tx_hash=tx_hash,
                     criterion_params=params,
                     N_total=2000,  # match attractor size
+                    block_index=block_index,
                 )
             except Exception as e:
                 print(f"  [ZK] Excepción en modo compacto: {e}")
@@ -314,7 +316,7 @@ class Blockchain:
                     print("[Cadena] Rechazo: la coinbase no pertenece al líder del slot.")
                     return False
                 if not self._verify_signature(
-                    cb.signature_data, cb.receiver_m3, producer_hash(block)
+                    cb.signature_data, cb.receiver_m3, producer_hash(block), block.index
                 ):
                     print("[Cadena] Rechazo: autenticación del productor inválida.")
                     return False
@@ -330,7 +332,7 @@ class Blockchain:
         op_hash = protocol_op_hash(
             tx.sender_m3, tx.payload, tx.amount, tx.receiver_m3, tx.fee
         )
-        if not self._verify_signature(tx.signature_data, tx.sender_m3, op_hash):
+        if not self._verify_signature(tx.signature_data, tx.sender_m3, op_hash, block_index):
             print(f"[Cadena] Rechazo (reorg): firma inválida en op de protocolo.")
             return False
         if tx.payload.get("op") == "VALIDATOR_REGISTER":
