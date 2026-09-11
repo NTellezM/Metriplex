@@ -119,6 +119,7 @@ class ZKEngine:
         tx_hash: str,
         criterion_params: CriterionParams = None,
         N_total: int = None,
+        block_index: int = None,
     ) -> bool:
         """
         VERIFIER — Ejecutado por el nodo validador.
@@ -165,8 +166,20 @@ class ZKEngine:
 
             empirical_m3 = calculate_m3_tensor(x_final)
 
-            TOLERANCE = int(2.0 * SCALE_FACTOR)  # aumentado — diferencias numpy entre versiones
+            from blockchain.rules import (
+                ZK_TOLERANCE_ACTIVATION, ZK_TOLERANCE_RATIO,
+            )
             D = len(public_m3)
+            if block_index is not None and block_index >= ZK_TOLERANCE_ACTIVATION:
+                # Margen relativo: escala con el tensor y separa claves distintas.
+                magnitud = max(
+                    abs(public_m3[i][j][k])
+                    for i in range(D) for j in range(D) for k in range(D)
+                )
+                TOLERANCE = max(1, int(ZK_TOLERANCE_RATIO * magnitud))
+            else:
+                # Regla historica, conservada para revalidar bloques previos.
+                TOLERANCE = int(2.0 * SCALE_FACTOR)
             for i in range(D):
                 for j in range(D):
                     for k in range(D):
