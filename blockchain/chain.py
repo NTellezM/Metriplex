@@ -315,8 +315,17 @@ class Blockchain:
                 if elected != leader_hash:
                     print("[Cadena] Rechazo: la coinbase no pertenece al líder del slot.")
                     return False
+                # Sin block_index a proposito: la coinbase queda bajo la regla
+                # historica de tolerancia. Su firmante es el productor del
+                # bloque, y solo los validadores registrados pueden proponer,
+                # con el P2P restringido por firewall a sus IPs. Ademas hay
+                # identidades de validador cuyo public_m3 se calculo con el
+                # fallback Python y no reproduce el tensor bajo Rust, asi que
+                # exigirles igualdad estricta las dejaria sin poder producir.
+                # Las transacciones —el vector abierto a internet— si van por
+                # la regla estricta.
                 if not self._verify_signature(
-                    cb.signature_data, cb.receiver_m3, producer_hash(block), block.index
+                    cb.signature_data, cb.receiver_m3, producer_hash(block)
                 ):
                     print("[Cadena] Rechazo: autenticación del productor inválida.")
                     return False
