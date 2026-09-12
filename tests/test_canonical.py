@@ -41,14 +41,21 @@ class CanonicalHashTests(unittest.TestCase):
                          signature_data={"type": "X"},
                          payload={"timestamp": int(time.time())})  # payload transportado (actual)
         seen = []
-        def capture(sig, m3, h):
-            seen.append(h); return True
+        alturas = []
+        def capture(sig, m3, h, block_index=None):
+            # block_index se anadio al gatear la tolerancia ZK por altura
+            seen.append(h); alturas.append(block_index); return True
         with patch.object(b, "_verify_signature", side_effect=capture):
             # forzar que validate_transaction llegue a la firma: saldo suficiente
             with patch.object(b.state_db, "get_balance", return_value=10**9):
                 b.validate_transaction(tx, block_index=1)
             b.validate_zk_only(tx)
         self.assertEqual(len(seen), 2)
+        # La altura debe llegar al verificador: sin ella, verify_proof cae a la
+        # rama permisiva y la tolerancia estricta de ZK_TOLERANCE_ACTIVATION
+        # queda desactivada en silencio.
+        self.assertEqual(alturas[0], 1, "validate_transaction debe propagar block_index")
+        self.assertIsNotNone(alturas[1], "validate_zk_only debe propagar block_index")
         self.assertEqual(seen[0], seen[1], "las dos rutas deben usar el mismo hash")
         self.assertEqual(seen[0], canonical_tx_hash(tx.sender_m3, tx.receiver_m3, tx.amount, tx.fee))
 
