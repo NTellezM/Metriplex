@@ -23,6 +23,45 @@ from core.arithmetic import fp_mul, fp_div_safe, SCALE_FACTOR
 
 D = 4
 
+try:
+    import metriplex_core as _rust
+    USING_RUST = True
+except ImportError:  # pragma: no cover
+    _rust = None
+    USING_RUST = False
+
+
+class TensorBackendError(RuntimeError):
+    """El backend de referencia (Rust) no esta disponible."""
+
+
+def require_rust(contexto: str) -> None:
+    """Aborta si falta la extension Rust.
+
+    El fallback Python de calculate_m3_tensor NO coincide con la extension:
+    sobre la misma entrada difieren hasta 3,3e8, el 7800% de la magnitud del
+    tensor. Rust es la referencia (reproduce el public_m3 con error 0).
+
+    Degradarse en silencio produce dos fallos graves y dificiles de
+    diagnosticar: un nodo que valida distinto al resto queda fuera de consenso
+    desde ZK_TOLERANCE_ACTIVATION, y un keystore creado con el fallback lleva
+    una clave publica que la red no puede reproducir, de modo que su saldo
+    queda inmovilizado. Mejor fallar aqui, ruidosamente.
+    """
+    if USING_RUST:
+        return
+    raise TensorBackendError(
+        f"metriplex_core (extension Rust) no esta instalado y {contexto} lo "
+        f"requiere.\n"
+        f"El fallback Python calcula tensores distintos y NO sirve para "
+        f"consenso ni para crear claves.\n"
+        f"Instalar desde la raiz del repo:\n"
+        f"    pip install -r requirements.txt\n"
+        f"o directamente:\n"
+        f"    pip install ./rust_core   (requiere cargo/rustc)"
+    )
+
+
 def calculate_centroid(x_points: list[list[int]]) -> list[int]:
     """Calcula el centroide mu (media espacial) del conjunto de puntos."""
     N = len(x_points)
@@ -41,11 +80,8 @@ def calculate_m3_tensor(x_points: list[list[int]]) -> list[list[list[int]]]:
     M3_ijk = (1/N) * sum((x_i - mu_i) * (x_j - mu_j) * (x_k - mu_k))
     Rust: ~0.6ms | Python: ~85ms  (136x speedup)
     """
-    try:
-        import metriplex_core as _rust
+    if USING_RUST:
         return _rust.calculate_m3_tensor(x_points)
-    except ImportError:
-        pass
     N = len(x_points)
     mu = calculate_centroid(x_points)
     

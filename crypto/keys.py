@@ -314,7 +314,8 @@ def derive_public_key(private_key: dict) -> list:
     attractor = chaos_game(matrices, vectores)
 
     # Calcular el tensor M3
-    from crypto.tensors import calculate_m3_tensor
+    from crypto.tensors import calculate_m3_tensor, require_rust
+    require_rust("derivar una clave publica")
 
     return calculate_m3_tensor(attractor)
 
@@ -328,7 +329,8 @@ def derive_public_key_with_attractor(private_key: dict) -> tuple:
     vectores = private_key["b"]
     attractor = chaos_game(matrices, vectores)
 
-    from crypto.tensors import calculate_m3_tensor
+    from crypto.tensors import calculate_m3_tensor, require_rust
+    require_rust("derivar una clave publica")
 
     m3 = calculate_m3_tensor(attractor)
     return m3, attractor

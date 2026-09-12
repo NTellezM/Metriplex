@@ -1,0 +1,13 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "metriplex_core"
+version = "0.1.0"
+description = "Núcleo tensorial de Metriplex (extensión Rust). Implementación de referencia de calculate_m3_tensor."
+requires-python = ">=3.9"
+classifiers = ["Private :: Do Not Upload"]
+
+[tool.maturin]
+features = ["pyo3/extension-module"]

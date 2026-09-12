@@ -14,3 +14,21 @@ numpy>=1.24.0
 
 # ── Tests (cliente ASGI) ─────────────────────────────────
 httpx>=0.24.0
+
+# ── Núcleo tensorial (extensión Rust) ────────────────────
+# OBLIGATORIO. calculate_m3_tensor tiene dos implementaciones: esta extensión
+# y un fallback Python en crypto/tensors.py. NO coinciden: medido sobre la
+# misma entrada, difieren hasta 3,3e8 (el 7800% de la magnitud del tensor).
+#
+# Rust es la referencia — reproduce el public_m3 de los keystores con error 0.
+# Un nodo que caiga al fallback calcula tensores distintos y, desde
+# ZK_TOLERANCE_ACTIVATION, queda fuera de consenso de inmediato.
+#
+# Ruta local a propósito: el nombre "metriplex_core" NO está registrado en
+# PyPI, así que declararlo por nombre abriría la puerta a un secuestro de
+# dependencia. Requiere toolchain de Rust (cargo/rustc) al instalar.
+#
+# OJO: pip resuelve esta ruta relativa respecto al directorio ACTUAL, no al de
+# este archivo. Instalar siempre desde la raiz del repo:
+#     cd /opt/Metriplex && venv/bin/pip install -r requirements.txt
+./rust_core

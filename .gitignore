@@ -65,3 +65,10 @@ backups/
 # Wallets (nunca subir)
 wallet*.json
 keystore_seguro_*.json
+
+# ── Artefactos de compilacion de Rust ────────────────────
+# 75 MB de binarios y fingerprints que cargo regenera. Estaban versionados,
+# de modo que cualquiera que compilara ensuciaba el repo con diffs binarios.
+# El modulo se construye desde rust_core/ (ver requirements.txt).
+rust_core/target/
+target/
