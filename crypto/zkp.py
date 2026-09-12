@@ -23,7 +23,17 @@ from crypto.stark_core import MerkleTree
 
 
 class ZKEngine:
-    N_PROOF = 400  # Puntos del atractor simulados en la traza
+    # Puntos del atractor incluidos en la traza. DEBE ser >= el tamano del
+    # atractor (2000): con cualquier submuestreo, calculate_m3_tensor(x_final)
+    # no reproduce el public_m3 —el tercer momento tiene varianza altisima— y
+    # el chequeo anti-forge de verify_proof se vuelve inutil. Medido sobre una
+    # clave real: con 400 puntos el error legitimo es de 2,1e7 (601% de la
+    # magnitud del tensor), del mismo orden que el de una falsificacion; con
+    # los 2000 el error es exactamente 0.
+    #
+    # El cliente JS (metriplex-crypto-v2.js) ya usaba 2000; solo el generador
+    # Python se habia quedado en 400, que es el que firma las coinbase.
+    N_PROOF = 2000
 
     @staticmethod
     def generate_proof(
