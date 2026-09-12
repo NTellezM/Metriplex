@@ -11,7 +11,11 @@ TX_V2_ACTIVATION = 109_000
 # modo que el tensor empirico de CUALQUIER clave caia dentro del margen de
 # CUALQUIER otra: la comprobacion no distinguia claves. Desde aqui el margen
 # es relativo a la magnitud del tensor.
-ZK_TOLERANCE_ACTIVATION = 111500  # despliegue coordinado 2026-09-11
+# DESACTIVADO 2026-09-12 tras el incidente: con N_PROOF=400 las coinbase
+# tienen un error empirico de ~1e8 y la regla estricta impidio producir
+# bloques durante 2h20. Volver a fijar una altura solo cuando el minero
+# firme con el atractor completo y se haya verificado sobre bloques reales.
+ZK_TOLERANCE_ACTIVATION = 999_999_999
 # Margen permitido, en fraccion de max|public_m3|. Las pruebas legitimas
 # observadas dan error 0; una falsificacion con otra clave ronda el 100%.
 ZK_TOLERANCE_RATIO = 0.01
