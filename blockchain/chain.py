@@ -38,14 +38,35 @@ class Blockchain:
 
     # ── Carga desde disco ──────────────────────────────────────────────────
 
+    # Bloques recientes que conservan la prueba ZK completa en memoria. Debe
+    # cubrir MAX_REORG_DEPTH (200) y el segmento que P2P sirve desde RAM en
+    # REQUEST_FULL_CHAIN (los ultimos 201), con margen.
+    VENTANA_PRUEBAS = 260
+
+    @staticmethod
+    def _aligerar_firma(sig: dict) -> dict:
+        """Quita del signature_data lo que solo hace falta para verificar.
+
+        x_final son 2000 puntos de 4 enteros: el 93% del peso de un bloque.
+        Una vez el bloque queda por debajo de la profundidad de reorg no se
+        revalida jamas (load_chain_from_disk confia en el hash guardado y
+        calculate_hash solo se invoca para bloques nuevos o en reorg), asi que
+        mantenerlo en RAM es puro lastre. En disco sigue intacto: el hash del
+        bloque lo cubre y los peers lo reciben desde SQLite.
+        """
+        if not isinstance(sig, dict):
+            return sig
+        return {k: v for k, v in sig.items() if k not in ("x_final", "metrics")}
+
     def load_chain_from_disk(self):
         """Reconstruye la cadena completa desde la base de datos al iniciar."""
-        blocks_data = self.storage.get_all_blocks()
-        if not blocks_data:
+        total = self.storage.count_blocks()
+        if not total:
             self.create_genesis_block()
             return
+        aligerar_bajo = total - self.VENTANA_PRUEBAS
 
-        for row in blocks_data:
+        for row in self.storage.iter_all_blocks():
             index, b_hash, prev_hash, timestamp, tx_json = row
 
             tx_list_raw = json.loads(tx_json)
@@ -56,7 +77,11 @@ class Blockchain:
                     receiver_m3=tx_data["receiver_m3"],
                     amount=tx_data["amount"],
                     fee=tx_data.get("fee", 0),  # <-- BUG CORREGIDO
-                    signature_data=tx_data.get("signature_data", {}),
+                    signature_data=(
+                        tx_data.get("signature_data", {})
+                        if index >= aligerar_bajo
+                        else self._aligerar_firma(tx_data.get("signature_data", {}))
+                    ),
                     payload=tx_data.get("payload", {}),
                 )
                 tx.tx_id = tx_data["tx_id"]
@@ -465,6 +490,12 @@ class Blockchain:
             print(f"[Cadena] Rechazo: aplicación atómica falló: {exc}")
             return False
         self.chain.append(block)
+        # Aligerar el bloque que acaba de salir de la ventana de reorg: sin
+        # esto la memoria vuelve a crecer ~98 KB por bloque indefinidamente.
+        salido = len(self.chain) - 1 - self.VENTANA_PRUEBAS
+        if salido >= 0:
+            for _tx in self.chain[salido].transactions:
+                _tx.signature_data = self._aligerar_firma(_tx.signature_data)
         self.confirmed_tx_ids.update(block_ids)
         # Snapshot cada 1000 bloques
         if block.index > 0 and block.index % 1000 == 0:
