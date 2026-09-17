@@ -371,13 +371,25 @@ class CAFNode:
                         f"[Red] Nodo {requester_addr} desactualizado. Enviando segmento (Desde {requester_index + 1} a {local_height})..."
                     )
 
-                    # Extraer bloques faltantes
-                    blocks_to_send = self.blockchain.chain[
-                        requester_index + 1 : requester_index + 51
-                    ]  # Paginación: máx 50 bloques
+                    # Extraer bloques faltantes DESDE SQLITE, no desde RAM.
+                    # Los bloques por debajo de la ventana de reorg viven en
+                    # memoria sin su x_final (ver Blockchain._aligerar_firma);
+                    # servirlos desde ahi mandaria pruebas incompletas y el
+                    # peer recalcularia otro hash y los rechazaria. En disco
+                    # estan enteros. /blocks ya usaba esta misma via.
+                    _filas = self.blockchain.storage.get_blocks_paginated(
+                        start=requester_index + 1, limit=50, desc=False
+                    )
                     blocks_data = [
-                        b.to_dict() if hasattr(b, "to_dict") else vars(b)
-                        for b in blocks_to_send
+                        {
+                            "index": _i,
+                            "timestamp": _ts,
+                            "hash": _h,
+                            "previous_hash": _ph,
+                            "nonce": 0,  # Block.__init__ lo fija a 0 y nada lo cambia
+                            "transactions": json.loads(_txj) if _txj else [],
+                        }
+                        for (_i, _h, _ph, _ts, _txj) in _filas
                     ]
 
                     peer_height = len(self.blockchain.chain) - 1

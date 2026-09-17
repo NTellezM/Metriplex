@@ -207,6 +207,28 @@ class Storage:
             "FROM blocks ORDER BY block_index ASC"
         ).fetchall()
 
+    def iter_all_blocks(self):
+        """Igual que get_all_blocks pero en streaming.
+
+        get_all_blocks hace fetchall(): materializa el JSON de TODOS los
+        bloques a la vez. Con la cadena en ~600 MB eso es un pico de memoria
+        que basta para que el OOM killer mate al nodo al arrancar. Iterando el
+        cursor solo vive una fila cada vez.
+        """
+        cur = self._conn().execute(
+            "SELECT block_index, hash, previous_hash, timestamp, transactions "
+            "FROM blocks ORDER BY block_index ASC"
+        )
+        while True:
+            filas = cur.fetchmany(64)
+            if not filas:
+                return
+            for f in filas:
+                yield f
+
+    def count_blocks(self) -> int:
+        return self._conn().execute("SELECT COUNT(*) FROM blocks").fetchone()[0]
+
     # ── Contratos ──────────────────────────────────────────────────────────
 
     def get_contract_state(self, address: str, key: str) -> str | None:
