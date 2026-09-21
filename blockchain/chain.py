@@ -554,7 +554,13 @@ class Blockchain:
         snapshot = self.storage.get_latest_snapshot(target_index)
 
         # Reset completo (igual que replace_chain)
-        self.storage.clear_all()
+        # NO clear_all(): borraria los bloques conservados para reescribirlos
+        # desde RAM, donde los que estan fuera de VENTANA_PRUEBAS viven sin
+        # x_final. Eso destruia permanentemente las pruebas en disco. Los
+        # bloques conservados ya estan en disco e intactos: solo se quitan los
+        # de encima del objetivo y se vacia el estado para reconstruirlo.
+        self.storage.truncate_blocks_above(target_index)
+        self.storage.clear_state()
         self.chain = []
         # Fix 3 — instanciar un ValidatorRegistry NUEVO en vez de reutilizar
         # self.validator_registry. Antes el registry conservaba TODO su
@@ -581,19 +587,19 @@ class Blockchain:
                 )
             for blk in keep_blocks[:snap_idx + 1]:
                 self.chain.append(blk)
-                self.storage.save_block(blk)
+                pass  # ya esta en disco, intacto (ver truncate_blocks_above)
             replay_start = snap_idx + 1
         else:
             # Sin snapshot válido — empezar desde génesis
             genesis = keep_blocks[0]
             self.chain.append(genesis)
-            self.storage.save_block(genesis)
+            pass  # ya esta en disco, intacto (ver truncate_blocks_above)
             replay_start = 1
 
         # Replay de transacciones para reconstruir estado
         for blk in keep_blocks[replay_start:]:
             self.chain.append(blk)
-            self.storage.save_block(blk)
+            pass  # ya esta en disco, intacto (ver truncate_blocks_above)
             for tx in blk.transactions:
                 self.state_db.apply_transaction(
                     tx.tx_id, tx.sender_m3, tx.receiver_m3,
