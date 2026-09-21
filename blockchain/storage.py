@@ -259,6 +259,23 @@ class Storage:
 
     # ── Mantenimiento ──────────────────────────────────────────────────────
 
+    def truncate_blocks_above(self, index: int):
+        """Borra solo los bloques por ENCIMA de index; los demas no se tocan."""
+        with self._conn() as conn:
+            conn.execute("DELETE FROM blocks WHERE block_index > ?", (index,))
+
+    def clear_state(self):
+        """Vacia saldos y estado de contratos, sin tocar los bloques.
+
+        rollback_to los reconstruye re-ejecutando las transacciones, y para eso
+        no necesita reescribir los bloques conservados: ya estan en disco.
+        """
+        with self._conn() as conn:
+            conn.executescript("""
+                DELETE FROM balances;
+                DELETE FROM contract_state;
+            """)
+
     def clear_all(self):
         """Limpia estado completo para rollback/reorg."""
         with self._conn() as conn:
