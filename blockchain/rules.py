@@ -20,6 +20,14 @@ ZK_TOLERANCE_ACTIVATION = 111900  # despliegue coordinado 2026-09-12
 # observadas dan error 0; una falsificacion con otra clave ronda el 100%.
 ZK_TOLERANCE_RATIO = 0.01
 
+# Desde aqui, si el tensor de Rust no coincide con public_m3 se prueba tambien
+# la ruta Python (crypto.tensors.calculate_m3_tensor_python), con el mismo
+# margen. Hay claves creadas con esa ruta -la de nodo3, 203a4d51...- que
+# reproducen su public_m3 con error 0 en Python y 9,4e7 en Rust: desde
+# ZK_TOLERANCE_ACTIVATION no podian gastar. Siguen siendo igualdades estrictas;
+# falsificar exige igualmente conocer el atractor.
+DUAL_TENSOR_ACTIVATION = 123_000  # despliegue coordinado 2026-09-22
+
 # Monetary values are stored as signed SQLite INTEGERs.
 MAX_MONEY_RAW = 2**63 - 1
 
