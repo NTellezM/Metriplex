@@ -25,6 +25,7 @@ from network.mempool import Mempool
 
 
 class CAFNode:
+    MAX_ROLLBACKS_SEGURIDAD = 10  # x20 bloques = MAX_REORG_DEPTH
     def __init__(self, host: str, port: int, blockchain: Blockchain, mempool: Mempool, host_public: str = None, geo_identity: dict = None):
         self.host = host
         self.port = port
@@ -35,6 +36,12 @@ class CAFNode:
         self.authenticated_peers: dict = {}  # peer → {m3_hash, m3, authenticated_at}
         self.observer_peers: set = set()
         self.syncing = False
+        # Rollbacks de seguridad CONSECUTIVOS sin integrar ningún bloque. Cada
+        # uno retrocede 20; sin tope, un fork que no se resuelve (p.ej. porque
+        # FULL_CHAIN no llega) encadena rollbacks sin fondo. Con rollback_to
+        # escribiendo en disco, eso borró ~4.000 bloques de nodo3 el
+        # 2026-09-22. El tope (10 x 20 = MAX_REORG_DEPTH) detiene la cascada.
+        self._rollbacks_seguridad = 0
         self.sync_target = 0
         # --- Control de resiliencia P2P ---
         self.banned_peers = set()
@@ -247,8 +254,14 @@ class CAFNode:
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ):
         # Límite duro: un peer no puede obligar al proceso a acumular memoria
-        # sin cota. Los segmentos normales contienen como máximo 50 bloques.
-        max_message = 16 * 1024 * 1024
+        # sin cota. CHAIN_SEGMENT lleva hasta 50 bloques, pero FULL_CHAIN
+        # (resolución de forks) lleva 201. Con N_PROOF=2000 cada bloque pesa
+        # ~98 KB y FULL_CHAIN ronda 19,7 MB: con el antiguo tope de 16 MiB se
+        # rechazaba, el nodo no encontraba el ancestro común y entraba en una
+        # cascada de rollbacks (incidente del 2026-09-22 en nodo3). 32 MiB da
+        # margen de ~1,7x sobre un tamaño estable. El P2P solo admite a los
+        # validadores por firewall, así que el tope no expone a terceros.
+        max_message = 32 * 1024 * 1024
         data = await reader.read(min(10485760, max_message + 1))
         if len(data) >= 10485760 or (data and data[-1:] != b'}'):
             chunks = [data]
@@ -266,7 +279,8 @@ class CAFNode:
                     break
             data = b"".join(chunks)
         if len(data) > max_message:
-            print("[P2P] Mensaje rechazado: excede 16 MiB")
+            print(f"[P2P] Mensaje rechazado: {len(data) / 1048576:.1f} MiB excede "
+                  f"{max_message // 1048576} MiB")
             writer.close()
             await writer.wait_closed()
             return
@@ -461,6 +475,7 @@ class CAFNode:
                             continue
                     # Intentar inyectar en la base de datos local
                     if self.blockchain.add_block(new_block):
+                        self._rollbacks_seguridad = 0  # hubo avance: fin de la cascada
                         added_count += 1
                         self.mempool.remove_mined_transactions(txs)
                     else:
@@ -496,8 +511,21 @@ class CAFNode:
                             # Ancestro no encontrado en ventana reciente
                             # Retroceder 20 bloques y pedir sync
                             safe_idx = max(0, chain_len - 21)
+                            if self._rollbacks_seguridad >= self.MAX_ROLLBACKS_SEGURIDAD:
+                                print(f"[Catch-up] ⛔ {self._rollbacks_seguridad} rollbacks de "
+                                      f"seguridad seguidos sin encontrar ancestro. DETENIDO "
+                                      f"para no seguir borrando la cadena: requiere "
+                                      f"intervención manual.")
+                                # handle_client cierra al final, fuera del try y sin
+                                # finally: un return temprano dejaria la conexion
+                                # abierta. Cerrar aqui, como la ruta de "excede".
+                                writer.close()
+                                await writer.wait_closed()
+                                return
+                            self._rollbacks_seguridad += 1
                             print(f"[Catch-up] Ancestro no encontrado. "
-                                  f"Rollback de seguridad a bloque {safe_idx}...")
+                                  f"Rollback de seguridad a bloque {safe_idx} "
+                                  f"({self._rollbacks_seguridad}/{self.MAX_ROLLBACKS_SEGURIDAD})...")
                             if self.blockchain.rollback_to(safe_idx):
                                 import asyncio as _aio
                                 _aio.create_task(self.request_sync(force=True))
@@ -585,6 +613,7 @@ class CAFNode:
                     print(
                         f"[Red] ✓ Bloque {new_block.index} validado e integrado al ledger local."
                     )
+                    self._rollbacks_seguridad = 0  # hubo avance: fin de la cascada
                     self.mempool.remove_mined_transactions(txs)
                 else:
                     # FASE F2: Lógica de Detección de Bifurcaciones
