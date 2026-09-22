@@ -82,6 +82,17 @@ def calculate_m3_tensor(x_points: list[list[int]]) -> list[list[list[int]]]:
     """
     if USING_RUST:
         return _rust.calculate_m3_tensor(x_points)
+    return calculate_m3_tensor_python(x_points)
+
+
+def calculate_m3_tensor_python(x_points: list[list[int]]) -> list[list[list[int]]]:
+    """Ruta Python, siempre disponible aunque Rust este instalado.
+
+    NO coincide con Rust (ver require_rust), pero hay identidades creadas con
+    ella: su public_m3 solo se reproduce por aqui. El verificador la usa como
+    segundo intento desde DUAL_TENSOR_ACTIVATION. No cambiar ni una operacion:
+    cualquier diferencia de redondeo vuelve a bloquear esas cuentas.
+    """
     N = len(x_points)
     mu = calculate_centroid(x_points)
     

@@ -190,16 +190,27 @@ class ZKEngine:
             else:
                 # Regla historica, conservada para revalidar bloques previos.
                 TOLERANCE = int(2.0 * SCALE_FACTOR)
-            for i in range(D):
-                for j in range(D):
-                    for k in range(D):
-                        if abs(empirical_m3[i][j][k] - public_m3[i][j][k]) > TOLERANCE:
-                            print(
-                                "[ZK] Falla: Tensor empírico diverge de la llave pública. Proof falsificado."
-                            )
-                            return False
+            def coincide(m3):
+                return all(
+                    abs(m3[i][j][k] - public_m3[i][j][k]) <= TOLERANCE
+                    for i in range(D) for j in range(D) for k in range(D)
+                )
 
-            return True
+            if coincide(empirical_m3):
+                return True
+
+            # Identidades creadas con la ruta Python (p. ej. nodo3): su
+            # public_m3 no se reproduce con Rust. Se prueba la otra ruta con
+            # el MISMO margen; solo cuesta ~70 ms cuando Rust ya fallo.
+            from blockchain.rules import DUAL_TENSOR_ACTIVATION
+            from crypto.tensors import USING_RUST, calculate_m3_tensor_python
+            if (USING_RUST and block_index is not None
+                    and block_index >= DUAL_TENSOR_ACTIVATION
+                    and coincide(calculate_m3_tensor_python(x_final))):
+                return True
+
+            print("[ZK] Falla: Tensor empírico diverge de la llave pública. Proof falsificado.")
+            return False
 
         except (KeyError, TypeError, ValueError, AttributeError) as e:
             print(f"  [ZK] Excepción en modo compacto: {e}")
