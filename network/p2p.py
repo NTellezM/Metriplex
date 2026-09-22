@@ -26,6 +26,14 @@ from network.mempool import Mempool
 
 class CAFNode:
     MAX_ROLLBACKS_SEGURIDAD = 10  # x20 bloques = MAX_REORG_DEPTH
+    # FULL_CHAIN paginado. Cada pagina lleva a lo sumo esta cantidad de bytes
+    # de bloques, muy por debajo del tope de mensaje (32 MiB). Se pagina por
+    # bytes y no por numero: un bloque con transacciones de usuario puede
+    # pesar ~500 KB frente a los ~98 KB de uno con solo la coinbase.
+    FULL_CHAIN_PAGINA_BYTES = 8 * 1024 * 1024
+    FULL_CHAIN_TTL = 60          # s que se guarda un conjunto incompleto
+    FULL_CHAIN_BUFFER_MAX = 8    # conjuntos incompletos simultaneos
+    FULL_CHAIN_PAGES_MAX = 64    # paginas por conjunto (cordura)
     def __init__(self, host: str, port: int, blockchain: Blockchain, mempool: Mempool, host_public: str = None, geo_identity: dict = None):
         self.host = host
         self.port = port
@@ -42,6 +50,8 @@ class CAFNode:
         # escribiendo en disco, eso borró ~4.000 bloques de nodo3 el
         # 2026-09-22. El tope (10 x 20 = MAX_REORG_DEPTH) detiene la cascada.
         self._rollbacks_seguridad = 0
+        # Paginas de FULL_CHAIN a medio llegar: (base_index, tip) -> estado.
+        self._full_chain_parcial: dict = {}
         self.sync_target = 0
         # --- Control de resiliencia P2P ---
         self.banned_peers = set()
@@ -249,6 +259,112 @@ class CAFNode:
             # marcado como "syncing" e incapaz de volver a sincronizar.
             self.syncing = False
         print(f"[Red] ✓ Sincronización completa. Altura: {self.blockchain.chain[-1].index}")
+
+    def _paginar_bloques(self, blocks_data):
+        """Parte una lista de bloques en paginas de como mucho
+        FULL_CHAIN_PAGINA_BYTES. Un bloque mayor que el presupuesto va solo en
+        su pagina. Conserva el orden."""
+        paginas, actual, bytes_act = [], [], 0
+        for b in blocks_data:
+            tam = len(json.dumps(b))
+            if actual and bytes_act + tam > self.FULL_CHAIN_PAGINA_BYTES:
+                paginas.append(actual)
+                actual, bytes_act = [], 0
+            actual.append(b)
+            bytes_act += tam
+        if actual or not paginas:
+            paginas.append(actual)
+        return paginas
+
+    def _recibir_pagina_full_chain(self, payload):
+        """Guarda una pagina de FULL_CHAIN. Devuelve (base_index, bloques) en
+        orden cuando el conjunto esta completo; None mientras falten paginas o
+        si la pagina es invalida."""
+        base_index = payload.get("base_index")
+        tip = payload.get("tip")
+        page = payload.get("page")
+        pages = payload.get("pages")
+        blocks = payload.get("blocks")
+        if (not isinstance(base_index, int) or not isinstance(tip, str)
+                or not isinstance(page, int) or not isinstance(pages, int)
+                or not isinstance(blocks, list)
+                or not 1 <= pages <= self.FULL_CHAIN_PAGES_MAX
+                or not 0 <= page < pages):
+            return None
+
+        ahora = time.time()
+        # Olvidar conjuntos que nunca se completaron.
+        for k in [k for k, v in self._full_chain_parcial.items()
+                  if ahora - v["ts"] > self.FULL_CHAIN_TTL]:
+            del self._full_chain_parcial[k]
+
+        clave = (base_index, tip)
+        entrada = self._full_chain_parcial.get(clave)
+        if entrada is None:
+            if len(self._full_chain_parcial) >= self.FULL_CHAIN_BUFFER_MAX:
+                # Descartar el conjunto mas antiguo: el buffer no crece sin cota.
+                viejo = min(self._full_chain_parcial,
+                            key=lambda k: self._full_chain_parcial[k]["ts"])
+                del self._full_chain_parcial[viejo]
+            entrada = {"pages": pages, "recibidas": {}, "ts": ahora}
+            self._full_chain_parcial[clave] = entrada
+        elif entrada["pages"] != pages:
+            # Paginas del mismo conjunto que no coinciden en el total: descartar.
+            del self._full_chain_parcial[clave]
+            return None
+
+        entrada["recibidas"][page] = blocks      # duplicados: se sobrescriben
+        if len(entrada["recibidas"]) < pages:
+            return None
+
+        del self._full_chain_parcial[clave]
+        bloques = [b for k in range(pages) for b in entrada["recibidas"][k]]
+        return base_index, bloques
+
+    def _procesar_full_chain(self, base_index, blocks_data):
+        """Evalua una cadena competidora y la adopta si procede.
+
+        Comun a FULL_CHAIN (un mensaje) y FULL_CHAIN_PAGE (reensamblado). Es la
+        decision de consenso: replace_chain recibe exactamente lo mismo venga
+        por una via o por la otra.
+        """
+        if (not isinstance(base_index, int) or base_index < 0
+                or base_index > len(self.blockchain.chain)):
+            return
+        print(
+            f"[Red] 📥 Descargando historial competitivo ({len(blocks_data)} bloques)..."
+        )
+        new_chain = list(self.blockchain.chain[:base_index])
+        for b_data in blocks_data:
+            txs = []
+            for tx_data in b_data["transactions"]:
+                tx = Transaction(
+                    sender_m3=tx_data["sender_m3"],
+                    receiver_m3=tx_data["receiver_m3"],
+                    amount=tx_data["amount"],
+                    fee=tx_data.get("fee", 0),
+                    signature_data=tx_data.get("signature_data", {}),
+                    payload=tx_data.get("payload", {}),
+                )
+                calculated_id = tx.tx_id
+                from blockchain.rules import TX_V2_ACTIVATION
+                if b_data["index"] >= TX_V2_ACTIVATION and tx_data.get("tx_id") != calculated_id:
+                    raise ValueError("tx_id P2P no coincide con el contenido")
+                tx.tx_id = tx_data.get("tx_id", calculated_id)
+                txs.append(tx)
+
+            new_b = Block(
+                index=b_data["index"],
+                transactions=txs,
+                previous_hash=b_data["previous_hash"],
+                timestamp=b_data["timestamp"],
+            )
+            new_b.hash = b_data["hash"]
+            new_chain.append(new_b)
+
+        if self.blockchain.replace_chain(new_chain):
+            for b in new_chain:
+                self.mempool.remove_mined_transactions(b.transactions)
 
     async def handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -655,64 +771,46 @@ class CAFNode:
                     b.to_dict() if hasattr(b, "to_dict") else vars(b)
                     for b in self.blockchain.chain[base_index:]
                 ]
-                resp_msg = json.dumps(
-                    {"type": "FULL_CHAIN", "base_index": base_index, "blocks": blocks_data}
-                ).encode()
+                paginas = self._paginar_bloques(blocks_data)
+                if len(paginas) == 1:
+                    # Cabe en un mensaje: formato clasico, que entienden
+                    # tambien los nodos sin paginacion.
+                    mensajes = [json.dumps(
+                        {"type": "FULL_CHAIN", "base_index": base_index, "blocks": blocks_data}
+                    ).encode()]
+                else:
+                    tip = self.blockchain.chain[-1].hash
+                    mensajes = [json.dumps({
+                        "type": "FULL_CHAIN_PAGE", "base_index": base_index, "tip": tip,
+                        "page": k, "pages": len(paginas), "blocks": pag,
+                    }).encode() for k, pag in enumerate(paginas)]
+                    print(f"[Red] FULL_CHAIN paginado: {len(blocks_data)} bloques "
+                          f"en {len(paginas)} paginas.")
 
                 host, port = requester_target
-                try:
-                    resp_reader, resp_writer = await asyncio.wait_for(
-                        asyncio.open_connection(host, port), timeout=5.0
-                    )
-                    resp_writer.write(resp_msg)
-                    await resp_writer.drain()
-                    resp_writer.close()
-                    await resp_writer.wait_closed()
-                except Exception:
-                    pass
+                for resp_msg in mensajes:   # un mensaje por conexion
+                    try:
+                        resp_reader, resp_writer = await asyncio.wait_for(
+                            asyncio.open_connection(host, port), timeout=5.0
+                        )
+                        resp_writer.write(resp_msg)
+                        await resp_writer.drain()
+                        resp_writer.close()
+                        await resp_writer.wait_closed()
+                    except Exception:
+                        pass
 
             # --- FASE F2: RECIBIR Y EVALUAR HISTORIAL COMPETITIVO ---
             elif msg_type == "FULL_CHAIN":
-                blocks_data = payload.get("blocks", [])
-                base_index = payload.get("base_index", 0)
-                if (not isinstance(base_index, int) or base_index < 0
-                        or base_index > len(self.blockchain.chain)):
-                    return
-
-                print(
-                    f"[Red] 📥 Descargando historial competitivo ({len(blocks_data)} bloques)..."
+                # Formato de un solo mensaje, compatible con nodos sin paginacion.
+                self._procesar_full_chain(
+                    payload.get("base_index", 0), payload.get("blocks", [])
                 )
-                new_chain = list(self.blockchain.chain[:base_index])
-                for b_data in blocks_data:
-                    txs = []
-                    for tx_data in b_data["transactions"]:
-                        tx = Transaction(
-                            sender_m3=tx_data["sender_m3"],
-                            receiver_m3=tx_data["receiver_m3"],
-                            amount=tx_data["amount"],
-                            fee=tx_data.get("fee", 0),
-                            signature_data=tx_data.get("signature_data", {}),
-                            payload=tx_data.get("payload", {}),
-                        )
-                        calculated_id = tx.tx_id
-                        from blockchain.rules import TX_V2_ACTIVATION
-                        if b_data["index"] >= TX_V2_ACTIVATION and tx_data.get("tx_id") != calculated_id:
-                            raise ValueError("tx_id P2P no coincide con el contenido")
-                        tx.tx_id = tx_data.get("tx_id", calculated_id)
-                        txs.append(tx)
 
-                    new_b = Block(
-                        index=b_data["index"],
-                        transactions=txs,
-                        previous_hash=b_data["previous_hash"],
-                        timestamp=b_data["timestamp"],
-                    )
-                    new_b.hash = b_data["hash"]
-                    new_chain.append(new_b)
-
-                if self.blockchain.replace_chain(new_chain):
-                    for b in new_chain:
-                        self.mempool.remove_mined_transactions(b.transactions)
+            elif msg_type == "FULL_CHAIN_PAGE":
+                completo = self._recibir_pagina_full_chain(payload)
+                if completo is not None:
+                    self._procesar_full_chain(*completo)
 
             elif msg_type == "STATUS_REQUEST":
                 last_block = self.blockchain.chain[-1]
