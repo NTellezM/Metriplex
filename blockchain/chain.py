@@ -43,6 +43,38 @@ class Blockchain:
     # REQUEST_FULL_CHAIN (los ultimos 201), con margen.
     VENTANA_PRUEBAS = 260
 
+    # Tensores m3 compartidos entre bloques. Cada coinbase guarda el
+    # receiver_m3 de su productor —64 enteros en listas anidadas, ~3 KB—, y
+    # solo hay un punado de productores: en 40.000 bloques reales aparecen 14
+    # tensores distintos repetidos decenas de miles de veces. Compartirlos
+    # reduce la memoria de la cadena ~40% (medido: 1.213 -> 737 MB).
+    #
+    # Se internan SOLO los bloques que entran en la cadena (validados), no
+    # cualquier Transaction: si no, un atacante podria inflar el pool sin
+    # limite enviando transacciones con tensores aleatorios por la API.
+    #
+    # El pool guarda su propia copia (json.loads), asi que ningun llamador
+    # conserva una referencia al objeto compartido. Seguro porque nadie muta
+    # un m3 en sitio: la unica escritura indexada en el codigo es sobre el
+    # tensor local recien creado en calculate_m3_tensor.
+    _POOL_M3: dict = {}
+
+    @classmethod
+    def _internar_m3(cls, m3):
+        if not m3 or not isinstance(m3, list):
+            return m3          # [] de la coinbase y demas: tal cual
+        clave = json.dumps(m3, separators=(",", ":"))
+        compartido = cls._POOL_M3.get(clave)
+        if compartido is None:
+            compartido = json.loads(clave)
+            cls._POOL_M3[clave] = compartido
+        return compartido
+
+    def _internar_bloque(self, block):
+        for tx in block.transactions:
+            tx.sender_m3 = self._internar_m3(tx.sender_m3)
+            tx.receiver_m3 = self._internar_m3(tx.receiver_m3)
+
     @staticmethod
     def _aligerar_firma(sig: dict) -> dict:
         """Quita del signature_data lo que solo hace falta para verificar.
@@ -91,6 +123,7 @@ class Blockchain:
 
             block = Block(index, transactions, prev_hash, timestamp)
             block.hash = b_hash
+            self._internar_bloque(block)
             self.chain.append(block)
             for tx in transactions:
                 self.validator_registry.process_tx(tx, index)
@@ -489,6 +522,7 @@ class Blockchain:
             self.state_db.validator_registry = registry_backup
             print(f"[Cadena] Rechazo: aplicación atómica falló: {exc}")
             return False
+        self._internar_bloque(block)
         self.chain.append(block)
         # Aligerar el bloque que acaba de salir de la ventana de reorg: sin
         # esto la memoria vuelve a crecer ~98 KB por bloque indefinidamente.
