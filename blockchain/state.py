@@ -89,6 +89,11 @@ class StateDB:
                 from blockchain.protocol_auth import (
                     PROTOCOL_SIG_ACTIVATION, governance_vote_hash, verify_vote_signature,
                 )
+                from blockchain.rules import GOVERNANCE_STRICT_ACTIVATION
+                # Antes de la activacion se pasa None (tolerancia antigua), para
+                # que un nodo nuevo y uno viejo verifiquen el voto igual durante
+                # el despliegue. Desde la altura, ambos usan el margen estricto.
+                vote_bi = block_index if block_index >= GOVERNANCE_STRICT_ACTIVATION else None
                 target = payload.get("target_m3_hash")
                 votes  = payload.get("votes", [])
                 if not target:
@@ -116,7 +121,7 @@ class StateDB:
                         # Estricto: cada voto debe traer una firma ZK válida del
                         # votante sobre el mensaje del voto (no basta el hash público).
                         sig = vote.get("signature") if isinstance(vote, dict) else None
-                        if not sig or not verify_vote_signature(sig, active[full]["m3"], vote_hash):
+                        if not sig or not verify_vote_signature(sig, active[full]["m3"], vote_hash, vote_bi):
                             print(f"[State] GOVERNANCE_EXIT: voto sin firma válida de {voter[:8]}")
                             continue
                     seen.add(voter)

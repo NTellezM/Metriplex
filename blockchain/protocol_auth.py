@@ -67,11 +67,16 @@ def governance_vote_hash(target_m3_hash: str) -> str:
     return _sha({"vote": "VALIDATOR_GOVERNANCE_EXIT", "target": target_m3_hash})
 
 
-def verify_vote_signature(sig: dict, voter_m3: list, vote_hash: str) -> bool:
+def verify_vote_signature(sig: dict, voter_m3: list, vote_hash: str,
+                          block_index: int = None) -> bool:
     """Verifica la prueba ZK de un voto de gobernanza contra el M3 del votante.
 
     Espeja el 'modo compacto' de Blockchain._verify_signature: la prueba lleva
     sus criterion_params y el ZK la liga al M3 del votante y al mensaje del voto.
+
+    block_index llega hasta verify_proof para que el margen anti-forge sea el
+    relativo (y la regla dual Rust/Python) desde GOVERNANCE_STRICT_ACTIVATION,
+    en vez de la tolerancia absoluta antigua que no distinguia claves.
     """
     try:
         from crypto.zkp import ZKEngine
@@ -81,7 +86,7 @@ def verify_vote_signature(sig: dict, voter_m3: list, vote_hash: str) -> bool:
         params = CriterionParams.from_dict(sig["criterion_params"])
         return ZKEngine.verify_proof(
             proof=sig, public_m3=voter_m3, tx_hash=vote_hash,
-            criterion_params=params, N_total=2000,
+            criterion_params=params, N_total=2000, block_index=block_index,
         )
     except Exception:
         return False

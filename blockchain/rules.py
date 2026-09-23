@@ -28,6 +28,15 @@ ZK_TOLERANCE_RATIO = 0.01
 # falsificar exige igualmente conocer el atractor.
 DUAL_TENSOR_ACTIVATION = 123_000  # despliegue coordinado 2026-09-22
 
+# Los votos de VALIDATOR_GOVERNANCE_EXIT se verificaban con la tolerancia
+# absoluta antigua (2*SCALE_FACTOR, ~22x la magnitud del tensor): el chequeo
+# anti-forge quedaba anulado y cualquier x_final valia como firma de cualquier
+# validador. Desde aqui, un voto se verifica con el mismo margen relativo y la
+# regla dual Rust/Python que las transacciones. Es cambio de consenso: entra
+# por altura para que ambos nodos lo apliquen a la vez. No hay ninguna
+# expulsion de gobernanza pendiente cuando se despliega.
+GOVERNANCE_STRICT_ACTIVATION = 124_000  # despliegue coordinado 2026-09-23
+
 # Monetary values are stored as signed SQLite INTEGERs.
 MAX_MONEY_RAW = 2**63 - 1
 

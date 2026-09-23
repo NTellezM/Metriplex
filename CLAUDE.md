@@ -47,6 +47,7 @@ Endpoints reales: `/info`, `/blocks`, `/validators`, `/balance/{hash}`, `/peers`
 | 109000 | `TX_V2_ACTIVATION` | sobre firmado con `chain_id` y nonce |
 | 111900 | `ZK_TOLERANCE_ACTIVATION` | margen relativo 1 %: ata la prueba a la clave |
 | 123000 | `DUAL_TENSOR_ACTIVATION` | acepta el tensor de Rust **o** el de Python |
+| 124000 | `GOVERNANCE_STRICT_ACTIVATION` | votos de gobernanza con margen relativo + dual |
 
 ## Constantes con historia
 
@@ -95,11 +96,10 @@ el uso de credenciales y algunos comandos que relajan verificaciones. Cuando ocu
 ## Pendientes
 
 - Memoria definitiva: acotar la cadena en RAM a ~200 bloques (hoy crece ~10 MB/día).
-- `fix/identidad-tensor-python`: rama lista y probada, sin desplegar. Desbloquea los
-  ~5.313 MPX de nodo3 en la altura 123000.
 - Poda en disco: exige sacar `signature_data` del hash del bloque.
-- Conexiones sin cerrar en los `return` tempranos de `handle_client`.
-- `verify_proof` sin `block_index` (votos de gobernanza, handshake P2P) sigue usando la
-  tolerancia antigua, muy amplia.
 - Respaldos de la reparación por limpiar: `/root/node_data_8003_ANTES_REPARAR_*.db` (nodo3),
   `/root/node_data_8000_SANA_20260921.db` y `/root/reparacion_export.json.gz` (nodo1).
+
+Resuelto (2026-09-22/23): identidad Python de nodo3 (`DUAL_TENSOR_ACTIVATION`),
+fugas de conexión en `handle_client`, y tolerancia antigua en votos de gobernanza
+(`GOVERNANCE_STRICT_ACTIVATION`) y handshake P2P (`strict_latest`).
