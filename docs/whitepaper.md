@@ -386,7 +386,7 @@ is what lets consensus rules change on a live network without forking it.
 
 ## 10. Network Status and Roadmap
 
-**Today:** two validators in Germany (node1 on Hetzner, node3 in Falkenstein),
+**Today:** two validators (node1 in Finland, node3 in the USA — both Hetzner),
 ZK-authenticated P2P mesh, 60-second block time, live EVM bridge, web wallet and
 Chrome extension with the Tensor Glyph.
 

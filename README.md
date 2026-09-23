@@ -35,16 +35,17 @@ Metriplex:           identity = M₃(attractor(IFS))
 
 | Node | Role | Location | Status |
 |------|------|----------|--------|
-| node-0 (genesis) | Validator · Miner | Hetzner VPS · Germany | ✅ Online 24/7 |
-| node-1 | Observer | Hetzner VPS · Germany | ✅ Online 24/7 |
-| node-3 | Validator · Miner | Hetzner VPS · Finland | ✅ Online 24/7 |
+| node-0 (genesis) | Validator · Miner | Hetzner VPS · Finland | ✅ Online 24/7 |
+| node-1 | Observer | Hetzner VPS · Finland | ✅ Online 24/7 |
+| node-3 | Validator · Miner | Hetzner VPS · USA | ✅ Online 24/7 |
 
 **Milestones:**
-- May 14, 2026 — First cross-country ZK-verified TX (Chile → Germany, ~10s)
+- May 14, 2026 — First cross-country ZK-verified TX (~10s propagation)
 - May 16, 2026 — First native browser TX — ZK proof generated in JavaScript, verified on-chain
 - May 21, 2026 — Bidirectional bridge live on Base mainnet
 - May 25, 2026 — **Lyapunov Consensus** activated — leader elected by geometric proximity in λ-space, not hash or stake
-- Jun 3, 2026 — node-3 joins from Finland (first node outside genesis infra)
+- Jun 3, 2026 — node-3 joins (first node outside genesis infra)
+- Sep 2026 — **N_PROOF = 2000** (attractor-complete proof, error 0) closes a proof-forgery vector; anti-forge tightened to a relative margin with a dual Rust/Python tensor rule; FULL_CHAIN paginated + rollback-cascade brake after a fork-resolution incident; governance votes and P2P handshake hardened. Chain stable at 123,000+ blocks.
 
 ---
 
@@ -159,7 +160,7 @@ python relayer.py
 |-----------|-------|
 | Name | Metriplex |
 | Symbol | MPX |
-| Max Supply | 21,000,000 (fixed forever) |
+| Max Supply | Convergent — ≈21,000,000 MPX at current validator geometry; no fixed cap (grows with λ diversity) |
 | Decimals | 18 |
 | Network | Base (mainnet) |
 | Contract | [`0x22D3f414438556d1B071cCfE52513d4d829400fd`](https://basescan.org/token/0x22D3f414438556d1B071cCfE52513d4d829400fd) |
