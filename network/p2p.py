@@ -410,6 +410,7 @@ class CAFNode:
         except UnicodeDecodeError:
             print(f"[P2P] Datos binarios inválidos recibidos — ignorando")
             writer.close()
+            await writer.wait_closed()
             return
 
         try:
@@ -632,11 +633,8 @@ class CAFNode:
                                       f"seguridad seguidos sin encontrar ancestro. DETENIDO "
                                       f"para no seguir borrando la cadena: requiere "
                                       f"intervención manual.")
-                                # handle_client cierra al final, fuera del try y sin
-                                # finally: un return temprano dejaria la conexion
-                                # abierta. Cerrar aqui, como la ruta de "excede".
-                                writer.close()
-                                await writer.wait_closed()
+                                # El finally de handle_client cierra la conexión
+                                # en todos los caminos; aquí solo cortamos.
                                 return
                             self._rollbacks_seguridad += 1
                             print(f"[Catch-up] Ancestro no encontrado. "
@@ -830,9 +828,15 @@ class CAFNode:
             pass
         except Exception as e:
             print(f"[Red] Error procesando mensaje: {e}")
-
-        writer.close()
-        await writer.wait_closed()
+        finally:
+            # Cierre único de la conexión. Antes estaba fuera del try, así que
+            # los return tempranos de este bloque (requester inválido en
+            # REQUEST_CHAIN_SYNC/REQUEST_FULL_CHAIN, CHAIN_SEGMENT vacío,
+            # NEW_BLOCK ya conocido, STATUS_REQUEST) salían sin cerrar y
+            # dejaban el socket colgado hasta el timeout del peer. Un finally
+            # lo cubre en todos los caminos, incluidas las excepciones.
+            writer.close()
+            await writer.wait_closed()
 
     async def broadcast_transaction(self, tx: Transaction):
         message = json.dumps({"type": "NEW_TX", "data": tx.to_dict()}).encode()
