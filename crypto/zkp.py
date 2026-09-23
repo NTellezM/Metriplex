@@ -130,10 +130,16 @@ class ZKEngine:
         criterion_params: CriterionParams = None,
         N_total: int = None,
         block_index: int = None,
+        strict_latest: bool = False,
     ) -> bool:
         """
         VERIFIER — Ejecutado por el nodo validador.
         Blindado contra forgeability calculando el tensor empírico y la Raíz Merkle.
+
+        strict_latest fuerza el margen relativo y la regla dual Rust/Python al
+        margen de block_index. Lo usa el handshake P2P, que autentica pares en
+        tiempo real y no tiene altura de cadena: sin esto caeria en la
+        tolerancia absoluta antigua, que no distingue una clave de otra.
         """
         try:
             x_final = proof["x_final"]
@@ -180,7 +186,10 @@ class ZKEngine:
                 ZK_TOLERANCE_ACTIVATION, ZK_TOLERANCE_RATIO,
             )
             D = len(public_m3)
-            if block_index is not None and block_index >= ZK_TOLERANCE_ACTIVATION:
+            relativa = strict_latest or (
+                block_index is not None and block_index >= ZK_TOLERANCE_ACTIVATION
+            )
+            if relativa:
                 # Margen relativo: escala con el tensor y separa claves distintas.
                 magnitud = max(
                     abs(public_m3[i][j][k])
@@ -204,9 +213,10 @@ class ZKEngine:
             # el MISMO margen; solo cuesta ~70 ms cuando Rust ya fallo.
             from blockchain.rules import DUAL_TENSOR_ACTIVATION
             from crypto.tensors import USING_RUST, calculate_m3_tensor_python
-            if (USING_RUST and block_index is not None
-                    and block_index >= DUAL_TENSOR_ACTIVATION
-                    and coincide(calculate_m3_tensor_python(x_final))):
+            dual = strict_latest or (
+                block_index is not None and block_index >= DUAL_TENSOR_ACTIVATION
+            )
+            if USING_RUST and dual and coincide(calculate_m3_tensor_python(x_final)):
                 return True
 
             print("[ZK] Falla: Tensor empírico diverge de la llave pública. Proof falsificado.")

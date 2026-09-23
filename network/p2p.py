@@ -125,7 +125,7 @@ class CAFNode:
                 criterion_params=params, N_total=len(att), attractor=att,
             )
             proof["criterion_params"] = vars(params)
-            if not ZKEngine.verify_proof(proof, pub, nonce, params):
+            if not ZKEngine.verify_proof(proof, pub, nonce, params, strict_latest=True):
                 raise ValueError("La prueba GEO local no verifica")
             self.geo_proof = proof
             self.geo_nonce = nonce
@@ -181,7 +181,7 @@ class CAFNode:
             if not params_raw:
                 return False
             params = CriterionParams(**params_raw) if isinstance(params_raw, dict) else params_raw
-            return ZKEngine.verify_proof(proof, m3, nonce, params)
+            return ZKEngine.verify_proof(proof, m3, nonce, params, strict_latest=True)
         except Exception as e:
             print(f"[GEO] Error verificando proof: {e}")
             return False
