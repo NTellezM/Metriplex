@@ -390,7 +390,7 @@ viva sin bifurcarla.
 
 ## 10. Estado de la red y hoja de ruta
 
-**Hoy:** dos validadores en Alemania (nodo1 en Hetzner, nodo3 en Falkenstein),
+**Hoy:** dos validadores (nodo1 en Finlandia, nodo3 en EE.UU. — ambos Hetzner),
 malla P2P autenticada por ZK, bloque cada 60 s, puente EVM en vivo, billetera
 web y extensión de Chrome con Glifo Tensorial.
 
