@@ -117,8 +117,10 @@ class KeystoreTests(unittest.IsolatedAsyncioTestCase):
         import inspect
         import api.server as srv
         src = inspect.getsource(srv.create_api_app)
+        # Ruta + generador compartido, hasta la ruta que cifra en el navegador.
         i = src.index('@app.post("/keystore/generate")')
-        route = src[i:i + 4000]
+        j = src.index('@app.post("/keystore/generate-identity")')
+        route = src[i:j]
 
         code = []
         in_doc = False
@@ -148,6 +150,64 @@ class KeystoreTests(unittest.IsolatedAsyncioTestCase):
                          {"address": "0x" + "1" * 40, "password": "corta"},
                          {"address": None, "password": None}):
                 self.assertEqual((await c.post("/keystore/generate", json=body)).status_code, 400)
+
+    def _keygen_patches(self):
+        from contextlib import ExitStack
+        st = ExitStack()
+        for target, kw in [
+            ("crypto.keys._make_contraction_seeded", {"return_value": [[1]]}),
+            ("crypto.keys.validate_r1", {"return_value": (True, None)}),
+            ("crypto.keys.validate_scale", {"return_value": (True, None)}),
+            ("crypto.keys.validate_kruskal", {"return_value": (True, 4, None)}),
+            ("crypto.keys.chaos_game", {"return_value": [[1] * 4] * 8}),
+            ("core.verifier.calibrate", {"return_value": {"theta": 1}}),
+            ("core.verifier.evaluate", {"return_value": SimpleNamespace(pass_all=True)}),
+            ("crypto.tensors.calculate_m3_tensor", {"return_value": [[1]]}),
+        ]:
+            st.enter_context(patch(target, **kw))
+        return st
+
+    async def test_generate_identity_never_receives_password(self):
+        # El navegador cifra: la ruta no acepta contraseña y no cachea la respuesta.
+        import httpx
+        app = self.make_app()
+        addr = "0x" + "1" * 40
+        with self._keygen_patches():
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
+                                         base_url="http://t") as c:
+                r = await c.post("/keystore/generate-identity", json={"address": addr})
+                r_pw = await c.post("/keystore/generate-identity",
+                                    json={"address": addr, "password": "una-passphrase"})
+        self.assertEqual(r.status_code, 200)
+        ident = r.json()["identity"]
+        for k in ("address", "private_key", "public_m3", "criterion_params", "attractor"):
+            self.assertIn(k, ident)
+        self.assertEqual(ident["evm_address"], addr)
+        self.assertEqual(r.headers.get("cache-control"), "no-store")
+        self.assertEqual(r_pw.status_code, 400)
+
+    async def test_generate_identity_rejects_bad_address(self):
+        import httpx
+        app = self.make_app()
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app),
+                                     base_url="http://t") as c:
+            r = await c.post("/keystore/generate-identity", json={"address": "0xzz"})
+        self.assertEqual(r.status_code, 400)
+
+    async def test_browser_fernet_format_decrypts_in_python(self):
+        # El formato que produce el navegador (Fernet con clave PBKDF2) es el
+        # que Python ya sabe abrir: se reproduce aquí con cryptography.
+        import base64, json, os
+        from cryptography.fernet import Fernet
+        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+        from cryptography.hazmat.primitives import hashes
+        salt = os.urandom(16)
+        raw = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt,
+                         iterations=200000).derive(b"una-passphrase")
+        pk = {"A": [[[1, 2], [3, 4]]], "b": [[5, 6]]}
+        token = Fernet(base64.urlsafe_b64encode(raw)).encrypt(
+            json.dumps(pk, separators=(",", ":")).encode())
+        self.assertEqual(json.loads(Fernet(base64.urlsafe_b64encode(raw)).decrypt(token)), pk)
 
 
 if __name__ == "__main__":

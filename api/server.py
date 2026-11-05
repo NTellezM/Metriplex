@@ -18,7 +18,7 @@ from typing import Optional  # NUEVO IMPORT
 from blockchain.block import Transaction
 from blockchain.chain import Blockchain
 import asyncio
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -322,12 +322,16 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         finally:
             keygen_slots.release()
 
-    def _generate_keystore_sync(req: dict):
-        import hashlib, json, os, base64, re
-        from fastapi import HTTPException
-        from cryptography.fernet import Fernet
-        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-        from cryptography.hazmat.primitives import hashes
+    def _validate_evm(raw_address):
+        import re
+        evm_address = raw_address.strip().lower() if isinstance(raw_address, str) else ""
+        if not re.fullmatch(r"0x[0-9a-f]{40}", evm_address):
+            raise HTTPException(status_code=400, detail="Address EVM inválida")
+        return evm_address
+
+    def _generate_identity_sync(evm_address: str) -> dict:
+        # Genera el material de identidad en claro. No cifra ni ve contraseñas.
+        import hashlib, json, os
         import numpy as np
         from crypto.keys import (
             chaos_game, _make_contraction_seeded, validate_r1, validate_scale,
@@ -336,13 +340,6 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         from crypto.tensors import calculate_m3_tensor
         from core.verifier import calibrate, evaluate
 
-        raw_address = req.get("address")
-        evm_address = raw_address.strip().lower() if isinstance(raw_address, str) else ""
-        password = req.get("password") or ""
-        if not re.fullmatch(r"0x[0-9a-f]{40}", evm_address):
-            raise HTTPException(status_code=400, detail="Address EVM inválida")
-        if not isinstance(password, str) or len(password) < 8:
-            raise HTTPException(status_code=400, detail="Password demasiado corta (mínimo 8)")
         rng = np.random.RandomState(np.frombuffer(os.urandom(32), dtype=np.uint32))
 
         private_key = criterion_params = attractor = None
@@ -376,6 +373,28 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
         address = "0x" + hashlib.sha256(
             json.dumps(public_m3, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
+        return {
+            "address": address,
+            "evm_address": evm_address,
+            "private_key": private_key,
+            "public_m3": public_m3,
+            "criterion_params": criterion_params,
+            "attractor": attractor,
+        }
+
+    def _generate_keystore_sync(req: dict):
+        import json, os, base64
+        from cryptography.fernet import Fernet
+        from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+        from cryptography.hazmat.primitives import hashes
+
+        evm_address = _validate_evm(req.get("address"))
+        password = req.get("password") or ""
+        if not isinstance(password, str) or len(password) < 8:
+            raise HTTPException(status_code=400, detail="Password demasiado corta (mínimo 8)")
+
+        ident = _generate_identity_sync(evm_address)
+        private_key = ident.pop("private_key")
 
         salt = os.urandom(16)
         kdf = PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=salt, iterations=200000)
@@ -386,15 +405,15 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
 
         return {
             "keystore": {
-                "address": address,
+                "address": ident["address"],
                 "evm_address": evm_address,
                 "salt": base64.b64encode(salt).decode(),
                 "encrypted_private_key": encrypted,
-                "public_m3": public_m3,
-                "criterion_params": criterion_params,
-                "attractor": attractor,
+                "public_m3": ident["public_m3"],
+                "criterion_params": ident["criterion_params"],
+                "attractor": ident["attractor"],
             },
-            "address": address,
+            "address": ident["address"],
             "evm_address": evm_address,
             "warning": (
                 "Guarda este keystore. La clave es aleatoria y no puede "
@@ -402,7 +421,27 @@ def create_api_app(blockchain: Blockchain, mempool: Mempool, p2p_node) -> FastAP
             ),
         }
 
-
+    @app.post("/keystore/generate-identity")
+    async def generate_identity(req: dict, response: Response):
+        """
+        Genera una identidad SIN recibir contraseña. El navegador cifra la
+        clave privada localmente (PBKDF2-SHA256 200k + Fernet, el mismo
+        formato que /keystore/generate) y la contraseña nunca sale del
+        cliente. La clave se devuelve una sola vez, no se guarda ni se loguea.
+        """
+        evm_address = _validate_evm(req.get("address"))
+        if "password" in req:
+            raise HTTPException(status_code=400, detail="No envíes la contraseña: el cifrado se hace en el navegador")
+        if keygen_slots.locked():
+            raise HTTPException(status_code=429, detail="Hay otra identidad en generación; reintenta en un minuto")
+        await keygen_slots.acquire()
+        try:
+            ident = await asyncio.to_thread(_generate_identity_sync, evm_address)
+        finally:
+            keygen_slots.release()
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Pragma"] = "no-cache"
+        return {"identity": ident}
 
     # ── Facial Identity ──────────────────────────────────────────────────
     import sqlite3 as _sqlite3, math as _math
